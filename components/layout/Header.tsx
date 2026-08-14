@@ -1,0 +1,173 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  Bookmark,
+  ChevronRight,
+  Globe,
+  Menu,
+  X,
+} from "lucide-react";
+
+const navLinks = [
+  {
+    name: "Home",
+    href: "/",
+  },
+  {
+    name: "Countries",
+    href: "/countries",
+  },
+  {
+    name: "Categories",
+    href: "/categories",
+  },
+  {
+    name: "Career Resources",
+    href: "/career-resources",
+  },
+];
+
+export default function Header() {
+  const [mobileOpen, setMobileOpen] =
+    useState(false);
+
+  function closeMenu() {
+    setMobileOpen(false);
+  }
+
+  return (
+    <header className="sticky top-0 z-40 w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center gap-5">
+
+        {/* Logo */}
+        <Link
+          href="/"
+          onClick={closeMenu}
+          className="flex items-center gap-2.5 sm:gap-3 shrink-0 group"
+        >
+
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
+            <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950" />
+          </div>
+
+          <div>
+            <div className="text-base sm:text-xl font-bold tracking-tight">
+              HORIZON{" "}
+              <span className="text-indigo-400 font-medium">
+                JOBS
+              </span>
+            </div>
+
+            <div className="hidden sm:block text-[9px] tracking-widest uppercase text-slate-400 font-mono">
+              Global Employment Intelligence
+            </div>
+          </div>
+
+        </Link>
+
+        {/* Desktop navigation */}
+        <nav className="hidden lg:flex items-center gap-1 ml-auto">
+
+          {navLinks.map(
+            (link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition-colors whitespace-nowrap"
+              >
+                {link.name}
+              </Link>
+            )
+          )}
+
+          <Link
+            href="/saved"
+            aria-label="Saved Jobs"
+            title="Saved Jobs"
+            className="ml-2 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white hover:border-slate-600 transition-colors"
+          >
+            <Bookmark className="w-4 h-4" />
+          </Link>
+
+        </nav>
+
+        {/* Mobile button */}
+        <div className="lg:hidden ml-auto">
+
+          <button
+            type="button"
+            onClick={() =>
+              setMobileOpen(
+                (current) =>
+                  !current
+              )
+            }
+            className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
+            aria-label={
+              mobileOpen
+                ? "Close menu"
+                : "Open menu"
+            }
+            aria-expanded={
+              mobileOpen
+            }
+          >
+
+            {mobileOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="lg:hidden border-t border-slate-800 bg-slate-900 px-4 py-3">
+
+          <nav className="space-y-1">
+
+            {navLinks.map(
+              (link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={closeMenu}
+                  className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"
+                >
+                  <span>
+                    {link.name}
+                  </span>
+
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </Link>
+              )
+            )}
+
+            <Link
+              href="/saved"
+              onClick={closeMenu}
+              className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"
+            >
+              <span>
+                Saved Jobs
+              </span>
+
+              <Bookmark className="w-4 h-4 text-slate-500" />
+            </Link>
+
+          </nav>
+
+        </div>
+      )}
+
+    </header>
+  );
+}
