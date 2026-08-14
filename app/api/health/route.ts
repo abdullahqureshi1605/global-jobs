@@ -22,7 +22,7 @@ export async function GET() {
   const requiredEnvironmentVariables = [
     "NEXT_PUBLIC_SITE_URL",
     "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     "SUPABASE_SECRET_KEY",
   ];
 
@@ -33,7 +33,8 @@ export async function GET() {
     );
 
   if (
-    missingEnvironmentVariables.length === 0
+    missingEnvironmentVariables.length ===
+    0
   ) {
     checks.environment = "ok";
   }
