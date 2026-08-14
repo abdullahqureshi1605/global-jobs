@@ -71,16 +71,7 @@ export default async function AdminPage() {
     Open Reports →
   </span>
 </Link>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Reports
-            </h2>
-
-            <p className="text-sm text-slate-500 mt-2">
-              Report management will be connected after the core content
-              management system is ready.
-            </p>
-          </div>
+          
 
         </div>
       </div>
