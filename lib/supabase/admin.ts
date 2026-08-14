@@ -1,34 +1,40 @@
-import { createClient } from "@supabase/supabase-js";
+import {
+  createClient as createSupabaseClient,
+} from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+function requireEnv(
+  name: string
+): string {
+  const value =
+    process.env[name]?.trim();
 
-if (!supabaseUrl) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL environment variable."
-  );
-}
-
-if (!supabaseSecretKey) {
-  throw new Error(
-    "Missing SUPABASE_SECRET_KEY environment variable."
-  );
-}
-
-/**
- * Server-only Supabase client.
- *
- * IMPORTANT:
- * This client uses the Supabase secret key and must NEVER
- * be imported into Client Components or browser-side code.
- */
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  supabaseSecretKey,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+  if (!value) {
+    throw new Error(
+      `Missing ${name} environment variable.`
+    );
   }
-);
+
+  return value;
+}
+
+const supabaseUrl =
+  requireEnv(
+    "NEXT_PUBLIC_SUPABASE_URL"
+  );
+
+const supabaseSecretKey =
+  requireEnv(
+    "SUPABASE_SECRET_KEY"
+  );
+
+export const supabaseAdmin =
+  createSupabaseClient(
+    supabaseUrl,
+    supabaseSecretKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );

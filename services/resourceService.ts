@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export interface Resource {
   id: string;
@@ -8,106 +8,112 @@ export interface Resource {
   description: string;
   content: string;
   author: string;
-  authorRole: string;
-  publishedDate: string;
-  updatedDate: string;
+  authorRole?: string;
   readTime: string;
-  featured: boolean;
-  status: "draft" | "published" | "archived";
-  seoTitle: string;
-  seoDescription: string;
+  publishedDate: string;
+  updatedDate?: string;
+  featured?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+  status?: string;
 }
 
 function mapResource(row: any): Resource {
   return {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    category: row.category,
-    description: row.description,
-    content: row.content,
-    author: row.author,
-    authorRole: row.author_role || "",
-    publishedDate: row.published_date,
-    updatedDate: row.updated_date || "",
-    readTime: row.read_time,
-    featured: row.featured ?? false,
-    status: row.status,
-    seoTitle: row.seo_title || row.title,
+    id: row.id ?? "",
+
+    slug: row.slug ?? "",
+
+    title: row.title ?? "",
+
+    category: row.category ?? "",
+
+    description: row.description ?? "",
+
+    content: row.content ?? "",
+
+    author:
+      row.author ??
+      "Horizon Jobs",
+
+    authorRole:
+      row.author_role ??
+      row.authorRole ??
+      "",
+
+    readTime:
+      row.read_time ??
+      row.readTime ??
+      "",
+
+    publishedDate:
+      row.published_date ??
+      row.publishedDate ??
+      "",
+
+    updatedDate:
+      row.updated_date ??
+      row.updatedDate ??
+      undefined,
+
+    featured:
+      Boolean(row.featured),
+
+    seoTitle:
+      row.seo_title ??
+      row.seoTitle ??
+      "",
+
     seoDescription:
-      row.seo_description || row.description,
+      row.seo_description ??
+      row.seoDescription ??
+      "",
+
+    status:
+      row.status ??
+      "draft",
   };
 }
 
 export class ResourceService {
   static async getPublishedResources(): Promise<Resource[]> {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from("resources")
-      .select("*")
-      .eq("status", "published")
-      .order("published_date", {
-        ascending: false,
-      });
-
-    if (error) {
-      console.error(
-        "Failed to fetch resources:",
-        error
-      );
-
-      return [];
-    }
-
-    return (data || []).map(mapResource);
-  }
-
-  static async getFeaturedResources(): Promise<Resource[]> {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from("resources")
-      .select("*")
-      .eq("status", "published")
-      .eq("featured", true)
-      .order("published_date", {
-        ascending: false,
-      });
+    const { data, error } =
+      await supabaseAdmin
+        .from("resources")
+        .select("*")
+        .eq("status", "published")
+        .order("published_date", {
+          ascending: false,
+        });
 
     if (error) {
-      console.error(
-        "Failed to fetch featured resources:",
-        error
+      throw new Error(
+        `Failed to load published resources: ${error.message}`
       );
-
-      return [];
     }
 
-    return (data || []).map(mapResource);
+    return (data ?? []).map(mapResource);
   }
 
   static async getResourceBySlug(
     slug: string
-  ): Promise<Resource | undefined> {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from("resources")
-      .select("*")
-      .eq("slug", slug)
-      .eq("status", "published")
-      .maybeSingle();
+  ): Promise<Resource | null> {
+    const { data, error } =
+      await supabaseAdmin
+        .from("resources")
+        .select("*")
+        .eq("slug", slug)
+        .eq("status", "published")
+        .maybeSingle();
 
     if (error) {
-      console.error(
-        "Failed to fetch resource:",
-        error
+      throw new Error(
+        `Failed to load resource: ${error.message}`
       );
-
-      return undefined;
     }
 
-    return data ? mapResource(data) : undefined;
+    return data
+      ? mapResource(data)
+      : null;
   }
 }
