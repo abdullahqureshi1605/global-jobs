@@ -23,6 +23,8 @@ import {
   slugify,
 } from "@/lib/utils/slug";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title:
     "Horizon Jobs | Global Job Discovery Platform",

@@ -35,6 +35,8 @@ import {
   slugify,
 } from "@/lib/utils/slug";
 
+export const dynamic = "force-dynamic";
+
 interface ResourcePageProps {
   params: Promise<{
     slug: string;

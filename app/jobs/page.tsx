@@ -13,6 +13,8 @@ import BackButton from "@/components/layout/BackButton";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import AdSlot from "@/components/ads/AdSlot";
 
+export const dynamic = "force-dynamic";
+
 interface JobsPageProps {
   searchParams: Promise<{
     keyword?: string;

@@ -4,6 +4,8 @@ import { MapPin } from "lucide-react";
 import { JobService } from "@/services/jobService";
 import { slugify } from "@/lib/utils/slug";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Jobs by Country | Horizon Jobs",
   description:

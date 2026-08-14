@@ -14,6 +14,8 @@ import BackButton from "@/components/layout/BackButton";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import AdSlot from "@/components/ads/AdSlot";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Career Resources | Horizon Jobs",
   description:

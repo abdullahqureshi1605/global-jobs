@@ -24,6 +24,8 @@ import {
   getSiteUrl,
 } from "@/lib/seo/siteUrl";
 
+export const dynamic = "force-dynamic";
+
 interface JobPageProps {
   params: Promise<{
     country: string;
