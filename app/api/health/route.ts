@@ -1,25 +1,22 @@
 import { NextResponse } from "next/server";
 
-import {
-  supabaseAdmin,
-} from "@/lib/supabase/admin";
-
-import {
-  getSiteUrl,
-} from "@/lib/seo/siteUrl";
+import { JobService } from "@/services/jobService";
+import { ResourceService } from "@/services/resourceService";
+import { getSiteUrl } from "@/lib/seo/siteUrl";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const startedAt =
-    Date.now();
+  const startedAt = Date.now();
 
   const checks: {
-    database: "ok" | "error";
     environment: "ok" | "error";
+    jobs: "ok" | "error";
+    resources: "ok" | "error";
   } = {
-    database: "error",
     environment: "error",
+    jobs: "error",
+    resources: "error",
   };
 
   const requiredEnvironmentVariables = [
@@ -36,90 +33,95 @@ export async function GET() {
     );
 
   if (
-    missingEnvironmentVariables.length ===
-    0
+    missingEnvironmentVariables.length === 0
   ) {
     checks.environment = "ok";
   }
 
-  let databaseError: string | null =
-    null;
+  let jobsCount = 0;
+  let resourcesCount = 0;
+
+  let jobsError: string | null = null;
+  let resourcesError: string | null = null;
 
   try {
-    const {
-      error,
-    } = await supabaseAdmin
-      .from("jobs")
-      .select("id", {
-        head: true,
-        count: "exact",
-      });
+    const jobs =
+      await JobService.getPublishedJobs();
 
-    if (!error) {
-      checks.database = "ok";
-    } else {
-      databaseError =
-        error.message;
-    }
+    jobsCount = jobs.length;
+    checks.jobs = "ok";
   } catch (error) {
-    databaseError =
+    jobsError =
       error instanceof Error
         ? error.message
-        : "Database check failed.";
+        : "Jobs query failed.";
+  }
+
+  try {
+    const resources =
+      await ResourceService.getPublishedResources();
+
+    resourcesCount =
+      resources.length;
+
+    checks.resources = "ok";
+  } catch (error) {
+    resourcesError =
+      error instanceof Error
+        ? error.message
+        : "Resources query failed.";
   }
 
   const healthy =
     checks.environment === "ok" &&
-    checks.database === "ok";
+    checks.jobs === "ok" &&
+    checks.resources === "ok";
 
-  const response =
-    NextResponse.json(
-      {
-        status: healthy
-          ? "ok"
-          : "error",
+  const response = NextResponse.json(
+    {
+      status: healthy
+        ? "ok"
+        : "error",
 
-        service:
-          "horizon-jobs",
+      service: "horizon-jobs",
 
-        siteUrl:
-          getSiteUrl(),
+      siteUrl: getSiteUrl(),
 
-        checks: {
-          environment:
-            checks.environment,
+      checks,
 
-          database:
-            checks.database,
-        },
+      data: {
+        publishedJobs:
+          jobsCount,
 
-        ...(healthy
-          ? {}
-          : {
-              databaseError:
-                databaseError ||
-                undefined,
-
-              missingEnvironmentVariables:
-                missingEnvironmentVariables.length >
-                0
-                  ? missingEnvironmentVariables
-                  : undefined,
-            }),
-
-        responseTimeMs:
-          Date.now() -
-          startedAt,
-
-        timestamp:
-          new Date().toISOString(),
+        publishedResources:
+          resourcesCount,
       },
-      {
-        status: healthy
-          ? 200
-          : 503,
-      }
-    );
+
+      ...(healthy
+        ? {}
+        : {
+            missingEnvironmentVariables:
+              missingEnvironmentVariables.length
+                ? missingEnvironmentVariables
+                : undefined,
+
+            jobsError:
+              jobsError || undefined,
+
+            resourcesError:
+              resourcesError || undefined,
+          }),
+
+      responseTimeMs:
+        Date.now() - startedAt,
+
+      timestamp:
+        new Date().toISOString(),
+    },
+    {
+      status: healthy ? 200 : 503,
+    }
+  );
 
   response.headers.set(
     "Cache-Control",
