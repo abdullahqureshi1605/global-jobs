@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { ChevronRight, Home } from "lucide-react";
 
 export interface BreadcrumbItem {
   label: string;
@@ -6,69 +9,65 @@ export interface BreadcrumbItem {
 }
 
 interface BreadcrumbsProps {
-  items: BreadcrumbItem[];
+  items?: BreadcrumbItem[];
   className?: string;
 }
 
 export default function Breadcrumbs({
-  items,
+  items = [],
   className = "",
 }: BreadcrumbsProps) {
-  if (!items.length) {
+  if (items.length === 0) {
     return null;
   }
 
   return (
     <nav
       aria-label="Breadcrumb"
-      className={`mb-6 ${className}`}
+      className={`border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 ${className}`}
     >
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      <div className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
+        <Link
+          href="/"
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+        >
+          <Home className="h-4 w-4" />
+          <span>Home</span>
+        </Link>
+
         {items.map((item, index) => {
           const isLast =
             index === items.length - 1;
 
           return (
-            <li
+            <div
               key={`${item.label}-${index}`}
-              className="flex items-center gap-2"
+              className="flex min-w-0 shrink-0 items-center"
             >
-              {index > 0 && (
-                <span
-                  aria-hidden="true"
-                  className="text-slate-400 dark:text-slate-600"
-                >
-                  /
-                </span>
-              )}
+              <ChevronRight className="mx-1 h-4 w-4 shrink-0 text-slate-400" />
 
-              {isLast || !item.href ? (
-                <span
-                  aria-current={
-                    isLast
-                      ? "page"
-                      : undefined
-                  }
-                  className={
-                    isLast
-                      ? "font-medium text-slate-700 dark:text-slate-300"
-                      : "text-slate-500 dark:text-slate-400"
-                  }
-                >
-                  {item.label}
-                </span>
-              ) : (
+              {item.href && !isLast ? (
                 <Link
                   href={item.href}
-                  className="text-indigo-600 transition-colors hover:text-indigo-500 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                  className="max-w-[220px] truncate text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
                   {item.label}
                 </Link>
+              ) : (
+                <span
+                  className={`max-w-[260px] truncate text-sm ${
+                    isLast
+                      ? "font-semibold text-slate-900 dark:text-white"
+                      : "font-medium text-slate-600 dark:text-slate-300"
+                  }`}
+                >
+                  {item.label}
+                </span>
               )}
-            </li>
+            </div>
           );
         })}
-      </ol>
+      </div>
     </nav>
   );
 }

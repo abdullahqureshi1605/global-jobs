@@ -5,7 +5,6 @@ import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AutoBreadcrumbs from "@/components/navigation/AutoBreadcrumbs";
-import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +18,8 @@ export const metadata: Metadata = {
     "Discover global job opportunities and practical career resources with Horizon Jobs.",
 
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env
+      .NEXT_PUBLIC_SITE_URL ||
       "https://global-jobz.netlify.app"
   ),
 };
@@ -43,8 +43,6 @@ export default function RootLayout({
 
           <Footer />
         </div>
-
-        <GoogleAnalytics />
       </body>
     </html>
   );

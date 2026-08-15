@@ -1,39 +1,76 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 import Breadcrumbs, {
   type BreadcrumbItem,
 } from "./Breadcrumbs";
 
-import BackButton from "./BackButton";
-
-interface PageNavigationProps {
-  breadcrumbs: BreadcrumbItem[];
-
-  backLabel?: string;
-
-  backFallbackHref?: string;
-
-  showBack?: boolean;
+function formatSegment(
+  segment: string
+): string {
+  return decodeURIComponent(
+    segment
+  )
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (character) =>
+      character.toUpperCase()
+    );
 }
 
-export default function PageNavigation({
-  breadcrumbs,
-  backLabel = "Back",
-  backFallbackHref = "/",
-  showBack = true,
-}: PageNavigationProps) {
-  return (
-    <div className="mb-8">
-      {showBack && (
-        <div className="mb-4">
-          <BackButton
-            label={backLabel}
-            fallbackHref={backFallbackHref}
-          />
-        </div>
-      )}
+function buildBreadcrumbs(
+  pathname: string
+): BreadcrumbItem[] {
+  const segments = pathname
+    .split("/")
+    .filter(Boolean);
 
-      <Breadcrumbs
-        items={breadcrumbs}
-      />
-    </div>
+  const items: BreadcrumbItem[] = [];
+
+  segments.forEach(
+    (segment, index) => {
+      const href =
+        "/" +
+        segments
+          .slice(0, index + 1)
+          .join("/");
+
+      items.push({
+        label:
+          formatSegment(
+            segment
+          ),
+        href:
+          index ===
+          segments.length - 1
+            ? undefined
+            : href,
+      });
+    }
+  );
+
+  return items;
+}
+
+export default function PageNavigation() {
+  const pathname =
+    usePathname();
+
+  if (
+    !pathname ||
+    pathname === "/"
+  ) {
+    return null;
+  }
+
+  const items =
+    buildBreadcrumbs(
+      pathname
+    );
+
+  return (
+    <Breadcrumbs
+      items={items}
+    />
   );
 }

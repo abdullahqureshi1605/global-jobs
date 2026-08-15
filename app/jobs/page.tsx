@@ -1,14 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { JobService } from "@/services/jobService";
 import { slugify } from "@/lib/utils/slug";
 
 export const revalidate = 30;
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Find Jobs | Horizon Jobs",
   description:
-    "Search global job opportunities by keyword, location, category, workplace type, employment type, and experience level.",
+    "Search published global jobs by keyword, country, city, category, workplace type, employment type, and experience level.",
 };
 
 type SearchParams = {
@@ -20,14 +21,16 @@ type SearchParams = {
   experience?: string;
 };
 
-function getValue(value: string | string[] | undefined) {
-  return Array.isArray(value)
-    ? value[0] || ""
-    : value || "";
+function value(
+  input: string | string[] | undefined
+) {
+  return Array.isArray(input)
+    ? input[0] || ""
+    : input || "";
 }
 
-function safeSearchValue(value: string) {
-  return value
+function clean(input: string) {
+  return input
     .replace(/[,%()]/g, " ")
     .replace(/\\/g, " ")
     .trim()
@@ -39,78 +42,106 @@ export default async function JobsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const params = await searchParams;
+  const params =
+    await searchParams;
 
-  const q = getValue(params.q).trim();
-  const location = getValue(params.location).trim();
-  const category = getValue(params.category).trim();
-  const workplace = getValue(params.workplace).trim();
-  const employment = getValue(params.employment).trim();
-  const experience = getValue(params.experience).trim();
+  const q = value(params.q);
+  const location =
+    value(params.location);
+  const category =
+    value(params.category);
+  const workplace =
+    value(params.workplace);
+  const employment =
+    value(params.employment);
+  const experience =
+    value(params.experience);
 
   let query = supabaseAdmin
     .from("jobs")
-    .select("*")
+    .select(
+      `
+      id,
+      title,
+      slug,
+      company,
+      country,
+      countryCode:country_code,
+      city,
+      category,
+      employmentType:employment_type,
+      workplaceType:workplace_type,
+      experienceLevel:experience_level,
+      salaryMin:salary_min,
+      salaryMax:salary_max,
+      salaryCurrency:salary_currency,
+      description,
+      datePosted:date_posted,
+      featured
+      `
+    )
     .eq("status", "published")
     .order("date_posted", {
       ascending: false,
     })
     .limit(60);
 
-  if (q) {
-    const value = safeSearchValue(q);
+  if (q.trim()) {
+    const search =
+      clean(q);
 
-    if (value) {
-      query = query.or(
-        `title.ilike.%${value}%,company.ilike.%${value}%,description.ilike.%${value}%`
-      );
-    }
+    query = query.or(
+      `title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%`
+    );
   }
 
-  if (location) {
-    const value = safeSearchValue(location);
+  if (location.trim()) {
+    const search =
+      clean(location);
 
-    if (value) {
-      query = query.or(
-        `country.ilike.%${value}%,city.ilike.%${value}%`
-      );
-    }
+    query = query.or(
+      `country.ilike.%${search}%,city.ilike.%${search}%`
+    );
   }
 
-  if (category) {
-    query = query.ilike(
+  if (category.trim()) {
+    query = query.eq(
       "category",
-      `%${safeSearchValue(category)}%`
+      category
     );
   }
 
-  if (workplace) {
-    query = query.ilike(
+  if (workplace.trim()) {
+    query = query.eq(
       "workplace_type",
-      `%${safeSearchValue(workplace)}%`
+      workplace
     );
   }
 
-  if (employment) {
-    query = query.ilike(
+  if (employment.trim()) {
+    query = query.eq(
       "employment_type",
-      `%${safeSearchValue(employment)}%`
+      employment
     );
   }
 
-  if (experience) {
-    query = query.ilike(
+  if (experience.trim()) {
+    query = query.eq(
       "experience_level",
-      `%${safeSearchValue(experience)}%`
+      experience
     );
   }
 
   const [
     jobsResult,
-    categoryCounts,
+    categoriesResult,
   ] = await Promise.all([
     query,
-    JobService.getPublishedCategoryCounts(),
+
+    supabaseAdmin
+      .from("jobs")
+      .select("category")
+      .eq("status", "published"),
   ]);
 
   if (jobsResult.error) {
@@ -119,13 +150,27 @@ export default async function JobsPage({
     );
   }
 
-  const jobs = jobsResult.data ?? [];
+  if (categoriesResult.error) {
+    throw new Error(
+      `Failed to load categories: ${categoriesResult.error.message}`
+    );
+  }
 
-  const categoryOptions = Array.from(
-    categoryCounts.keys()
+  const jobs =
+    jobsResult.data ?? [];
+
+  const categories = Array.from(
+    new Set(
+      (categoriesResult.data ?? [])
+        .map(
+          (item) =>
+            item.category
+        )
+        .filter(Boolean)
+    )
   ).sort();
 
-  const hasFilters =
+  const filtered =
     Boolean(
       q ||
         location ||
@@ -143,18 +188,16 @@ export default async function JobsPage({
             Global Employment
           </p>
 
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
             Find Your Opportunity
           </h1>
 
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Search current published jobs by keyword, location,
-            category, workplace, employment type, and experience.
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
+            Search the published Horizon Jobs database.
           </p>
         </header>
 
         <div className="flex flex-col gap-8 lg:flex-row">
-          {/* SIDEBAR */}
           <aside className="w-full shrink-0 lg:w-80">
             <form
               action="/jobs"
@@ -175,203 +218,208 @@ export default async function JobsPage({
               </div>
 
               <div className="mt-6 space-y-5">
-                <div>
-                  <label
-                    htmlFor="q"
-                    className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Keyword
-                  </label>
+                <Field
+                  id="q"
+                  name="q"
+                  label="Keyword"
+                  defaultValue={q}
+                  placeholder="Job title or company"
+                />
 
-                  <input
-                    id="q"
-                    name="q"
-                    defaultValue={q}
-                    placeholder="Job title, company..."
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  />
-                </div>
+                <Field
+                  id="location"
+                  name="location"
+                  label="Location"
+                  defaultValue={
+                    location
+                  }
+                  placeholder="Country or city"
+                />
 
-                <div>
-                  <label
-                    htmlFor="location"
-                    className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Location
-                  </label>
+                <Select
+                  id="category"
+                  name="category"
+                  label="Category"
+                  defaultValue={
+                    category
+                  }
+                  options={[
+                    {
+                      value: "",
+                      label:
+                        "All categories",
+                    },
+                    ...categories.map(
+                      (item) => ({
+                        value: item,
+                        label: item,
+                      })
+                    ),
+                  ]}
+                />
 
-                  <input
-                    id="location"
-                    name="location"
-                    defaultValue={location}
-                    placeholder="Country or city..."
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  />
-                </div>
+                <Select
+                  id="workplace"
+                  name="workplace"
+                  label="Workplace"
+                  defaultValue={
+                    workplace
+                  }
+                  options={[
+                    {
+                      value: "",
+                      label:
+                        "Any workplace",
+                    },
+                    {
+                      value: "Remote",
+                      label: "Remote",
+                    },
+                    {
+                      value: "Hybrid",
+                      label: "Hybrid",
+                    },
+                    {
+                      value: "On-site",
+                      label:
+                        "On-site",
+                    },
+                  ]}
+                />
 
-                <div>
-                  <label
-                    htmlFor="category"
-                    className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Category
-                  </label>
+                <Select
+                  id="employment"
+                  name="employment"
+                  label="Employment"
+                  defaultValue={
+                    employment
+                  }
+                  options={[
+                    {
+                      value: "",
+                      label:
+                        "Any employment",
+                    },
+                    {
+                      value:
+                        "Full-time",
+                      label:
+                        "Full-time",
+                    },
+                    {
+                      value:
+                        "Part-time",
+                      label:
+                        "Part-time",
+                    },
+                    {
+                      value:
+                        "Contract",
+                      label:
+                        "Contract",
+                    },
+                    {
+                      value:
+                        "Temporary",
+                      label:
+                        "Temporary",
+                    },
+                    {
+                      value:
+                        "Internship",
+                      label:
+                        "Internship",
+                    },
+                    {
+                      value:
+                        "Freelance",
+                      label:
+                        "Freelance",
+                    },
+                  ]}
+                />
 
-                  <select
-                    id="category"
-                    name="category"
-                    defaultValue={category}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  >
-                    <option value="">
-                      All categories
-                    </option>
-
-                    {categoryOptions.map((item) => (
-                      <option
-                        key={item}
-                        value={item}
-                      >
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="workplace"
-                    className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Workplace
-                  </label>
-
-                  <select
-                    id="workplace"
-                    name="workplace"
-                    defaultValue={workplace}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  >
-                    <option value="">
-                      Any workplace
-                    </option>
-                    <option value="Remote">
-                      Remote
-                    </option>
-                    <option value="Hybrid">
-                      Hybrid
-                    </option>
-                    <option value="On-site">
-                      On-site
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="employment"
-                    className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Employment
-                  </label>
-
-                  <select
-                    id="employment"
-                    name="employment"
-                    defaultValue={employment}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  >
-                    <option value="">
-                      Any employment
-                    </option>
-                    <option value="Full-time">
-                      Full-time
-                    </option>
-                    <option value="Part-time">
-                      Part-time
-                    </option>
-                    <option value="Contract">
-                      Contract
-                    </option>
-                    <option value="Temporary">
-                      Temporary
-                    </option>
-                    <option value="Internship">
-                      Internship
-                    </option>
-                    <option value="Freelance">
-                      Freelance
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="experience"
-                    className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Experience
-                  </label>
-
-                  <select
-                    id="experience"
-                    name="experience"
-                    defaultValue={experience}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  >
-                    <option value="">
-                      Any experience
-                    </option>
-                    <option value="Entry Level">
-                      Entry Level
-                    </option>
-                    <option value="Mid Level">
-                      Mid Level
-                    </option>
-                    <option value="Senior">
-                      Senior
-                    </option>
-                    <option value="Executive">
-                      Executive
-                    </option>
-                  </select>
-                </div>
+                <Select
+                  id="experience"
+                  name="experience"
+                  label="Experience"
+                  defaultValue={
+                    experience
+                  }
+                  options={[
+                    {
+                      value: "",
+                      label:
+                        "Any experience",
+                    },
+                    {
+                      value:
+                        "Entry Level",
+                      label:
+                        "Entry Level",
+                    },
+                    {
+                      value:
+                        "Mid Level",
+                      label:
+                        "Mid Level",
+                    },
+                    {
+                      value:
+                        "Senior",
+                      label:
+                        "Senior",
+                    },
+                    {
+                      value:
+                        "Executive",
+                      label:
+                        "Executive",
+                    },
+                  ]}
+                />
 
                 <button
                   type="submit"
                   className="w-full rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
                 >
-                  Apply Filters
+                  Search Jobs
                 </button>
               </div>
             </form>
           </aside>
 
-          {/* RESULTS */}
           <section className="min-w-0 flex-1">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                {hasFilters
-                  ? "Filtered Job Results"
+              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                {filtered
+                  ? "Search Results"
                   : "Latest Opportunities"}
               </h2>
 
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {jobs.length} published{" "}
-                {jobs.length === 1 ? "job" : "jobs"} found.
+                {jobs.length ===
+                1
+                  ? "job"
+                  : "jobs"}{" "}
+                found.
               </p>
             </div>
 
-            {jobs.length === 0 ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
-                <div className="text-4xl">🔎</div>
+            {jobs.length ===
+            0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
+                <div className="text-4xl">
+                  🔎
+                </div>
 
                 <h3 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">
                   No jobs found
                 </h3>
 
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Try changing your search or removing some filters.
+                <p className="mt-2 text-sm text-slate-500">
+                  Try different search criteria.
                 </p>
 
                 <Link
@@ -405,7 +453,8 @@ export default async function JobsPage({
 
                       <div className="mt-4 flex flex-wrap gap-2 text-xs">
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {job.city}, {job.country}
+                          {job.city},{" "}
+                          {job.country}
                         </span>
 
                         <span className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
@@ -413,16 +462,22 @@ export default async function JobsPage({
                         </span>
 
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {job.workplace_type}
+                          {
+                            job.workplaceType
+                          }
                         </span>
 
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {job.employment_type}
+                          {
+                            job.employmentType
+                          }
                         </span>
                       </div>
 
                       <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                        {job.description}
+                        {
+                          job.description
+                        }
                       </p>
                     </div>
 
@@ -446,5 +501,84 @@ export default async function JobsPage({
         </div>
       </div>
     </main>
+  );
+}
+
+function Field({
+  id,
+  name,
+  label,
+  defaultValue,
+  placeholder,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  defaultValue: string;
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
+      >
+        {label}
+      </label>
+
+      <input
+        id={id}
+        name={name}
+        defaultValue={defaultValue}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+      />
+    </div>
+  );
+}
+
+function Select({
+  id,
+  name,
+  label,
+  defaultValue,
+  options,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  defaultValue: string;
+  options: {
+    value: string;
+    label: string;
+  }[];
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
+      >
+        {label}
+      </label>
+
+      <select
+        id={id}
+        name={name}
+        defaultValue={defaultValue}
+        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+      >
+        {options.map(
+          (option) => (
+            <option
+              key={option.value}
+              value={option.value}
+            >
+              {option.label}
+            </option>
+          )
+        )}
+      </select>
+    </div>
   );
 }
