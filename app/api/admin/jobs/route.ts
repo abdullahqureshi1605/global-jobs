@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
@@ -154,6 +156,8 @@ export async function POST(
     }
 
     const jobRecord = {
+        id: randomUUID(),
+      
       title,
 
       slug,
