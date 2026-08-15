@@ -14,25 +14,79 @@ interface Props {
   }>;
 }
 
+const COUNTRY_NAMES: Record<
+  string,
+  string
+> = {
+  pakistan: "Pakistan",
+  india: "India",
+  canada: "Canada",
+  "united-states":
+    "United States",
+  "united-kingdom":
+    "United Kingdom",
+  australia: "Australia",
+  germany: "Germany",
+  france: "France",
+  netherlands:
+    "Netherlands",
+  ireland: "Ireland",
+  spain: "Spain",
+  italy: "Italy",
+  portugal: "Portugal",
+  switzerland:
+    "Switzerland",
+  austria: "Austria",
+  belgium: "Belgium",
+  sweden: "Sweden",
+  norway: "Norway",
+  denmark: "Denmark",
+  finland: "Finland",
+  poland: "Poland",
+  bangladesh:
+    "Bangladesh",
+  nepal: "Nepal",
+  china: "China",
+  japan: "Japan",
+  "south-korea":
+    "South Korea",
+  singapore: "Singapore",
+  malaysia: "Malaysia",
+  indonesia: "Indonesia",
+  thailand: "Thailand",
+  philippines:
+    "Philippines",
+  "saudi-arabia":
+    "Saudi Arabia",
+  "united-arab-emirates":
+    "United Arab Emirates",
+  qatar: "Qatar",
+  kuwait: "Kuwait",
+  bahrain: "Bahrain",
+  oman: "Oman",
+  "south-africa":
+    "South Africa",
+  nigeria: "Nigeria",
+  kenya: "Kenya",
+  egypt: "Egypt",
+  brazil: "Brazil",
+  mexico: "Mexico",
+  argentina: "Argentina",
+  chile: "Chile",
+  "new-zealand":
+    "New Zealand",
+};
+
 export const dynamic =
   "force-dynamic";
 
-async function getCountryName(
+async function resolveCountry(
   slug: string
 ) {
-  const map =
-    await JobService.getPublishedCountryCounts();
-
-  const found =
-    Array.from(
-      map.keys()
-    ).find(
-      (country) =>
-        slugify(country) ===
-        slug
-    );
-
-  return found ?? null;
+  return (
+    COUNTRY_NAMES[slug] ??
+    null
+  );
 }
 
 export async function generateMetadata({
@@ -41,18 +95,18 @@ export async function generateMetadata({
   const { country } =
     await params;
 
-  const name =
-    await getCountryName(
+  const countryName =
+    await resolveCountry(
       country
     );
 
   return {
-    title: name
-      ? `${name} Jobs | Horizon Jobs`
+    title: countryName
+      ? `${countryName} Jobs | Horizon Jobs`
       : "Country Jobs | Horizon Jobs",
 
-    description: name
-      ? `Explore published jobs in ${name}.`
+    description: countryName
+      ? `Explore published jobs in ${countryName}.`
       : "Explore published jobs by country.",
   };
 }
@@ -64,13 +118,13 @@ export default async function CountryJobsPage({
     await params;
 
   const countryName =
-    await getCountryName(
+    await resolveCountry(
       country
     );
 
   if (!countryName) {
     return (
-      <NotFoundCountry />
+      <NotFound />
     );
   }
 
@@ -80,7 +134,7 @@ export default async function CountryJobsPage({
     );
 
   const countryCode =
-    jobs[0]?.countryCode ||
+    jobs[0]?.countryCode ??
     "";
 
   const flag =
@@ -109,13 +163,12 @@ export default async function CountryJobsPage({
             </div>
           </div>
 
-          <p className="mt-4 text-sm leading-7 text-slate-500 dark:text-slate-400">
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
             {jobs.length} published{" "}
             {jobs.length === 1
               ? "job"
               : "jobs"}{" "}
-            currently listed for{" "}
-            {countryName}.
+            available.
           </p>
         </header>
 
@@ -126,8 +179,16 @@ export default async function CountryJobsPage({
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              There are no published jobs for this country right now.
+              There are currently no published jobs in{" "}
+              {countryName}.
             </p>
+
+            <Link
+              href="/countries"
+              className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white"
+            >
+              Browse Countries
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -161,9 +222,7 @@ export default async function CountryJobsPage({
                       <div className="mt-4 flex flex-wrap gap-2 text-xs">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
                           <CategoryIcon className="h-3.5 w-3.5" />
-                          {
-                            job.category
-                          }
+                          {job.category}
                         </span>
 
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
@@ -178,9 +237,7 @@ export default async function CountryJobsPage({
                       </div>
 
                       <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                        {
-                          job.description
-                        }
+                        {job.description}
                       </p>
                     </div>
 
@@ -205,7 +262,7 @@ export default async function CountryJobsPage({
   );
 }
 
-function NotFoundCountry() {
+function NotFound() {
   return (
     <main className="min-h-screen bg-slate-100 py-16 dark:bg-slate-950">
       <div className="mx-auto max-w-2xl px-4 text-center">
@@ -215,7 +272,7 @@ function NotFoundCountry() {
           </h1>
 
           <p className="mt-3 text-sm text-slate-500">
-            This country does not currently have a published job page.
+            This country is not currently available.
           </p>
 
           <Link

@@ -13,25 +13,73 @@ interface Props {
   }>;
 }
 
+const CATEGORY_NAMES: Record<
+  string,
+  string
+> = {
+  "technology-it":
+    "Technology & IT",
+  "data-analytics":
+    "Data & Analytics",
+  healthcare:
+    "Healthcare",
+  "finance-accounting":
+    "Finance & Accounting",
+  administration:
+    "Administration",
+  "customer-service":
+    "Customer Service",
+  sales: "Sales",
+  marketing:
+    "Marketing",
+  "human-resources":
+    "Human Resources",
+  engineering:
+    "Engineering",
+  "logistics-supply-chain":
+    "Logistics & Supply Chain",
+  hospitality:
+    "Hospitality",
+  education:
+    "Education",
+  "legal-compliance":
+    "Legal & Compliance",
+  government:
+    "Government",
+  "security-cybersecurity":
+    "Security & Cybersecurity",
+  "software-development":
+    "Software Development",
+  "project-management":
+    "Project Management",
+  "operations-management":
+    "Operations & Management",
+  design: "Design",
+  "media-communications":
+    "Media & Communications",
+  "real-estate":
+    "Real Estate",
+  manufacturing:
+    "Manufacturing",
+  retail: "Retail",
+  "construction-trades":
+    "Construction & Trades",
+  "nonprofit-ngo":
+    "Nonprofit & NGO",
+  "science-research":
+    "Science & Research",
+};
+
 export const dynamic =
   "force-dynamic";
 
-async function getCategoryName(
+function resolveCategory(
   slug: string
 ) {
-  const map =
-    await JobService.getPublishedCategoryCounts();
-
-  const found =
-    Array.from(
-      map.keys()
-    ).find(
-      (category) =>
-        slugify(category) ===
-        slug
-    );
-
-  return found ?? null;
+  return (
+    CATEGORY_NAMES[slug] ??
+    null
+  );
 }
 
 export async function generateMetadata({
@@ -41,7 +89,7 @@ export async function generateMetadata({
     await params;
 
   const category =
-    await getCategoryName(
+    resolveCategory(
       slug
     );
 
@@ -63,13 +111,13 @@ export default async function CategoryJobsPage({
     await params;
 
   const category =
-    await getCategoryName(
+    resolveCategory(
       slug
     );
 
   if (!category) {
     return (
-      <NotFoundCategory />
+      <NotFound />
     );
   }
 
@@ -103,13 +151,12 @@ export default async function CategoryJobsPage({
             </div>
           </div>
 
-          <p className="mt-4 text-sm leading-7 text-slate-500 dark:text-slate-400">
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
             {jobs.length} published{" "}
             {jobs.length === 1
               ? "job"
               : "jobs"}{" "}
-            available in{" "}
-            {category}.
+            available.
           </p>
         </header>
 
@@ -120,8 +167,15 @@ export default async function CategoryJobsPage({
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              There are no published jobs in this category right now.
+              There are currently no published jobs in this category.
             </p>
+
+            <Link
+              href="/categories"
+              className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white"
+            >
+              Browse Categories
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -169,9 +223,7 @@ export default async function CategoryJobsPage({
                     </div>
 
                     <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                      {
-                        job.description
-                      }
+                      {job.description}
                     </p>
                   </div>
 
@@ -195,7 +247,7 @@ export default async function CategoryJobsPage({
   );
 }
 
-function NotFoundCategory() {
+function NotFound() {
   return (
     <main className="min-h-screen bg-slate-100 py-16 dark:bg-slate-950">
       <div className="mx-auto max-w-2xl px-4 text-center">
@@ -205,7 +257,7 @@ function NotFoundCategory() {
           </h1>
 
           <p className="mt-3 text-sm text-slate-500">
-            This category does not currently have a published job page.
+            This category is not currently available.
           </p>
 
           <Link

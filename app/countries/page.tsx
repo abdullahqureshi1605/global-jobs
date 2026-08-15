@@ -1,21 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
 import { MapPin } from "lucide-react";
 
-import { JobService } from "@/services/jobService";
+import { TaxonomyService } from "@/services/taxonomyService";
 import { slugify } from "@/lib/utils/slug";
 import { countryCodeToFlag } from "@/lib/utils/countryFlag";
 
-export const dynamic = "force-dynamic";
+export const dynamic =
+  "force-dynamic";
 
 export const metadata: Metadata = {
   title:
     "Jobs by Country | Horizon Jobs",
+
   description:
     "Explore global job opportunities by country.",
 };
 
-const FLAG_CODES: Record<
+const COUNTRY_CODES: Record<
   string,
   string
 > = {
@@ -51,7 +54,8 @@ const FLAG_CODES: Record<
   Thailand: "TH",
   Philippines: "PH",
   "Saudi Arabia": "SA",
-  "United Arab Emirates": "AE",
+  "United Arab Emirates":
+    "AE",
   Qatar: "QA",
   Kuwait: "KW",
   Bahrain: "BH",
@@ -67,24 +71,26 @@ const FLAG_CODES: Record<
   "New Zealand": "NZ",
 };
 
-function flagForCountry(
+function getFlag(
   country: string
-) {
+): string {
+  const code =
+    COUNTRY_CODES[country];
+
   return countryCodeToFlag(
-    FLAG_CODES[country]
+    code
   );
 }
 
 export default async function CountriesPage() {
   const countryMap =
-    await JobService.getPublishedCountryCounts();
+    await TaxonomyService.getCountryCounts();
 
-  const countries =
-    Array.from(
-      countryMap.entries()
-    ).sort(
-      (a, b) => b[1] - a[1]
-    );
+  const countries: Array<
+    [string, number]
+  > = Array.from(
+    countryMap.entries()
+  );
 
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
@@ -103,14 +109,20 @@ export default async function CountriesPage() {
           </p>
         </header>
 
-        {countries.length === 0 ? (
+        {countries.length ===
+        0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-            No published jobs are available yet.
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              No published jobs are available yet.
+            </h2>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {countries.map(
-              ([country, count]) => (
+              ([
+                country,
+                count,
+              ]) => (
                 <Link
                   key={country}
                   href={`/jobs/${slugify(
@@ -120,7 +132,7 @@ export default async function CountriesPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-4xl">
-                      {flagForCountry(
+                      {getFlag(
                         country
                       )}
                     </span>
