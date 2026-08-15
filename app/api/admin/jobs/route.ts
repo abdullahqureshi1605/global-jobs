@@ -1,363 +1,361 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 
-import {
-  getServerSession,
-} from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
-import {
-  authOptions,
-} from "@/lib/auth";
+function toNullableString(
+  value: unknown
+): string | null {
+  if (
+    typeof value !== "string"
+  ) {
+    return null;
+  }
 
-import {
-  supabaseAdmin,
-} from "@/lib/supabase/admin";
+  const trimmed = value.trim();
 
-import {
-  checkRateLimit,
-} from "@/lib/security/requestGuard";
+  return trimmed.length > 0
+    ? trimmed
+    : null;
+}
 
-import {
-  rateLimitedResponse,
-  securityHeaders,
-} from "@/lib/security/apiResponse";
+function toNullableNumber(
+  value: unknown
+): number | null {
+  if (
+    value === "" ||
+    value === null ||
+    value === undefined
+  ) {
+    return null;
+  }
+
+  const numberValue =
+    typeof value === "number"
+      ? value
+      : Number(value);
+
+  return Number.isFinite(numberValue)
+    ? numberValue
+    : null;
+}
+
+function slugify(
+  value: string
+): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(
+      /[^a-z0-9\s-]/g,
+      ""
+    )
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
 
 export async function POST(
-  request: NextRequest
+  request: Request
 ) {
-  const session =
-    await getServerSession(
-      authOptions
-    );
+  try {
+    const session =
+      await getServerSession(
+        authOptions
+      );
 
-  if (!session?.user) {
-    return securityHeaders(
-      NextResponse.json(
+    if (!session?.user) {
+      return NextResponse.json(
         {
           error:
-            "Unauthorized.",
+            "Unauthorized. Please log in again.",
         },
         {
           status: 401,
         }
-      )
-    );
-  }
+      );
+    }
 
-  const rateLimit =
-    checkRateLimit({
-      request,
-      keyPrefix:
-        "admin-job-write",
-      limit: 20,
-      windowMs:
-        10 * 60 * 1000,
-    });
-
-  if (!rateLimit.allowed) {
-    return rateLimitedResponse(
-      rateLimit.retryAfterSeconds
-    );
-  }
-
-  try {
     const body =
       await request.json();
 
     if (
-      !body ||
-      typeof body !==
-        "object"
+      !body.title ||
+      !body.company ||
+      !body.country ||
+      !body.countryCode ||
+      !body.city ||
+      !body.category ||
+      !body.description ||
+      !body.sourceName ||
+      !body.sourceUrl ||
+      !body.applyUrl
     ) {
-      return securityHeaders(
-        NextResponse.json(
-          {
-            error:
-              "Invalid request.",
-          },
-          {
-            status: 400,
-          }
-        )
-      );
-    }
-
-    const requiredFields = [
-      "title",
-      "company",
-      "country",
-      "countryCode",
-      "city",
-      "category",
-      "employmentType",
-      "workplaceType",
-      "experienceLevel",
-      "description",
-      "sourceName",
-      "sourceUrl",
-      "applyUrl",
-    ];
-
-    for (
-      const field of requiredFields
-    ) {
-      if (
-        typeof body[field] !==
-          "string" ||
-        !body[field].trim()
-      ) {
-        return securityHeaders(
-          NextResponse.json(
-            {
-              error:
-                `${field} is required.`,
-            },
-            {
-              status: 400,
-            }
-          )
-        );
-      }
-    }
-
-    const safeString =
-      (
-        value: unknown,
-        max: number
-      ) =>
-        typeof value ===
-          "string"
-          ? value
-              .trim()
-              .slice(0, max)
-          : "";
-
-    const title =
-      safeString(
-        body.title,
-        200
-      );
-
-    const company =
-      safeString(
-        body.company,
-        200
-      );
-
-    const country =
-      safeString(
-        body.country,
-        100
-      );
-
-    const countryCode =
-      safeString(
-        body.countryCode,
-        10
-      ).toUpperCase();
-
-    const city =
-      safeString(
-        body.city,
-        150
-      );
-
-    const category =
-      safeString(
-        body.category,
-        150
-      );
-
-    const description =
-      safeString(
-        body.description,
-        30_000
-      );
-
-    if (
-      title.length < 2 ||
-      company.length < 2 ||
-      country.length < 2 ||
-      city.length < 2 ||
-      category.length < 2 ||
-      description.length < 20
-    ) {
-      return securityHeaders(
-        NextResponse.json(
-          {
-            error:
-              "Some job fields are too short or incomplete.",
-          },
-          {
-            status: 400,
-          }
-        )
-      );
-    }
-
-    function stringArray(
-      value: unknown,
-      maxItems = 50,
-      maxLength = 500
-    ) {
-      if (!Array.isArray(value)) {
-        return [];
-      }
-
-      return value
-        .slice(0, maxItems)
-        .filter(
-          (item) =>
-            typeof item ===
-            "string"
-        )
-        .map(
-          (item) =>
-            item
-              .trim()
-              .slice(
-                0,
-                maxLength
-              )
-        )
-        .filter(Boolean);
-    }
-
-    const requirements =
-      stringArray(
-        body.requirements
-      );
-
-    const responsibilities =
-      stringArray(
-        body.responsibilities
-      );
-
-    const benefits =
-      stringArray(
-        body.benefits
-      );
-
-    const response =
-      await supabaseAdmin
-        .from("jobs")
-        .insert({
-          ...body,
-
-          title,
-
-          company,
-
-          country,
-
-          countryCode,
-
-          city,
-
-          category,
-
-          description,
-
-          requirements,
-
-          responsibilities,
-
-          benefits,
-
-          subcategory:
-            safeString(
-              body.subcategory,
-              150
-            ),
-
-          industry:
-            safeString(
-              body.industry,
-              150
-            ),
-
-          employmentType:
-            safeString(
-              body.employmentType,
-              50
-            ),
-
-          workplaceType:
-            safeString(
-              body.workplaceType,
-              50
-            ),
-
-          experienceLevel:
-            safeString(
-              body.experienceLevel,
-              50
-            ),
-
-          sourceName:
-            safeString(
-              body.sourceName,
-              200
-            ),
-
-          sourceUrl:
-            safeString(
-              body.sourceUrl,
-              2000
-            ),
-
-          applyUrl:
-            safeString(
-              body.applyUrl,
-              2000
-            ),
-        })
-        .select()
-        .single();
-
-    if (response.error) {
-      console.error(
-        "Admin job insert error:",
-        response.error
-      );
-
-      return securityHeaders(
-        NextResponse.json(
-          {
-            error:
-              "Failed to save job.",
-          },
-          {
-            status: 500,
-          }
-        )
-      );
-    }
-
-    return securityHeaders(
-      NextResponse.json({
-        success: true,
-        job: response.data,
-      })
-    );
-  } catch (error) {
-    console.error(
-      "Admin job API error:",
-      error
-    );
-
-    return securityHeaders(
-      NextResponse.json(
+      return NextResponse.json(
         {
           error:
-            "Unexpected server error.",
+            "Please complete all required job fields.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const title =
+      String(body.title).trim();
+
+    const baseSlug =
+      slugify(title);
+
+    if (!baseSlug) {
+      return NextResponse.json(
+        {
+          error:
+            "Unable to create a valid job slug from the title.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    let slug = baseSlug;
+
+    const {
+      data: existingJob,
+      error:
+        existingJobError,
+    } = await supabaseAdmin
+      .from("jobs")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (existingJobError) {
+      console.error(
+        "Slug lookup error:",
+        existingJobError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            `Could not verify job slug: ${existingJobError.message}`,
         },
         {
           status: 500,
         }
-      )
+      );
+    }
+
+    if (existingJob) {
+      slug = `${baseSlug}-${Date.now()}`;
+    }
+
+    const jobRecord = {
+      title,
+
+      slug,
+
+      company:
+        String(body.company).trim(),
+
+      company_logo:
+        toNullableString(
+          body.companyLogo
+        ),
+
+      country:
+        String(body.country).trim(),
+
+      country_code:
+        String(
+          body.countryCode
+        ).trim(),
+
+      city:
+        String(body.city).trim(),
+
+      category:
+        String(body.category).trim(),
+
+      subcategory:
+        toNullableString(
+          body.subcategory
+        ),
+
+      industry:
+        toNullableString(
+          body.industry
+        ),
+
+      employment_type:
+        toNullableString(
+          body.employmentType
+        ),
+
+      workplace_type:
+        toNullableString(
+          body.workplaceType
+        ),
+
+      experience_level:
+        toNullableString(
+          body.experienceLevel
+        ),
+
+      salary_min:
+        toNullableNumber(
+          body.salaryMin
+        ),
+
+      salary_max:
+        toNullableNumber(
+          body.salaryMax
+        ),
+
+      salary_currency:
+        toNullableString(
+          body.salaryCurrency
+        ),
+
+      salary_period:
+        toNullableString(
+          body.salaryPeriod
+        ),
+
+      description:
+        String(
+          body.description
+        ).trim(),
+
+      requirements:
+        Array.isArray(
+          body.requirements
+        )
+          ? body.requirements
+          : [],
+
+      responsibilities:
+        Array.isArray(
+          body.responsibilities
+        )
+          ? body.responsibilities
+          : [],
+
+      benefits:
+        Array.isArray(
+          body.benefits
+        )
+          ? body.benefits
+          : [],
+
+      source_name:
+        String(
+          body.sourceName
+        ).trim(),
+
+      source_url:
+        String(
+          body.sourceUrl
+        ).trim(),
+
+      apply_url:
+        String(
+          body.applyUrl
+        ).trim(),
+
+      date_posted:
+        toNullableString(
+          body.datePosted
+        ),
+
+      closing_date:
+        toNullableString(
+          body.closingDate
+        ),
+
+      last_verified:
+        toNullableString(
+          body.lastVerified
+        ),
+
+      verification_status:
+        toNullableString(
+          body.verificationStatus
+        ) ??
+        "unverified",
+
+      status:
+        body.status === "published" ||
+        body.status === "archived"
+          ? body.status
+          : "draft",
+
+      featured:
+        Boolean(body.featured),
+    };
+
+    const {
+      data,
+      error,
+    } = await supabaseAdmin
+      .from("jobs")
+      .insert(jobRecord)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error(
+        "Supabase job insert error:",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            `Failed to save job: ${error.message}`,
+          code:
+            error.code ?? null,
+          details:
+            error.details ?? null,
+          hint:
+            error.hint ?? null,
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message:
+          "Job saved successfully.",
+        job: data,
+      },
+      {
+        status: 201,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "POST /api/admin/jobs error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to save job.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
