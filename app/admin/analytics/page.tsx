@@ -2,194 +2,274 @@
 
 import {
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
-type DashboardData = {
-  summary: {
-    pageviews?: number;
-    uniqueVisitors?: number;
-    sessions?: number;
-    pagesPerSession?: number;
-    bounceRate?: number;
-    ctaClicks?: number;
-    applyClicks?: number;
-    reportClicks?: number;
-    jobViews?: number;
-    resourceViews?: number;
-    paidSessions?: number;
-    avgLoadMs?: number;
-    avgFcpMs?: number;
-    avgLcpMs?: number;
-    avgCls?: number;
-    avgTimeOnPage?: number;
-    avgScrollDepth?: number;
-  };
-
-  daily: Array<{
-    date: string;
-    pageviews: number;
-    uniqueVisitors: number;
-    sessions: number;
-  }>;
-
-  countries: Array<{
-    country: string;
-    code: string;
-    pageviews: number;
-    uniqueVisitors: number;
-  }>;
-
-  sources: Array<{
-    source: string;
-    medium: string;
-    campaign: string;
-    pageviews: number;
-    sessions: number;
-  }>;
-
-  pages: Array<{
-    path: string;
-    views: number;
-    uniqueVisitors: number;
-  }>;
-
-  landingPages: Array<{
-    path: string;
-    visits: number;
-  }>;
-
-  events: Array<{
-    event: string;
-    count: number;
-  }>;
-
-  cta: Array<{
-    label: string;
-    target: string;
-    count: number;
-  }>;
-
-  devices: Array<{
-    device: string;
-    count: number;
-  }>;
-
-  browsers: Array<{
-    browser: string;
-    count: number;
-  }>;
-
-  operatingSystems: Array<{
-    os: string;
-    count: number;
-  }>;
+type LiveVisitor = {
+  session_hash: string;
+  last_seen: string;
+  page_path: string | null;
+  country_code: string | null;
+  country_name: string | null;
+  city: string | null;
+  region: string | null;
+  timezone: string | null;
+  device_type: string | null;
+  browser: string | null;
+  operating_system: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  is_bot: boolean;
+  displayLocation: string;
 };
 
-const ranges = [
-  {
-    label: "Today",
-    days: 1,
-  },
-  {
-    label: "7 Days",
-    days: 7,
-  },
-  {
-    label: "30 Days",
-    days: 30,
-  },
-  {
-    label: "90 Days",
-    days: 90,
-  },
-  {
-    label: "1 Year",
-    days: 365,
-  },
-];
+type CountRow = {
+  name: string;
+  count: number;
+};
 
-function formatNumber(
-  value: number | undefined
-) {
-  return (
-    value ?? 0
-  ).toLocaleString();
-}
+type DashboardData = {
+  visitors: number;
+  sessions: number;
+  pageviews: number;
 
-function formatMs(
-  value: number | undefined
-) {
+  countries: CountRow[];
+  pages: CountRow[];
+  sources: CountRow[];
+  devices: CountRow[];
+};
+
+type PageReport = {
+  page: {
+    url: string;
+    path: string;
+    analysis: {
+      status: number;
+      statusText: string;
+      responseTimeMs: number;
+      pageSizeBytes: number;
+      contentType: string;
+      title: string;
+      description: string;
+      canonical: string;
+      language: string;
+      viewport: string;
+      robots: string;
+      h1: number;
+      h2: number;
+      h3: number;
+      links: number;
+      images: number;
+      scripts: number;
+      stylesheets: number;
+      forms: number;
+    };
+  };
+
+  traffic: {
+    pageviews: number;
+    uniqueVisitors: number;
+    sessions: number;
+    pagesPerSession: number;
+    paidSessions: number;
+    ctaClicks: number;
+    applyClicks: number;
+    reportClicks: number;
+    avgTimeOnPage: number;
+    avgScrollDepth: number;
+    avgLoad: number;
+    avgFcp: number;
+    avgLcp: number;
+    avgCls: number;
+  };
+
+  countries: CountRow[];
+  sources: CountRow[];
+  devices: CountRow[];
+  browsers: CountRow[];
+  operatingSystems: CountRow[];
+  cta: CountRow[];
+};
+
+function formatMs(value: number) {
   if (!value) {
     return "—";
   }
 
-  return `${Math.round(
-    value
-  )} ms`;
+  return `${Math.round(value)} ms`;
 }
 
-function formatPercent(
-  value: number | undefined
-) {
-  return `${(
-    value ?? 0
-  ).toFixed(1)}%`;
+function formatBytes(value: number) {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / 1024 / 1024).toFixed(2)} MB`;
 }
 
-function formatDate(
-  date: Date
-) {
-  return date
-    .toISOString()
-    .slice(0, 10);
+function csvEscape(value: unknown) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
 export default function AnalyticsPage() {
-  const [range, setRange] =
-    useState(30);
-
   const [data, setData] =
-    useState<DashboardData | null>(
-      null
-    );
+    useState<DashboardData | null>(null);
+
+  const [liveVisitors, setLiveVisitors] =
+    useState<LiveVisitor[]>([]);
+
+  const [pageUrl, setPageUrl] =
+    useState("");
+
+  const [pageReport, setPageReport] =
+    useState<PageReport | null>(null);
 
   const [loading, setLoading] =
     useState(true);
 
-  const [error, setError] =
+  const [pageLoading, setPageLoading] =
+    useState(false);
+
+  const [pageError, setPageError] =
     useState("");
 
-  const [lastUpdated, setLastUpdated] =
-    useState("");
+  async function loadDashboard() {
+    try {
+      const [
+        dashboardResponse,
+        liveResponse,
+      ] = await Promise.all([
+        fetch(
+          "/api/admin/analytics/dashboard",
+          {
+            cache: "no-store",
+          }
+        ),
 
-  async function loadAnalytics(
-    selectedDays = range
-  ) {
-    setLoading(true);
-    setError("");
+        fetch(
+          "/api/admin/analytics/dashboard?live=true",
+          {
+            cache: "no-store",
+          }
+        ),
+      ]);
+
+      const dashboard =
+        await dashboardResponse.json();
+
+      const live =
+        await liveResponse.json();
+
+      if (dashboardResponse.ok) {
+        setData({
+          visitors:
+            Number(
+              dashboard.visitors ?? 0
+            ),
+          sessions:
+            Number(
+              dashboard.sessions ?? 0
+            ),
+          pageviews:
+            Number(
+              dashboard.pageviews ?? 0
+            ),
+
+          countries: (
+            dashboard.countries ?? []
+          ).map(
+            (item: {
+              country: string;
+              count: number;
+            }) => ({
+              name: item.country,
+              count: Number(
+                item.count
+              ),
+            })
+          ),
+
+          pages: (
+            dashboard.pages ?? []
+          ).map(
+            (item: {
+              page: string;
+              count: number;
+            }) => ({
+              name: item.page,
+              count: Number(
+                item.count
+              ),
+            })
+          ),
+
+          sources: (
+            dashboard.sources ?? []
+          ).map(
+            (item: {
+              source: string;
+              count: number;
+            }) => ({
+              name: item.source,
+              count: Number(
+                item.count
+              ),
+            })
+          ),
+
+          devices: (
+            dashboard.devices ?? []
+          ).map(
+            (item: {
+              device: string;
+              count: number;
+            }) => ({
+              name: item.device,
+              count: Number(
+                item.count
+              ),
+            })
+          ),
+        });
+      }
+
+      if (liveResponse.ok) {
+        setLiveVisitors(
+          live.visitors ?? []
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Failed to load analytics:",
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function analyzePage() {
+    setPageError("");
+    setPageReport(null);
+
+    if (!pageUrl.trim()) {
+      setPageError(
+        "Enter a Horizon Jobs page URL."
+      );
+      return;
+    }
+
+    setPageLoading(true);
 
     try {
-      const end =
-        new Date();
-
-      const start =
-        new Date(
-          end.getTime() -
-            (selectedDays - 1) *
-              24 *
-              60 *
-              60 *
-              1000
-        );
-
       const response =
         await fetch(
-          `/api/admin/analytics/dashboard?start=${formatDate(
-            start
-          )}&end=${formatDate(
-            end
+          `/api/admin/analytics/page-report?url=${encodeURIComponent(
+            pageUrl.trim()
           )}`,
           {
             cache: "no-store",
@@ -202,181 +282,284 @@ export default function AnalyticsPage() {
       if (!response.ok) {
         throw new Error(
           result.error ||
-            "Failed to load analytics."
+            "Page analysis failed."
         );
       }
 
-      setData(
-        result.data
+      setPageReport(
+        result as PageReport
       );
-
-      setLastUpdated(
-        new Date().toLocaleTimeString()
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load analytics."
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Page analysis failed."
       );
     } finally {
-      setLoading(false);
+      setPageLoading(false);
     }
   }
 
-  useEffect(() => {
-    void loadAnalytics(
-      range
-    );
-
-    const interval =
-      window.setInterval(
-        () => {
-          void loadAnalytics(
-            range
-          );
-        },
-        60_000
-      );
-
-    return () =>
-      window.clearInterval(
-        interval
-      );
-  }, [range]);
-
-  const maxDailyViews =
-    useMemo(() => {
-      if (
-        !data?.daily.length
-      ) {
-        return 1;
-      }
-
-      return Math.max(
-        ...data.daily.map(
-          (item) =>
-            item.pageviews
-        ),
-        1
-      );
-    }, [data]);
-
-  function exportCsv() {
-    if (!data) {
+  function exportPageCsv() {
+    if (!pageReport) {
       return;
     }
 
-    const rows: string[][] =
-      [
-        [
-          "Section",
-          "Item",
-          "Metric",
-          "Value",
-        ],
-      ];
+    const rows: string[][] = [];
 
-    for (const item of data.daily) {
+    const add = (
+      section: string,
+      metric: string,
+      value: unknown
+    ) => {
       rows.push([
-        "Daily",
-        item.date,
-        "Pageviews",
-        String(
-          item.pageviews
-        ),
+        section,
+        metric,
+        String(value ?? ""),
       ]);
+    };
 
-      rows.push([
-        "Daily",
-        item.date,
-        "Unique Visitors",
-        String(
-          item.uniqueVisitors
-        ),
-      ]);
-    }
+    const analysis =
+      pageReport.page.analysis;
 
-    for (const item of data.countries) {
-      rows.push([
+    add(
+      "Page",
+      "URL",
+      pageReport.page.url
+    );
+
+    add(
+      "Page",
+      "Path",
+      pageReport.page.path
+    );
+
+    add(
+      "SEO",
+      "Title",
+      analysis.title
+    );
+
+    add(
+      "SEO",
+      "Description",
+      analysis.description
+    );
+
+    add(
+      "SEO",
+      "Canonical",
+      analysis.canonical
+    );
+
+    add(
+      "SEO",
+      "Robots",
+      analysis.robots
+    );
+
+    add(
+      "SEO",
+      "Language",
+      analysis.language
+    );
+
+    add(
+      "SEO",
+      "Viewport",
+      analysis.viewport
+    );
+
+    add(
+      "Structure",
+      "H1",
+      analysis.h1
+    );
+
+    add(
+      "Structure",
+      "H2",
+      analysis.h2
+    );
+
+    add(
+      "Structure",
+      "H3",
+      analysis.h3
+    );
+
+    add(
+      "Structure",
+      "Links",
+      analysis.links
+    );
+
+    add(
+      "Structure",
+      "Images",
+      analysis.images
+    );
+
+    add(
+      "Structure",
+      "Scripts",
+      analysis.scripts
+    );
+
+    add(
+      "Structure",
+      "Stylesheets",
+      analysis.stylesheets
+    );
+
+    add(
+      "Performance",
+      "HTTP Status",
+      analysis.status
+    );
+
+    add(
+      "Performance",
+      "Response Time",
+      analysis.responseTimeMs
+    );
+
+    add(
+      "Performance",
+      "Page Size",
+      formatBytes(
+        analysis.pageSizeBytes
+      )
+    );
+
+    add(
+      "Traffic",
+      "Pageviews",
+      pageReport.traffic.pageviews
+    );
+
+    add(
+      "Traffic",
+      "Unique Visitors",
+      pageReport.traffic.uniqueVisitors
+    );
+
+    add(
+      "Traffic",
+      "Sessions",
+      pageReport.traffic.sessions
+    );
+
+    add(
+      "Traffic",
+      "Paid Sessions",
+      pageReport.traffic.paidSessions
+    );
+
+    add(
+      "Traffic",
+      "CTA Clicks",
+      pageReport.traffic.ctaClicks
+    );
+
+    add(
+      "Traffic",
+      "Apply Clicks",
+      pageReport.traffic.applyClicks
+    );
+
+    add(
+      "Traffic",
+      "Report Clicks",
+      pageReport.traffic.reportClicks
+    );
+
+    add(
+      "Behavior",
+      "Average Time On Page",
+      pageReport.traffic.avgTimeOnPage
+    );
+
+    add(
+      "Behavior",
+      "Average Scroll Depth",
+      pageReport.traffic.avgScrollDepth
+    );
+
+    for (const item of pageReport.countries) {
+      add(
         "Country",
-        item.country,
-        "Pageviews",
-        String(
-          item.pageviews
-        ),
-      ]);
-
-      rows.push([
-        "Country",
-        item.country,
-        "Unique Visitors",
-        String(
-          item.uniqueVisitors
-        ),
-      ]);
+        item.name,
+        item.count
+      );
     }
 
-    for (const item of data.sources) {
-      rows.push([
-        "Traffic Source",
-        item.source,
-        "Sessions",
-        String(
-          item.sessions
-        ),
-      ]);
+    for (const item of pageReport.sources) {
+      add(
+        "Source",
+        item.name,
+        item.count
+      );
     }
 
-    for (const item of data.pages) {
-      rows.push([
-        "Page",
-        item.path,
-        "Views",
-        String(
-          item.views
-        ),
-      ]);
+    for (const item of pageReport.devices) {
+      add(
+        "Device",
+        item.name,
+        item.count
+      );
     }
 
-    for (const item of data.cta) {
-      rows.push([
+    for (const item of pageReport.browsers) {
+      add(
+        "Browser",
+        item.name,
+        item.count
+      );
+    }
+
+    for (const item of pageReport.operatingSystems) {
+      add(
+        "Operating System",
+        item.name,
+        item.count
+      );
+    }
+
+    for (const item of pageReport.cta) {
+      add(
         "CTA",
-        item.label,
-        "Clicks",
-        String(
-          item.count
-        ),
-      ]);
+        item.name,
+        item.count
+      );
     }
 
-    const csv =
-      rows
-        .map(
-          (row) =>
-            row
-              .map(
-                (cell) =>
-                  `"${cell
-                    .replaceAll(
-                      '"',
-                      '""'
-                    )}"`
-              )
-              .join(",")
-        )
-        .join("\n");
+    const csv = [
+      [
+        "Section",
+        "Metric",
+        "Value",
+      ],
+      ...rows,
+    ]
+      .map(
+        (row) =>
+          row
+            .map(csvEscape)
+            .join(",")
+      )
+      .join("\n");
 
     const blob =
       new Blob(
         [csv],
         {
           type:
-            "text/csv;charset=utf-8;",
+            "text/csv;charset=utf-8",
         }
       );
 
-    const url =
+    const objectUrl =
       URL.createObjectURL(
         blob
       );
@@ -386,460 +569,518 @@ export default function AnalyticsPage() {
         "a"
       );
 
-    link.href = url;
+    link.href = objectUrl;
+
     link.download =
-      `horizon-jobs-analytics-${new Date()
-        .toISOString()
-        .slice(0, 10)}.csv`;
+      `horizon-jobs-page-report-${
+        pageReport.page.path
+          .replace(
+            /[^a-z0-9]+/gi,
+            "-"
+          )
+          .replace(
+            /^-|-$/g,
+            ""
+          ) || "home"
+      }.csv`;
 
     link.click();
 
     URL.revokeObjectURL(
-      url
+      objectUrl
     );
   }
 
-  const summary =
-    data?.summary || {};
+  useEffect(() => {
+    void loadDashboard();
+
+    const interval =
+      window.setInterval(
+        () => {
+          void loadDashboard();
+        },
+        15_000
+      );
+
+    return () =>
+      window.clearInterval(
+        interval
+      );
+  }, []);
 
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <header className="mb-8">
+      <div className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+        {/* PAGE ANALYZER */}
+        <section className="rounded-3xl border border-indigo-200 bg-white p-6 shadow-sm dark:border-indigo-900/40 dark:bg-slate-900">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                Internal Analytics
+                Page Analyzer
               </p>
 
-              <h1 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
-                Horizon Jobs Analytics
-              </h1>
+              <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                Analyze Any Horizon Jobs Page
+              </h2>
 
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
-                Traffic, visitors, countries, campaigns, CTA activity,
-                job activity, device usage, and performance data collected
-                for Horizon Jobs.
+              <p className="mt-2 max-w-3xl text-sm text-slate-500">
+                Enter a page URL to inspect its traffic, visitors,
+                sources, SEO structure, and performance.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  loadAnalytics(
-                    range
-                  )
-                }
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-              >
-                Refresh
-              </button>
+            <button
+              type="button"
+              onClick={
+                exportPageCsv
+              }
+              disabled={
+                !pageReport
+              }
+              className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Export Page CSV
+            </button>
+          </div>
 
-              <button
-                type="button"
-                onClick={
-                  exportCsv
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <input
+              value={pageUrl}
+              onChange={(event) =>
+                setPageUrl(
+                  event.target.value
+                )
+              }
+              onKeyDown={(event) => {
+                if (
+                  event.key ===
+                  "Enter"
+                ) {
+                  void analyzePage();
                 }
-                disabled={!data}
-                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-              >
-                Export CSV
-              </button>
+              }}
+              placeholder="https://global-jobz.netlify.app/jobs"
+              className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+
+            <button
+              type="button"
+              onClick={() =>
+                void analyzePage()
+              }
+              disabled={
+                pageLoading
+              }
+              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {pageLoading
+                ? "Analyzing..."
+                : "Analyze Page"}
+            </button>
+          </div>
+
+          {pageError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {pageError}
             </div>
-          </div>
-        </header>
+          )}
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-wrap gap-2">
-            {ranges.map(
-              (item) => (
-                <button
-                  key={
-                    item.days
-                  }
-                  type="button"
-                  onClick={() =>
-                    setRange(
-                      item.days
-                    )
-                  }
-                  className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                    range ===
-                    item.days
-                      ? "bg-indigo-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              )
-            )}
-          </div>
+          {pageReport && (
+            <div className="mt-8 space-y-6">
+              <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-800">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Analyzed Page
+                </p>
 
-          {lastUpdated && (
-            <p className="mt-3 text-xs text-slate-500">
-              Last updated{" "}
-              {lastUpdated}
-              {" · "}
-              Automatically refreshes every 60 seconds.
-            </p>
+                <p className="mt-2 break-all text-sm font-semibold text-slate-900 dark:text-white">
+                  {pageReport.page.url}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <Metric
+                  label="Pageviews"
+                  value={
+                    pageReport.traffic.pageviews
+                  }
+                />
+
+                <Metric
+                  label="Unique Visitors"
+                  value={
+                    pageReport.traffic.uniqueVisitors
+                  }
+                />
+
+                <Metric
+                  label="Sessions"
+                  value={
+                    pageReport.traffic.sessions
+                  }
+                />
+
+                <Metric
+                  label="Paid Sessions"
+                  value={
+                    pageReport.traffic.paidSessions
+                  }
+                />
+
+                <Metric
+                  label="CTA Clicks"
+                  value={
+                    pageReport.traffic.ctaClicks
+                  }
+                />
+
+                <Metric
+                  label="Apply Clicks"
+                  value={
+                    pageReport.traffic.applyClicks
+                  }
+                />
+
+                <Metric
+                  label="Avg Time"
+                  value={formatMs(
+                    pageReport.traffic.avgTimeOnPage
+                  )}
+                />
+
+                <Metric
+                  label="Avg Scroll"
+                  value={`${Math.round(
+                    pageReport.traffic.avgScrollDepth
+                  )}%`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <Metric
+                  label="Response"
+                  value={formatMs(
+                    pageReport.page.analysis
+                      .responseTimeMs
+                  )}
+                />
+
+                <Metric
+                  label="Page Size"
+                  value={formatBytes(
+                    pageReport.page.analysis
+                      .pageSizeBytes
+                  )}
+                />
+
+                <Metric
+                  label="H1"
+                  value={
+                    pageReport.page.analysis.h1
+                  }
+                />
+
+                <Metric
+                  label="H2"
+                  value={
+                    pageReport.page.analysis.h2
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Table
+                  title="Countries"
+                  rows={
+                    pageReport.countries
+                  }
+                />
+
+                <Table
+                  title="Traffic Sources"
+                  rows={
+                    pageReport.sources
+                  }
+                />
+
+                <Table
+                  title="Devices"
+                  rows={
+                    pageReport.devices
+                  }
+                />
+
+                <Table
+                  title="Browsers"
+                  rows={
+                    pageReport.browsers
+                  }
+                />
+
+                <Table
+                  title="Operating Systems"
+                  rows={
+                    pageReport.operatingSystems
+                  }
+                />
+
+                <Table
+                  title="CTA Clicks"
+                  rows={
+                    pageReport.cta
+                  }
+                />
+              </div>
+
+              <section className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  SEO & Page Structure
+                </h3>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <Info
+                    label="Title"
+                    value={
+                      pageReport.page.analysis
+                        .title ||
+                      "Missing"
+                    }
+                  />
+
+                  <Info
+                    label="Description"
+                    value={
+                      pageReport.page.analysis
+                        .description ||
+                      "Missing"
+                    }
+                  />
+
+                  <Info
+                    label="Canonical"
+                    value={
+                      pageReport.page.analysis
+                        .canonical ||
+                      "Missing"
+                    }
+                  />
+
+                  <Info
+                    label="Robots"
+                    value={
+                      pageReport.page.analysis
+                        .robots ||
+                      "Missing"
+                    }
+                  />
+
+                  <Info
+                    label="H3"
+                    value={
+                      pageReport.page.analysis.h3
+                    }
+                  />
+
+                  <Info
+                    label="Images"
+                    value={
+                      pageReport.page.analysis.images
+                    }
+                  />
+
+                  <Info
+                    label="Links"
+                    value={
+                      pageReport.page.analysis.links
+                    }
+                  />
+
+                  <Info
+                    label="Scripts"
+                    value={
+                      pageReport.page.analysis.scripts
+                    }
+                  />
+                </div>
+              </section>
+            </div>
           )}
         </section>
 
-        {error && (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        {/* LIVE VISITORS */}
+        <section className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm dark:border-emerald-900/40 dark:bg-slate-900">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-500" />
 
-        {loading && !data ? (
-          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Live Visitors
+                </h2>
+              </div>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Active visitors seen within the last 60 seconds.
+              </p>
+            </div>
+
+            <div className="text-4xl font-extrabold text-emerald-600">
+              {liveVisitors.length}
+            </div>
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            {liveVisitors.length ===
+            0 ? (
+              <div className="rounded-2xl bg-slate-50 p-8 text-center text-sm text-slate-500 dark:bg-slate-800">
+                No live visitors detected.
+              </div>
+            ) : (
+              <table className="w-full min-w-[900px] text-left">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800">
+                    <th className="px-3 py-3 text-xs uppercase text-slate-500">
+                      Country
+                    </th>
+                    <th className="px-3 py-3 text-xs uppercase text-slate-500">
+                      Location
+                    </th>
+                    <th className="px-3 py-3 text-xs uppercase text-slate-500">
+                      Page
+                    </th>
+                    <th className="px-3 py-3 text-xs uppercase text-slate-500">
+                      Device
+                    </th>
+                    <th className="px-3 py-3 text-xs uppercase text-slate-500">
+                      Browser
+                    </th>
+                    <th className="px-3 py-3 text-xs uppercase text-slate-500">
+                      Timezone
+                    </th>
+                    <th className="px-3 py-3 text-xs uppercase text-slate-500">
+                      Source
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {liveVisitors.map(
+                    (
+                      visitor
+                    ) => (
+                      <tr
+                        key={
+                          visitor.session_hash
+                        }
+                      >
+                        <td className="px-3 py-4 text-sm font-semibold">
+                          {visitor.country_code ||
+                            "Unknown"}
+                        </td>
+
+                        <td className="px-3 py-4 text-sm">
+                          {visitor.displayLocation ||
+                            "Unknown"}
+                        </td>
+
+                        <td className="max-w-[260px] truncate px-3 py-4 text-sm">
+                          {visitor.page_path ||
+                            "/"}
+                        </td>
+
+                        <td className="px-3 py-4 text-sm">
+                          {visitor.device_type ||
+                            "Unknown"}
+                        </td>
+
+                        <td className="px-3 py-4 text-sm">
+                          {visitor.browser ||
+                            "Unknown"}
+                        </td>
+
+                        <td className="px-3 py-4 text-sm">
+                          {visitor.timezone ||
+                            "Unknown"}
+                        </td>
+
+                        <td className="px-3 py-4 text-sm">
+                          {visitor.utm_source ||
+                            "Direct"}
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        {/* OVERALL */}
+        {loading ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
             Loading analytics...
           </div>
         ) : data ? (
           <>
-            <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <Metric
                 label="Unique Visitors"
-                value={formatNumber(
-                  summary.uniqueVisitors
-                )}
-              />
-
-              <Metric
-                label="Pageviews"
-                value={formatNumber(
-                  summary.pageviews
-                )}
+                value={
+                  data.visitors
+                }
               />
 
               <Metric
                 label="Sessions"
-                value={formatNumber(
-                  summary.sessions
-                )}
+                value={
+                  data.sessions
+                }
               />
 
               <Metric
-                label="Pages / Session"
-                value={(
-                  summary.pagesPerSession ??
-                  0
-                ).toFixed(2)}
+                label="Pageviews"
+                value={
+                  data.pageviews
+                }
               />
 
               <Metric
-                label="Bounce Rate"
-                value={formatPercent(
-                  summary.bounceRate
-                )}
-              />
-
-              <Metric
-                label="PPC Sessions"
-                value={formatNumber(
-                  summary.paidSessions
-                )}
-              />
-
-              <Metric
-                label="CTA Clicks"
-                value={formatNumber(
-                  summary.ctaClicks
-                )}
-              />
-
-              <Metric
-                label="Apply Clicks"
-                value={formatNumber(
-                  summary.applyClicks
-                )}
+                label="Live Now"
+                value={
+                  liveVisitors.length
+                }
               />
             </section>
 
-            <section className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <Metric
-                label="Job Views"
-                value={formatNumber(
-                  summary.jobViews
-                )}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <Table
+                title="Visitors by Country"
+                rows={
+                  data.countries
+                }
               />
 
-              <Metric
-                label="Resource Views"
-                value={formatNumber(
-                  summary.resourceViews
-                )}
+              <Table
+                title="Traffic Sources"
+                rows={
+                  data.sources
+                }
               />
 
-              <Metric
-                label="Report Clicks"
-                value={formatNumber(
-                  summary.reportClicks
-                )}
-              />
-
-              <Metric
-                label="Avg Time on Page"
-                value={formatMs(
-                  summary.avgTimeOnPage
-                )}
-              />
-            </section>
-
-            <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Traffic Over Time
-              </h2>
-
-              <div className="mt-6 space-y-3">
-                {data.daily
-                  .slice(-30)
-                  .map(
-                    (item) => (
-                      <div
-                        key={
-                          item.date
-                        }
-                        className="grid grid-cols-[80px_1fr_70px] items-center gap-3 text-sm"
-                      >
-                        <span className="text-xs text-slate-500">
-                          {item.date.slice(
-                            5
-                          )}
-                        </span>
-
-                        <div className="h-7 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
-                          <div
-                            className="h-full rounded-lg bg-indigo-500"
-                            style={{
-                              width: `${Math.max(
-                                2,
-                                (item.pageviews /
-                                  maxDailyViews) *
-                                  100
-                              )}%`,
-                            }}
-                          />
-                        </div>
-
-                        <span className="text-right text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {formatNumber(
-                            item.pageviews
-                          )}
-                        </span>
-                      </div>
-                    )
-                  )}
-              </div>
-            </section>
-
-            <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <DataTable
-                title="Countries"
-                columns={[
-                  "Country",
-                  "Visitors",
-                  "Views",
-                ]}
-                rows={data.countries.map(
-                  (item) => [
-                    `${item.country} ${
-                      item.code
-                        ? `(${item.code})`
-                        : ""
-                    }`,
-                    formatNumber(
-                      item.uniqueVisitors
-                    ),
-                    formatNumber(
-                      item.pageviews
-                    ),
-                  ]
-                )}
-              />
-
-              <DataTable
-                title="Traffic Sources / PPC"
-                columns={[
-                  "Source",
-                  "Medium",
-                  "Sessions",
-                ]}
-                rows={data.sources.map(
-                  (item) => [
-                    item.source,
-                    item.medium,
-                    formatNumber(
-                      item.sessions
-                    ),
-                  ]
-                )}
-              />
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <DataTable
+              <Table
                 title="Top Pages"
-                columns={[
-                  "Page",
-                  "Views",
-                  "Visitors",
-                ]}
-                rows={data.pages.map(
-                  (item) => [
-                    item.path,
-                    formatNumber(
-                      item.views
-                    ),
-                    formatNumber(
-                      item.uniqueVisitors
-                    ),
-                  ]
-                )}
+                rows={
+                  data.pages
+                }
               />
 
-              <DataTable
-                title="Landing Pages"
-                columns={[
-                  "Page",
-                  "Visits",
-                ]}
-                rows={data.landingPages.map(
-                  (item) => [
-                    item.path,
-                    formatNumber(
-                      item.visits
-                    ),
-                  ]
-                )}
-              />
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <DataTable
-                title="CTA Performance"
-                columns={[
-                  "CTA",
-                  "Target",
-                  "Clicks",
-                ]}
-                rows={data.cta.map(
-                  (item) => [
-                    item.label,
-                    item.target ||
-                      "—",
-                    formatNumber(
-                      item.count
-                    ),
-                  ]
-                )}
-              />
-
-              <DataTable
-                title="Events"
-                columns={[
-                  "Event",
-                  "Count",
-                ]}
-                rows={data.events.map(
-                  (item) => [
-                    item.event,
-                    formatNumber(
-                      item.count
-                    ),
-                  ]
-                )}
-              />
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <DataTable
+              <Table
                 title="Devices"
-                columns={[
-                  "Device",
-                  "Visitors",
-                ]}
-                rows={data.devices.map(
-                  (item) => [
-                    item.device,
-                    formatNumber(
-                      item.count
-                    ),
-                  ]
-                )}
-              />
-
-              <DataTable
-                title="Browsers"
-                columns={[
-                  "Browser",
-                  "Visitors",
-                ]}
-                rows={data.browsers.map(
-                  (item) => [
-                    item.browser,
-                    formatNumber(
-                      item.count
-                    ),
-                  ]
-                )}
-              />
-
-              <DataTable
-                title="Operating Systems"
-                columns={[
-                  "OS",
-                  "Visitors",
-                ]}
-                rows={data.operatingSystems.map(
-                  (item) => [
-                    item.os,
-                    formatNumber(
-                      item.count
-                    ),
-                  ]
-                )}
+                rows={
+                  data.devices
+                }
               />
             </div>
-
-            <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Website Performance
-              </h2>
-
-              <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
-                <Metric
-                  label="Avg Page Load"
-                  value={formatMs(
-                    summary.avgLoadMs
-                  )}
-                />
-
-                <Metric
-                  label="Avg FCP"
-                  value={formatMs(
-                    summary.avgFcpMs
-                  )}
-                />
-
-                <Metric
-                  label="Avg LCP"
-                  value={formatMs(
-                    summary.avgLcpMs
-                  )}
-                />
-
-                <Metric
-                  label="Avg CLS"
-                  value={(
-                    summary.avgCls ??
-                    0
-                  ).toFixed(3)}
-                />
-              </div>
-            </section>
           </>
         ) : null}
       </div>
@@ -852,7 +1093,7 @@ function Metric({
   value,
 }: {
   label: string;
-  value: string;
+  value: number | string;
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -861,20 +1102,41 @@ function Metric({
       </p>
 
       <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">
+        {typeof value ===
+        "number"
+          ? value.toLocaleString()
+          : value}
+      </p>
+    </div>
+  );
+}
+
+function Info({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+      <p className="text-xs font-semibold uppercase text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words text-sm text-slate-800 dark:text-slate-200">
         {value}
       </p>
     </div>
   );
 }
 
-function DataTable({
+function Table({
   title,
-  columns,
   rows,
 }: {
   title: string;
-  columns: string[];
-  rows: string[][];
+  rows: CountRow[];
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
@@ -884,68 +1146,36 @@ function DataTable({
         </h2>
       </div>
 
-      <div className="max-h-[420px] overflow-auto">
-        {rows.length ===
-        0 ? (
-          <p className="p-6 text-sm text-slate-500">
-            No data for this period.
-          </p>
-        ) : (
+      {rows.length ===
+      0 ? (
+        <p className="p-6 text-sm text-slate-500">
+          No data available.
+        </p>
+      ) : (
+        <div className="max-h-[400px] overflow-auto">
           <table className="w-full text-left">
-            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
-              <tr>
-                {columns.map(
-                  (column) => (
-                    <th
-                      key={
-                        column
-                      }
-                      className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500"
-                    >
-                      {column}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {rows.map(
-                (
-                  row,
-                  index
-                ) => (
+                (row) => (
                   <tr
                     key={
-                      index
+                      row.name
                     }
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/40"
                   >
-                    {row.map(
-                      (
-                        cell,
-                        cellIndex
-                      ) => (
-                        <td
-                          key={
-                            cellIndex
-                          }
-                          className="max-w-xs truncate px-4 py-3 text-sm text-slate-700 dark:text-slate-300"
-                          title={
-                            cell
-                          }
-                        >
-                          {cell}
-                        </td>
-                      )
-                    )}
+                    <td className="px-5 py-3 text-sm text-slate-700 dark:text-slate-300">
+                      {row.name}
+                    </td>
+
+                    <td className="px-5 py-3 text-right text-sm font-semibold text-slate-900 dark:text-white">
+                      {row.count.toLocaleString()}
+                    </td>
                   </tr>
                 )
               )}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

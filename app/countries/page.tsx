@@ -13,84 +13,13 @@ export const dynamic =
 export const metadata: Metadata = {
   title:
     "Jobs by Country | Horizon Jobs",
-
   description:
     "Explore global job opportunities by country.",
 };
 
-const COUNTRY_CODES: Record<
-  string,
-  string
-> = {
-  "United States": "US",
-  "United Kingdom": "GB",
-  Canada: "CA",
-  Australia: "AU",
-  Germany: "DE",
-  France: "FR",
-  Netherlands: "NL",
-  Ireland: "IE",
-  Spain: "ES",
-  Italy: "IT",
-  Portugal: "PT",
-  Switzerland: "CH",
-  Austria: "AT",
-  Belgium: "BE",
-  Sweden: "SE",
-  Norway: "NO",
-  Denmark: "DK",
-  Finland: "FI",
-  Poland: "PL",
-  India: "IN",
-  Pakistan: "PK",
-  Bangladesh: "BD",
-  Nepal: "NP",
-  China: "CN",
-  Japan: "JP",
-  "South Korea": "KR",
-  Singapore: "SG",
-  Malaysia: "MY",
-  Indonesia: "ID",
-  Thailand: "TH",
-  Philippines: "PH",
-  "Saudi Arabia": "SA",
-  "United Arab Emirates":
-    "AE",
-  Qatar: "QA",
-  Kuwait: "KW",
-  Bahrain: "BH",
-  Oman: "OM",
-  "South Africa": "ZA",
-  Nigeria: "NG",
-  Kenya: "KE",
-  Egypt: "EG",
-  Brazil: "BR",
-  Mexico: "MX",
-  Argentina: "AR",
-  Chile: "CL",
-  "New Zealand": "NZ",
-};
-
-function getFlag(
-  country: string
-): string {
-  const code =
-    COUNTRY_CODES[country];
-
-  return countryCodeToFlag(
-    code
-  );
-}
-
 export default async function CountriesPage() {
-  const countryMap =
+  const countries =
     await TaxonomyService.getCountryCounts();
-
-  const countries: Array<
-    [string, number]
-  > = Array.from(
-    countryMap.entries()
-  );
 
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
@@ -109,8 +38,7 @@ export default async function CountriesPage() {
           </p>
         </header>
 
-        {countries.length ===
-        0 ? (
+        {countries.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               No published jobs are available yet.
@@ -118,45 +46,40 @@ export default async function CountriesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {countries.map(
-              ([
-                country,
-                count,
-              ]) => (
-                <Link
-                  key={country}
-                  href={`/jobs/${slugify(
-                    country
-                  )}`}
-                  className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-4xl">
-                      {getFlag(
-                        country
-                      )}
-                    </span>
-
-                    <MapPin className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-500" />
-                  </div>
-
-                  <h2 className="mt-5 text-lg font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
-                    {country}
-                  </h2>
-
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {count} published{" "}
-                    {count === 1
-                      ? "job"
-                      : "jobs"}
-                  </p>
-
-                  <span className="mt-4 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                    View Jobs →
+            {countries.map((country) => (
+              <Link
+                key={country.country}
+                href={`/jobs/${slugify(
+                  country.country
+                )}`}
+                className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-4xl">
+                    {countryCodeToFlag(
+                      country.countryCode
+                    )}
                   </span>
-                </Link>
-              )
-            )}
+
+                  <MapPin className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-500" />
+                </div>
+
+                <h2 className="mt-5 text-lg font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
+                  {country.country}
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {country.count} published{" "}
+                  {country.count === 1
+                    ? "job"
+                    : "jobs"}
+                </p>
+
+                <span className="mt-4 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                  View Jobs →
+                </span>
+              </Link>
+            ))}
           </div>
         )}
       </div>

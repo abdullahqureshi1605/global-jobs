@@ -2,18 +2,20 @@ import { unstable_cache } from "next/cache";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-type CountryCount = [
-  string,
-  number
-];
+export type CountryCount = {
+  country: string;
+  countryCode: string;
+  count: number;
+};
 
-type CategoryCount = [
-  string,
-  number
-];
+export type CategoryCount = {
+  category: string;
+  count: number;
+};
 
 interface CountryRow {
   country: string;
+  country_code: string | null;
   job_count: number;
 }
 
@@ -30,10 +32,9 @@ const getCachedCountryCounts =
       const {
         data,
         error,
-      } =
-        await supabaseAdmin.rpc(
-          "get_published_country_counts"
-        );
+      } = await supabaseAdmin.rpc(
+        "get_published_country_counts"
+      );
 
       if (error) {
         throw new Error(
@@ -46,26 +47,33 @@ const getCachedCountryCounts =
 
       return rows
         .filter(
-          (
-            row
-          ): row is CountryRow =>
+          (row) =>
             typeof row.country ===
               "string" &&
-            row.country.trim() !==
-              ""
+            row.country.trim() !== ""
         )
         .map(
-          (row) =>
-            [
+          (row) => ({
+            country:
               row.country.trim(),
+
+            countryCode:
+              typeof row.country_code ===
+              "string"
+                ? row.country_code
+                    .trim()
+                    .toUpperCase()
+                : "",
+
+            count:
               Number(
                 row.job_count
               ),
-            ] as CountryCount
+          })
         );
     },
     [
-      "horizon-country-counts-v2",
+      "horizon-country-counts-v3",
     ],
     {
       revalidate: 300,
@@ -80,10 +88,9 @@ const getCachedCategoryCounts =
       const {
         data,
         error,
-      } =
-        await supabaseAdmin.rpc(
-          "get_published_category_counts"
-        );
+      } = await supabaseAdmin.rpc(
+        "get_published_category_counts"
+      );
 
       if (error) {
         throw new Error(
@@ -96,26 +103,24 @@ const getCachedCategoryCounts =
 
       return rows
         .filter(
-          (
-            row
-          ): row is CategoryRow =>
+          (row) =>
             typeof row.category ===
               "string" &&
-            row.category.trim() !==
-              ""
+            row.category.trim() !== ""
         )
         .map(
-          (row) =>
-            [
+          (row) => ({
+            category:
               row.category.trim(),
+            count:
               Number(
                 row.job_count
               ),
-            ] as CategoryCount
+          })
         );
     },
     [
-      "horizon-category-counts-v2",
+      "horizon-category-counts-v3",
     ],
     {
       revalidate: 300,
@@ -123,27 +128,11 @@ const getCachedCategoryCounts =
   );
 
 export class TaxonomyService {
-  static async getCountryCounts(): Promise<
-    Map<string, number>
-  > {
-    const rows =
-      await getCachedCountryCounts();
-
-    return new Map<
-      string,
-      number
-    >(rows);
+  static async getCountryCounts() {
+    return getCachedCountryCounts();
   }
 
-  static async getCategoryCounts(): Promise<
-    Map<string, number>
-  > {
-    const rows =
-      await getCachedCategoryCounts();
-
-    return new Map<
-      string,
-      number
-    >(rows);
+  static async getCategoryCounts() {
+    return getCachedCategoryCounts();
   }
 }

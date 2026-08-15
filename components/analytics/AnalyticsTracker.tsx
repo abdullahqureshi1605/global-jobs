@@ -25,6 +25,9 @@ const ATTRIBUTION_KEY =
 const SESSION_TIMEOUT =
   30 * 60 * 1000;
 
+const HEARTBEAT_INTERVAL =
+  15 * 1000;
+
 function createId() {
   if (
     typeof crypto !==
@@ -94,7 +97,8 @@ function getSession() {
           SESSION_KEY,
           JSON.stringify({
             id: parsed.id,
-            lastActivity: now,
+            lastActivity:
+              now,
           })
         );
 
@@ -112,7 +116,8 @@ function getSession() {
       SESSION_KEY,
       JSON.stringify({
         id,
-        lastActivity: now,
+        lastActivity:
+          now,
       })
     );
 
@@ -196,9 +201,7 @@ function getAttribution() {
         saved
       );
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
 
   return {
     source: "",
@@ -227,13 +230,15 @@ function getReferrerHost() {
 
 function getDevice() {
   if (
-    window.innerWidth < 768
+    window.innerWidth <
+    768
   ) {
     return "mobile";
   }
 
   if (
-    window.innerWidth < 1024
+    window.innerWidth <
+    1024
   ) {
     return "tablet";
   }
@@ -277,13 +282,17 @@ function getOS() {
     navigator.userAgent;
 
   if (
-    /Windows/i.test(ua)
+    /Windows/i.test(
+      ua
+    )
   ) {
     return "Windows";
   }
 
   if (
-    /Android/i.test(ua)
+    /Android/i.test(
+      ua
+    )
   ) {
     return "Android";
   }
@@ -297,13 +306,17 @@ function getOS() {
   }
 
   if (
-    /Mac OS X/i.test(ua)
+    /Mac OS X/i.test(
+      ua
+    )
   ) {
     return "macOS";
   }
 
   if (
-    /Linux/i.test(ua)
+    /Linux/i.test(
+      ua
+    )
   ) {
     return "Linux";
   }
@@ -340,76 +353,77 @@ function getScrollDepth() {
   );
 }
 
-function sendEvent(
-  event:
-    Record<
-      string,
-      unknown
-    >
+function basePayload() {
+  const session =
+    getSession();
+
+  const attribution =
+    getAttribution();
+
+  return {
+    visitor_id:
+      getVisitorId(),
+
+    session_id:
+      session.id,
+
+    page_path:
+      window.location.pathname,
+
+    page_title:
+      document.title,
+
+    referrer_host:
+      getReferrerHost(),
+
+    utm_source:
+      attribution.source,
+
+    utm_medium:
+      attribution.medium,
+
+    utm_campaign:
+      attribution.campaign,
+
+    has_gclid:
+      attribution.hasGclid,
+
+    has_fbclid:
+      attribution.hasFbclid,
+
+    device_type:
+      getDevice(),
+
+    browser:
+      getBrowser(),
+
+    operating_system:
+      getOS(),
+
+    timezone:
+      Intl.DateTimeFormat().resolvedOptions()
+        .timeZone,
+
+    screen_width:
+      window.screen.width,
+
+    screen_height:
+      window.screen.height,
+  };
+}
+
+function send(
+  event: Record<
+    string,
+    unknown
+  >
 ) {
   try {
-    const visitorId =
-      getVisitorId();
-
-    const session =
-      getSession();
-
-    const attribution =
-      getAttribution();
-
-    const payload = {
-      visitor_id:
-        visitorId,
-
-      session_id:
-        session.id,
-
-      page_path:
-        window.location.pathname,
-
-      page_title:
-        document.title,
-
-      referrer_host:
-        getReferrerHost(),
-
-      utm_source:
-        attribution.source,
-
-      utm_medium:
-        attribution.medium,
-
-      utm_campaign:
-        attribution.campaign,
-
-      has_gclid:
-        attribution.hasGclid,
-
-      has_fbclid:
-        attribution.hasFbclid,
-
-      device_type:
-        getDevice(),
-
-      browser:
-        getBrowser(),
-
-      operating_system:
-        getOS(),
-
-      screen_width:
-        window.screen.width,
-
-      screen_height:
-        window.screen.height,
-
-      ...event,
-    };
-
     const body =
-      JSON.stringify(
-        payload
-      );
+      JSON.stringify({
+        ...basePayload(),
+        ...event,
+      });
 
     const blob =
       new Blob(
@@ -425,13 +439,13 @@ function sendEvent(
         .sendBeacon ===
       "function"
     ) {
-      const sent =
+      const delivered =
         navigator.sendBeacon(
           TRACK_URL,
           blob
         );
 
-      if (sent) {
+      if (delivered) {
         return;
       }
     }
@@ -453,7 +467,7 @@ function sendEvent(
       }
     );
   } catch {
-    // Analytics must never break the website.
+    // Analytics must never break the site.
   }
 }
 
@@ -464,7 +478,7 @@ export default function AnalyticsTracker() {
   const searchParams =
     useSearchParams();
 
-  const startedAt =
+  const started =
     useRef(
       Date.now()
     );
@@ -472,7 +486,7 @@ export default function AnalyticsTracker() {
   const maxScroll =
     useRef(0);
 
-  const sentExit =
+  const exited =
     useRef(false);
 
   useEffect(() => {
@@ -491,17 +505,17 @@ export default function AnalyticsTracker() {
       return;
     }
 
-    startedAt.current =
+    started.current =
       Date.now();
 
     maxScroll.current = 0;
-    sentExit.current =
+    exited.current =
       false;
 
     const session =
       getSession();
 
-    sendEvent({
+    send({
       event_name:
         "page_view",
 
@@ -509,161 +523,158 @@ export default function AnalyticsTracker() {
         session.isNew,
     });
 
-    let performanceTimer:
-      number | undefined;
+    const heartbeat =
+      window.setInterval(
+        () => {
+          if (
+            document.visibilityState ===
+            "visible"
+          ) {
+            send({
+              event_name:
+                "heartbeat",
+            });
+          }
+        },
+        HEARTBEAT_INTERVAL
+      );
 
-    if (
-      typeof window !==
-      "undefined"
-    ) {
-      performanceTimer =
-        window.setTimeout(
-          () => {
-            try {
-              const navigation =
-                performance
-                  .getEntriesByType(
-                    "navigation"
-                  )[0] as
-                  | PerformanceNavigationTiming
-                  | undefined;
-
-              const paints =
-                performance.getEntriesByType(
-                  "paint"
-                );
-
-              const fcp =
-                paints.find(
-                  (entry) =>
-                    entry.name ===
-                    "first-contentful-paint"
-                );
-
-              sendEvent({
-                event_name:
-                  "page_performance",
-
-                load_ms:
-                  navigation?.loadEventEnd
-                    ? Math.round(
-                        navigation.loadEventEnd
-                      )
-                    : null,
-
-                fcp_ms:
-                  fcp
-                    ? Math.round(
-                        fcp.startTime
-                      )
-                    : null,
-              });
-            } catch {
-              // ignore
-            }
-          },
-          1200
-        );
-    }
-
-    function onScroll() {
-      maxScroll.current =
-        Math.max(
-          maxScroll.current,
-          getScrollDepth()
-        );
-    }
-
-    function sendExit() {
-      if (
-        sentExit.current
-      ) {
-        return;
-      }
-
-      sentExit.current =
-        true;
-
-      sendEvent({
-        event_name:
-          "page_exit",
-
-        duration_ms:
-          Date.now() -
-          startedAt.current,
-
-        scroll_depth:
-          maxScroll.current,
-      });
-    }
-
-    function onVisibilityChange() {
-      if (
-        document.visibilityState ===
-        "hidden"
-      ) {
-        sendExit();
-      }
-    }
-
-    function onClick(
-      event: MouseEvent
-    ) {
-      const element =
-        event.target as
-          | HTMLElement
-          | null;
-
-      if (!element) {
-        return;
-      }
-
-      const clickable =
-        element.closest(
-          "a,button,[role='button']"
-        ) as
-          | HTMLElement
-          | null;
-
-      if (!clickable) {
-        return;
-      }
-
-      const label =
-        (
-          clickable.innerText ||
-          clickable.textContent ||
-          clickable.getAttribute(
-            "aria-label"
-          ) ||
-          ""
-        )
-          .trim()
-          .replace(
-            /\s+/g,
-            " "
-          )
-          .slice(
-            0,
-            120
+    const onScroll =
+      () => {
+        maxScroll.current =
+          Math.max(
+            maxScroll.current,
+            getScrollDepth()
           );
+      };
 
-      const href =
-        clickable.getAttribute(
-          "href"
-        ) || "";
+    const sendExit =
+      () => {
+        if (
+          exited.current
+        ) {
+          return;
+        }
 
-      const combined =
-        `${label} ${href}`.toLowerCase();
+        exited.current =
+          true;
 
-      if (
-        combined.includes(
-          "apply"
-        )
-      ) {
-        sendEvent({
+        send({
           event_name:
-            "job_apply_click",
+            "page_exit",
+
+          duration_ms:
+            Date.now() -
+            started.current,
+
+          scroll_depth:
+            maxScroll.current,
+        });
+      };
+
+    const visibility =
+      () => {
+        if (
+          document.visibilityState ===
+          "hidden"
+        ) {
+          sendExit();
+        }
+      };
+
+    const clicks =
+      (event: MouseEvent) => {
+        const element =
+          event.target as
+            | HTMLElement
+            | null;
+
+        if (!element) {
+          return;
+        }
+
+        const clickable =
+          element.closest(
+            "a,button,[role='button']"
+          ) as
+            | HTMLElement
+            | null;
+
+        if (!clickable) {
+          return;
+        }
+
+        const label =
+          (
+            clickable.innerText ||
+            clickable.textContent ||
+            clickable.getAttribute(
+              "aria-label"
+            ) ||
+            ""
+          )
+            .trim()
+            .replace(
+              /\s+/g,
+              " "
+            )
+            .slice(
+              0,
+              120
+            );
+
+        const href =
+          clickable.getAttribute(
+            "href"
+          ) || "";
+
+        const combined =
+          `${label} ${href}`.toLowerCase();
+
+        if (
+          combined.includes(
+            "apply"
+          )
+        ) {
+          send({
+            event_name:
+              "job_apply_click",
+
+            event_label:
+              label,
+
+            event_target:
+              href,
+          });
+
+          return;
+        }
+
+        if (
+          combined.includes(
+            "report job"
+          ) ||
+          href.includes(
+            "/report"
+          )
+        ) {
+          send({
+            event_name:
+              "report_job_click",
+
+            event_label:
+              label,
+
+            event_target:
+              href,
+          });
+
+          return;
+        }
+
+        send({
+          event_name:
+            "cta_click",
 
           event_label:
             label,
@@ -671,43 +682,7 @@ export default function AnalyticsTracker() {
           event_target:
             href,
         });
-
-        return;
-      }
-
-      if (
-        combined.includes(
-          "report job"
-        ) ||
-        href.includes(
-          "/report"
-        )
-      ) {
-        sendEvent({
-          event_name:
-            "report_job_click",
-
-          event_label:
-            label,
-
-          event_target:
-            href,
-        });
-
-        return;
-      }
-
-      sendEvent({
-        event_name:
-          "cta_click",
-
-        event_label:
-          label,
-
-        event_target:
-          href,
-      });
-    }
+      };
 
     window.addEventListener(
       "scroll",
@@ -719,7 +694,13 @@ export default function AnalyticsTracker() {
 
     document.addEventListener(
       "visibilitychange",
-      onVisibilityChange
+      visibility
+    );
+
+    document.addEventListener(
+      "click",
+      clicks,
+      true
     );
 
     window.addEventListener(
@@ -727,21 +708,10 @@ export default function AnalyticsTracker() {
       sendExit
     );
 
-    document.addEventListener(
-      "click",
-      onClick,
-      true
-    );
-
     return () => {
-      if (
-        performanceTimer !==
-        undefined
-      ) {
-        window.clearTimeout(
-          performanceTimer
-        );
-      }
+      window.clearInterval(
+        heartbeat
+      );
 
       window.removeEventListener(
         "scroll",
@@ -750,18 +720,18 @@ export default function AnalyticsTracker() {
 
       document.removeEventListener(
         "visibilitychange",
-        onVisibilityChange
+        visibility
+      );
+
+      document.removeEventListener(
+        "click",
+        clicks,
+        true
       );
 
       window.removeEventListener(
         "pagehide",
         sendExit
-      );
-
-      document.removeEventListener(
-        "click",
-        onClick,
-        true
       );
 
       sendExit();

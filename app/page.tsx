@@ -1,21 +1,22 @@
 import Link from "next/link";
 
 import { JobService } from "@/services/jobService";
+import { TaxonomyService } from "@/services/taxonomyService";
 import { slugify } from "@/lib/utils/slug";
+import { countryCodeToFlag } from "@/lib/utils/countryFlag";
+import {
+  getCategoryIcon,
+} from "@/lib/utils/categoryIcon";
 
-/*
- * Important:
- * The homepage uses Supabase data.
- * Do not prerender this page during `next build`.
- *
- * This prevents the local build from trying to validate
- * a Supabase JWT while collecting page data.
- */
-export const dynamic = "force-dynamic";
+export const dynamic =
+  "force-dynamic";
+
 export const revalidate = 0;
 
 export const metadata = {
-  title: "Horizon Jobs | Global Job Discovery",
+  title:
+    "Horizon Jobs | Global Job Discovery",
+
   description:
     "Discover global job opportunities and practical career resources with Horizon Jobs.",
 };
@@ -26,44 +27,40 @@ function formatSalary(
   currency: string
 ) {
   if (
-    min === null ||
-    min === undefined ||
-    max === null ||
-    max === undefined ||
+    min == null ||
+    max == null ||
     !currency
   ) {
     return "";
   }
 
-  return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+  return `${currency} ${Number(
+    min
+  ).toLocaleString()} - ${Number(
+    max
+  ).toLocaleString()}`;
 }
 
 export default async function HomePage() {
   const [
     latestJobs,
-    countryMap,
-    categoryMap,
+    countries,
+    categories,
   ] = await Promise.all([
-    JobService.getLatestPublishedJobs(6),
-    JobService.getPublishedCountryCounts(),
-    JobService.getPublishedCategoryCounts(),
+    JobService.getLatestPublishedJobs(
+      6
+    ),
+
+    TaxonomyService.getCountryCounts(),
+
+    TaxonomyService.getCategoryCounts(),
   ]);
 
-  const countries = Array.from(
-    countryMap.entries()
-  )
-    .sort(
-      (a, b) => b[1] - a[1]
-    )
-    .slice(0, 4);
+  const previewCountries =
+    countries.slice(0, 4);
 
-  const categories = Array.from(
-    categoryMap.entries()
-  )
-    .sort(
-      (a, b) => b[1] - a[1]
-    )
-    .slice(0, 4);
+  const previewCategories =
+    categories.slice(0, 4);
 
   return (
     <main className="min-h-screen bg-slate-100 dark:bg-slate-950">
@@ -86,14 +83,14 @@ export default async function HomePage() {
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link
               href="/jobs"
-              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               Find Jobs
             </Link>
 
             <Link
               href="/career-resources"
-              className="rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
             >
               Career Resources
             </Link>
@@ -101,7 +98,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* LATEST JOBS */}
+      {/* JOBS */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -112,67 +109,93 @@ export default async function HomePage() {
             <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
               Recently Published Jobs
             </h2>
-
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              A small selection of the latest published opportunities.
-            </p>
           </div>
 
           <Link
             href="/jobs"
-            className="inline-flex w-fit rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-300"
+            className="inline-flex w-fit rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-300"
           >
             Browse All Jobs →
           </Link>
         </div>
 
-        {latestJobs.length === 0 ? (
+        {latestJobs.length ===
+        0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
             No published jobs are available yet.
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {latestJobs.map(
-              (job) => (
-                <article
-                  key={job.id}
-                  className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex-1">
-                    {job.featured && (
-                      <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                        Featured
-                      </span>
-                    )}
+              (job) => {
+                const CategoryIcon =
+                  getCategoryIcon(
+                    job.category
+                  );
 
-                    <h3 className="mt-3 line-clamp-2 text-lg font-bold text-slate-900 dark:text-white">
-                      {job.title}
-                    </h3>
+                const flag =
+                  countryCodeToFlag(
+                    job.countryCode
+                  );
 
-                    <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
-                      {job.company}
-                    </p>
+                return (
+                  <article
+                    key={job.id}
+                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          {job.featured && (
+                            <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                              Featured
+                            </span>
+                          )}
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {job.city}, {job.country}
-                      </span>
+                          <h3 className="mt-3 line-clamp-2 text-lg font-bold text-slate-900 dark:text-white">
+                            {job.title}
+                          </h3>
 
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
-                        {job.category}
-                      </span>
+                          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
+                            {job.company}
+                          </p>
+                        </div>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {job.workplaceType}
-                      </span>
-                    </div>
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-2xl dark:bg-slate-800">
+                          {flag}
+                        </div>
+                      </div>
 
-                    {job.salaryMin !== null &&
-                      job.salaryMin !==
-                        undefined &&
-                      job.salaryMax !== null &&
-                      job.salaryMax !==
-                        undefined && (
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                          <CategoryIcon className="h-3.5 w-3.5" />
+                          {job.category}
+                        </span>
+
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {flag} {job.country}
+                        </span>
+
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {job.city}
+                        </span>
+
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {job.workplaceType}
+                        </span>
+                      </div>
+
+                      {job.description && (
+                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                          {job.description}
+                        </p>
+                      )}
+
+                      {formatSalary(
+                        job.salaryMin,
+                        job.salaryMax,
+                        job.salaryCurrency
+                      ) && (
                         <p className="mt-4 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                           {formatSalary(
                             job.salaryMin,
@@ -181,20 +204,21 @@ export default async function HomePage() {
                           )}
                         </p>
                       )}
-                  </div>
+                    </div>
 
-                  <Link
-                    href={`/jobs/${slugify(
-                      job.country
-                    )}/${slugify(
-                      job.city
-                    )}/${job.slug}`}
-                    className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
-                  >
-                    View Job
-                  </Link>
-                </article>
-              )
+                    <Link
+                      href={`/jobs/${slugify(
+                        job.country
+                      )}/${slugify(
+                        job.city
+                      )}/${job.slug}`}
+                      className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+                    >
+                      View Job
+                    </Link>
+                  </article>
+                );
+              }
             )}
           </div>
         )}
@@ -216,24 +240,30 @@ export default async function HomePage() {
 
             <Link
               href="/countries"
-              className="inline-flex w-fit items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              className="inline-flex w-fit items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               Browse All Countries →
             </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {countries.map(
-              ([country, count]) => (
+            {previewCountries.map(
+              ({
+                country,
+                countryCode,
+                count,
+              }) => (
                 <Link
                   key={country}
                   href={`/jobs/${slugify(
                     country
                   )}`}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800/50"
                 >
-                  <span className="text-lg">
-                    🌍
+                  <span className="text-4xl">
+                    {countryCodeToFlag(
+                      countryCode
+                    )}
                   </span>
 
                   <h3 className="mt-3 font-bold text-slate-900 dark:text-white">
@@ -269,38 +299,50 @@ export default async function HomePage() {
 
             <Link
               href="/categories"
-              className="inline-flex w-fit items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              className="inline-flex w-fit items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               Browse All Categories →
             </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {categories.map(
-              ([category, count]) => (
-                <Link
-                  key={category}
-                  href={`/categories/${slugify(
+            {previewCategories.map(
+              ({
+                category,
+                count,
+              }) => {
+                const CategoryIcon =
+                  getCategoryIcon(
                     category
-                  )}`}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <span className="text-lg">
-                    💼
-                  </span>
+                  );
 
-                  <h3 className="mt-3 font-bold text-slate-900 dark:text-white">
-                    {category}
-                  </h3>
+                return (
+                  <Link
+                    key={
+                      category
+                    }
+                    href={`/categories/${slugify(
+                      category
+                    )}`}
+                    className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                      <CategoryIcon className="h-5 w-5" />
+                    </div>
 
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {count} published{" "}
-                    {count === 1
-                      ? "job"
-                      : "jobs"}
-                  </p>
-                </Link>
-              )
+                    <h3 className="mt-3 font-bold text-slate-900 dark:text-white">
+                      {category}
+                    </h3>
+
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {count} published{" "}
+                      {count === 1
+                        ? "job"
+                        : "jobs"}
+                    </p>
+                  </Link>
+                );
+              }
             )}
           </div>
         </div>

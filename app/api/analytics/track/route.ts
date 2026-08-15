@@ -3,14 +3,16 @@ import { createHash } from "crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const ALLOWED_EVENTS = new Set([
-  "page_view",
-  "page_exit",
-  "page_performance",
-  "cta_click",
-  "job_apply_click",
-  "report_job_click",
-]);
+const ALLOWED_EVENTS =
+  new Set([
+    "page_view",
+    "page_exit",
+    "page_performance",
+    "cta_click",
+    "job_apply_click",
+    "report_job_click",
+    "heartbeat",
+  ]);
 
 function text(
   value: unknown,
@@ -22,9 +24,11 @@ function text(
     return null;
   }
 
-  const result = value
-    .trim()
-    .slice(0, max);
+  const result =
+    value.trim().slice(
+      0,
+      max
+    );
 
   return result || null;
 }
@@ -32,10 +36,15 @@ function text(
 function number(
   value: unknown
 ) {
-  return typeof value === "number" &&
+  if (
+    typeof value ===
+      "number" &&
     Number.isFinite(value)
-    ? value
-    : null;
+  ) {
+    return value;
+  }
+
+  return null;
 }
 
 function hash(
@@ -45,35 +54,16 @@ function hash(
     process.env.ANALYTICS_HASH_SALT ||
     "horizon-jobs-default-analytics-salt";
 
-  return createHash("sha256")
+  return createHash(
+    "sha256"
+  )
     .update(
       `${salt}:${value}`
     )
     .digest("hex");
 }
 
-function getCountry(
-  request: Request
-) {
-  const code =
-    request.headers.get(
-      "x-nf-country"
-    ) ||
-    request.headers.get(
-      "x-country"
-    ) ||
-    request.headers.get(
-      "cf-ipcountry"
-    ) ||
-    "";
-
-  return code
-    .trim()
-    .toUpperCase()
-    .slice(0, 8) || null;
-}
-
-function getOriginAllowed(
+function originAllowed(
   request: Request
 ) {
   const origin =
@@ -81,7 +71,6 @@ function getOriginAllowed(
       "origin"
     );
 
-  // Some sendBeacon requests may omit Origin.
   if (!origin) {
     return true;
   }
@@ -100,16 +89,15 @@ function getOriginAllowed(
       return true;
     }
 
-    const configuredSite =
-      process.env.NEXT_PUBLIC_SITE_URL;
+    const configured =
+      process.env
+        .NEXT_PUBLIC_SITE_URL;
 
-    if (
-      configuredSite
-    ) {
+    if (configured) {
       return (
         originUrl.origin ===
         new URL(
-          configuredSite
+          configured
         ).origin
       );
     }
@@ -120,12 +108,77 @@ function getOriginAllowed(
   }
 }
 
+function detectBot(
+  request: Request
+) {
+  const userAgent =
+    request.headers.get(
+      "user-agent"
+    ) || "";
+
+  return /bot|crawler|spider|slurp|bingpreview|headless|phantom|selenium|puppeteer/i.test(
+    userAgent
+  );
+}
+
+function geoFromHeaders(
+  request: Request
+) {
+  const countryCode =
+    text(
+      request.headers.get(
+        "x-nf-country"
+      ) ||
+        request.headers.get(
+          "x-country"
+        ) ||
+        request.headers.get(
+          "cf-ipcountry"
+        ),
+      8
+    )?.toUpperCase() ||
+    null;
+
+  const countryName =
+    text(
+      request.headers.get(
+        "x-nf-country-name"
+      ),
+      100
+    );
+
+  const city =
+    text(
+      request.headers.get(
+        "x-nf-city"
+      ),
+      100
+    );
+
+  const region =
+    text(
+      request.headers.get(
+        "x-nf-region"
+      ),
+      100
+    );
+
+  return {
+    countryCode,
+    countryName:
+      countryName ||
+      countryCode,
+    city,
+    region,
+  };
+}
+
 export async function POST(
   request: Request
 ) {
   try {
     if (
-      !getOriginAllowed(
+      !originAllowed(
         request
       )
     ) {
@@ -180,16 +233,181 @@ export async function POST(
 
     const visitorHash =
       visitorId
-        ? hash(visitorId)
+        ? hash(
+            visitorId
+          )
         : null;
 
     const sessionHash =
       sessionId
-        ? hash(sessionId)
+        ? hash(
+            sessionId
+          )
         : null;
 
-    const countryCode =
-      getCountry(request);
+    const geo =
+      geoFromHeaders(
+        request
+      );
+
+    const isBot =
+      detectBot(
+        request
+      );
+
+    /* ==========================================
+       LIVE PRESENCE
+       ========================================== */
+
+    if (
+      eventName ===
+      "heartbeat"
+    ) {
+      if (
+        !sessionHash
+      ) {
+        return new NextResponse(
+          null,
+          {
+            status: 204,
+          }
+        );
+      }
+
+      const now =
+        new Date().toISOString();
+
+      const {
+        error,
+      } =
+        await supabaseAdmin
+          .from(
+            "analytics_presence"
+          )
+          .upsert(
+            {
+              session_hash:
+                sessionHash,
+
+              visitor_hash:
+                visitorHash,
+
+              last_seen:
+                now,
+
+              page_path:
+                text(
+                  body.page_path,
+                  500
+                ),
+
+              page_title:
+                text(
+                  body.page_title,
+                  250
+                ),
+
+              country_code:
+                geo.countryCode,
+
+              country_name:
+                geo.countryName,
+
+              city:
+                geo.city,
+
+              region:
+                geo.region,
+
+              timezone:
+                text(
+                  body.timezone,
+                  100
+                ),
+
+              device_type:
+                text(
+                  body.device_type,
+                  30
+                ),
+
+              browser:
+                text(
+                  body.browser,
+                  50
+                ),
+
+              operating_system:
+                text(
+                  body.operating_system,
+                  50
+                ),
+
+              utm_source:
+                text(
+                  body.utm_source,
+                  100
+                ),
+
+              utm_medium:
+                text(
+                  body.utm_medium,
+                  100
+                ),
+
+              utm_campaign:
+                text(
+                  body.utm_campaign,
+                  150
+                ),
+
+              has_gclid:
+                Boolean(
+                  body.has_gclid
+                ),
+
+              has_fbclid:
+                Boolean(
+                  body.has_fbclid
+                ),
+
+              is_bot:
+                isBot,
+            },
+            {
+              onConflict:
+                "session_hash",
+            }
+          );
+
+      if (error) {
+        console.error(
+          "Presence update failed:",
+          error
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Failed to update live visitor.",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
+
+      return new NextResponse(
+        null,
+        {
+          status: 204,
+        }
+      );
+    }
+
+    /* ==========================================
+       NORMAL ANALYTICS EVENT
+       ========================================== */
 
     const row = {
       event_name:
@@ -214,10 +432,10 @@ export async function POST(
         ),
 
       country_code:
-        countryCode,
+        geo.countryCode,
 
       country_name:
-        countryCode,
+        geo.countryName,
 
       referrer_host:
         text(
@@ -355,6 +573,123 @@ export async function POST(
           status: 500,
         }
       );
+    }
+
+    /*
+     * page_view also establishes the live presence
+     * immediately, so the visitor appears without
+     * waiting for the first heartbeat.
+     */
+    if (
+      eventName ===
+      "page_view"
+    ) {
+      if (
+        sessionHash
+      ) {
+        await supabaseAdmin
+          .from(
+            "analytics_presence"
+          )
+          .upsert(
+            {
+              session_hash:
+                sessionHash,
+
+              visitor_hash:
+                visitorHash,
+
+              started_at:
+                new Date().toISOString(),
+
+              last_seen:
+                new Date().toISOString(),
+
+              page_path:
+                text(
+                  body.page_path,
+                  500
+                ),
+
+              page_title:
+                text(
+                  body.page_title,
+                  250
+                ),
+
+              country_code:
+                geo.countryCode,
+
+              country_name:
+                geo.countryName,
+
+              city:
+                geo.city,
+
+              region:
+                geo.region,
+
+              timezone:
+                text(
+                  body.timezone,
+                  100
+                ),
+
+              device_type:
+                text(
+                  body.device_type,
+                  30
+                ),
+
+              browser:
+                text(
+                  body.browser,
+                  50
+                ),
+
+              operating_system:
+                text(
+                  body.operating_system,
+                  50
+                ),
+
+              utm_source:
+                text(
+                  body.utm_source,
+                  100
+                ),
+
+              utm_medium:
+                text(
+                  body.utm_medium,
+                  100
+                ),
+
+              utm_campaign:
+                text(
+                  body.utm_campaign,
+                  150
+                ),
+
+              has_gclid:
+                Boolean(
+                  body.has_gclid
+                ),
+
+              has_fbclid:
+                Boolean(
+                  body.has_fbclid
+                ),
+
+              is_bot:
+                isBot,
+            },
+            {
+              onConflict:
+                "session_hash",
+            }
+          );
+      }
     }
 
     return new NextResponse(
