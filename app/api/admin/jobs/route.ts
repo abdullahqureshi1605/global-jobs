@@ -1,30 +1,21 @@
-import { randomUUID } from "node:crypto";
-
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { randomUUID } from "node:crypto";
 
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-function toNullableString(
-  value: unknown
-): string | null {
-  if (
-    typeof value !== "string"
-  ) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-
-  return trimmed.length > 0
-    ? trimmed
-    : null;
+function cleanString(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim();
 }
 
-function toNullableNumber(
-  value: unknown
-): number | null {
+function nullableString(value: unknown): string | null {
+  const cleaned = cleanString(value);
+  return cleaned || null;
+}
+
+function numberValue(value: unknown): number | null {
   if (
     value === "" ||
     value === null ||
@@ -33,38 +24,42 @@ function toNullableNumber(
     return null;
   }
 
-  const numberValue =
+  const number =
     typeof value === "number"
       ? value
       : Number(value);
 
-  return Number.isFinite(numberValue)
-    ? numberValue
+  return Number.isFinite(number)
+    ? number
     : null;
 }
 
-function slugify(
-  value: string
+function dateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(
+  date: Date,
+  days: number
 ): string {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return dateOnly(result);
+}
+
+function slugify(value: string): string {
   return value
     .toLowerCase()
     .trim()
-    .replace(
-      /[^a-z0-9\s-]/g,
-      ""
-    )
+    .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 }
 
-export async function POST(
-  request: Request
-) {
+export async function POST(request: Request) {
   try {
     const session =
-      await getServerSession(
-        authOptions
-      );
+      await getServerSession(authOptions);
 
     if (!session?.user) {
       return NextResponse.json(
@@ -72,82 +67,78 @@ export async function POST(
           error:
             "Unauthorized. Please log in again.",
         },
-        {
-          status: 401,
-        }
+        { status: 401 }
       );
     }
 
-    const body =
-      await request.json();
+    const body = await request.json();
+
+    const title = cleanString(body.title);
+    const company = cleanString(body.company);
+    const country = cleanString(body.country);
+    const countryCode =
+      cleanString(body.countryCode);
+    const city = cleanString(body.city);
+    const category =
+      cleanString(body.category);
+    const description =
+      cleanString(body.description);
+    const sourceName =
+      cleanString(body.sourceName);
+    const sourceUrl =
+      cleanString(body.sourceUrl);
+    const applyUrl =
+      cleanString(body.applyUrl);
 
     if (
-      !body.title ||
-      !body.company ||
-      !body.country ||
-      !body.countryCode ||
-      !body.city ||
-      !body.category ||
-      !body.description ||
-      !body.sourceName ||
-      !body.sourceUrl ||
-      !body.applyUrl
+      !title ||
+      !company ||
+      !country ||
+      !countryCode ||
+      !city ||
+      !category ||
+      !description ||
+      !sourceName ||
+      !sourceUrl ||
+      !applyUrl
     ) {
       return NextResponse.json(
         {
           error:
             "Please complete all required job fields.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    const title =
-      String(body.title).trim();
-
-    const baseSlug =
-      slugify(title);
+    const baseSlug = slugify(title);
 
     if (!baseSlug) {
       return NextResponse.json(
         {
           error:
-            "Unable to create a valid job slug from the title.",
+            "Unable to create a valid slug from the job title.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
     let slug = baseSlug;
 
-    const {
-      data: existingJob,
-      error:
-        existingJobError,
-    } = await supabaseAdmin
-      .from("jobs")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
+    const { data: existingJob, error: slugError } =
+      await supabaseAdmin
+        .from("jobs")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
 
-    if (existingJobError) {
-      console.error(
-        "Slug lookup error:",
-        existingJobError
-      );
-
+    if (slugError) {
       return NextResponse.json(
         {
           error:
-            `Could not verify job slug: ${existingJobError.message}`,
+            `Slug check failed: ${slugError.message}`,
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
@@ -155,141 +146,104 @@ export async function POST(
       slug = `${baseSlug}-${Date.now()}`;
     }
 
+    const today = new Date();
+
+    const datePosted =
+      cleanString(body.datePosted) ||
+      dateOnly(today);
+
+    const closingDate =
+      cleanString(body.closingDate) ||
+      addDays(today, 30);
+
+    const lastVerified =
+      cleanString(body.lastVerified) ||
+      dateOnly(today);
+
     const jobRecord = {
-        id: randomUUID(),
-      
+      id: randomUUID(),
+
       title,
 
       slug,
 
-      company:
-        String(body.company).trim(),
+      company,
 
       company_logo:
-        toNullableString(
-        body.companyLogo
-            ) ?? "",
+        cleanString(body.companyLogo),
 
-      country:
-        String(body.country).trim(),
+      country,
 
-      country_code:
-        String(
-          body.countryCode
-        ).trim(),
+      country_code: countryCode,
 
-      city:
-        String(body.city).trim(),
+      city,
 
-      category:
-        String(body.category).trim(),
+      category,
 
       subcategory:
-       toNullableString(
-        body.subcategory
-           ) ?? "",
+        cleanString(body.subcategory),
 
       industry:
-        toNullableString(
-          body.industry
-             ) ?? "",
+        cleanString(body.industry),
 
       employment_type:
-        toNullableString(
-          body.employmentType
-        ),
+        cleanString(body.employmentType) ||
+        "Full-time",
 
       workplace_type:
-        toNullableString(
-          body.workplaceType
-        ),
+        cleanString(body.workplaceType) ||
+        "On-site",
 
       experience_level:
-        toNullableString(
-          body.experienceLevel
-        ),
+        cleanString(body.experienceLevel) ||
+        "Entry Level",
 
       salary_min:
-        toNullableNumber(
-          body.salaryMin
-        ),
+        numberValue(body.salaryMin),
 
       salary_max:
-        toNullableNumber(
-          body.salaryMax
-        ),
+        numberValue(body.salaryMax),
 
       salary_currency:
-        toNullableString(
-          body.salaryCurrency
-        ),
+        cleanString(body.salaryCurrency),
 
       salary_period:
-        toNullableString(
-          body.salaryPeriod
-        ),
+        cleanString(body.salaryPeriod) ||
+        "year",
 
-      description:
-        String(
-          body.description
-        ).trim(),
+      description,
 
       requirements:
-        Array.isArray(
-          body.requirements
-        )
+        Array.isArray(body.requirements)
           ? body.requirements
           : [],
 
       responsibilities:
-        Array.isArray(
-          body.responsibilities
-        )
+        Array.isArray(body.responsibilities)
           ? body.responsibilities
           : [],
 
       benefits:
-        Array.isArray(
-          body.benefits
-        )
+        Array.isArray(body.benefits)
           ? body.benefits
           : [],
 
-      source_name:
-        String(
-          body.sourceName
-        ).trim(),
+      source_name: sourceName,
 
-      source_url:
-        String(
-          body.sourceUrl
-        ).trim(),
+      source_url: sourceUrl,
 
-      apply_url:
-        String(
-          body.applyUrl
-        ).trim(),
+      apply_url: applyUrl,
 
-      date_posted:
-        toNullableString(
-          body.datePosted
-        ),
+      date_posted: datePosted,
 
-      closing_date:
-        toNullableString(
-          body.closingDate
-        ),
+      closing_date: closingDate,
 
-      last_verified:
-        toNullableString(
-          body.lastVerified
-        ),
+      last_verified: lastVerified,
 
       verification_status:
-        toNullableString(
+        cleanString(
           body.verificationStatus
-        ) ??
-        "unverified",
+        ) || "unverified",
 
       status:
         body.status === "published" ||
@@ -301,14 +255,12 @@ export async function POST(
         Boolean(body.featured),
     };
 
-    const {
-      data,
-      error,
-    } = await supabaseAdmin
-      .from("jobs")
-      .insert(jobRecord)
-      .select("*")
-      .single();
+    const { data, error } =
+      await supabaseAdmin
+        .from("jobs")
+        .insert(jobRecord)
+        .select("*")
+        .single();
 
     if (error) {
       console.error(
@@ -320,16 +272,11 @@ export async function POST(
         {
           error:
             `Failed to save job: ${error.message}`,
-          code:
-            error.code ?? null,
-          details:
-            error.details ?? null,
-          hint:
-            error.hint ?? null,
+          code: error.code ?? null,
+          details: error.details ?? null,
+          hint: error.hint ?? null,
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
@@ -340,9 +287,7 @@ export async function POST(
           "Job saved successfully.",
         job: data,
       },
-      {
-        status: 201,
-      }
+      { status: 201 }
     );
   } catch (error) {
     console.error(
@@ -357,9 +302,7 @@ export async function POST(
             ? error.message
             : "Failed to save job.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
