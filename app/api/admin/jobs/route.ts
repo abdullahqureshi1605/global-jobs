@@ -167,8 +167,8 @@ export async function POST(
 
       company_logo:
         toNullableString(
-          body.companyLogo
-        ),
+        body.companyLogo
+            ) ?? "",
 
       country:
         String(body.country).trim(),
