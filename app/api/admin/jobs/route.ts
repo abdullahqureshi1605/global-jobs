@@ -185,14 +185,14 @@ export async function POST(
         String(body.category).trim(),
 
       subcategory:
-        toNullableString(
-          body.subcategory
-        ),
+       toNullableString(
+        body.subcategory
+           ) ?? "",
 
       industry:
         toNullableString(
           body.industry
-        ),
+             ) ?? "",
 
       employment_type:
         toNullableString(
