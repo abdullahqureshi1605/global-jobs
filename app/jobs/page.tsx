@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  supabaseAdmin,
+} from "@/lib/supabase/admin";
+
 import { slugify } from "@/lib/utils/slug";
 
-export const revalidate = 30;
+export const dynamic =
+  "force-dynamic";
+
+export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Find Jobs | Horizon Jobs",
+  title:
+    "Find Jobs | Horizon Jobs",
   description:
-    "Search published global jobs by keyword, country, city, category, workplace type, employment type, and experience level.",
+    "Search published global jobs by keyword, location, category, workplace type, employment type, and experience level.",
 };
 
 type SearchParams = {
@@ -21,18 +28,25 @@ type SearchParams = {
   experience?: string;
 };
 
-function value(
-  input: string | string[] | undefined
+function getValue(
+  value:
+    | string
+    | string[]
+    | undefined
 ) {
-  return Array.isArray(input)
-    ? input[0] || ""
-    : input || "";
+  return Array.isArray(value)
+    ? value[0] || ""
+    : value || "";
 }
 
-function clean(input: string) {
-  return input
-    .replace(/[,%()]/g, " ")
-    .replace(/\\/g, " ")
+function clean(
+  value: string
+) {
+  return value
+    .replace(
+      /[,()%\\]/g,
+      " "
+    )
     .trim()
     .slice(0, 100);
 }
@@ -45,103 +59,147 @@ export default async function JobsPage({
   const params =
     await searchParams;
 
-  const q = value(params.q);
+  const q =
+    getValue(params.q).trim();
+
   const location =
-    value(params.location);
+    getValue(
+      params.location
+    ).trim();
+
   const category =
-    value(params.category);
+    getValue(
+      params.category
+    ).trim();
+
   const workplace =
-    value(params.workplace);
+    getValue(
+      params.workplace
+    ).trim();
+
   const employment =
-    value(params.employment);
+    getValue(
+      params.employment
+    ).trim();
+
   const experience =
-    value(params.experience);
+    getValue(
+      params.experience
+    ).trim();
 
-  let query = supabaseAdmin
-    .from("jobs")
-    .select(
-      `
-      id,
-      title,
-      slug,
-      company,
-      country,
-      countryCode:country_code,
-      city,
-      category,
-      employmentType:employment_type,
-      workplaceType:workplace_type,
-      experienceLevel:experience_level,
-      salaryMin:salary_min,
-      salaryMax:salary_max,
-      salaryCurrency:salary_currency,
-      description,
-      datePosted:date_posted,
-      featured
-      `
-    )
-    .eq("status", "published")
-    .order("date_posted", {
-      ascending: false,
-    })
-    .limit(60);
+  /*
+   * Only request fields required for the result cards.
+   * We do NOT select "*".
+   */
+  let jobsQuery =
+    supabaseAdmin
+      .from("jobs")
+      .select(
+        `
+        id,
+        title,
+        slug,
+        company,
+        country,
+        country_code,
+        city,
+        category,
+        employment_type,
+        workplace_type,
+        experience_level,
+        salary_min,
+        salary_max,
+        salary_currency,
+        description,
+        featured,
+        date_posted
+        `
+      )
+      .eq(
+        "status",
+        "published"
+      )
+      .order(
+        "date_posted",
+        {
+          ascending: false,
+        }
+      )
+      .limit(40);
 
-  if (q.trim()) {
+  if (q) {
     const search =
       clean(q);
 
-    query = query.or(
-      `title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%`
-    );
+    if (search) {
+      jobsQuery =
+        jobsQuery.or(
+          `title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%`
+        );
+    }
   }
 
-  if (location.trim()) {
+  if (location) {
     const search =
       clean(location);
 
-    query = query.or(
-      `country.ilike.%${search}%,city.ilike.%${search}%`
-    );
+    if (search) {
+      jobsQuery =
+        jobsQuery.or(
+          `country.ilike.%${search}%,city.ilike.%${search}%`
+        );
+    }
   }
 
-  if (category.trim()) {
-    query = query.eq(
-      "category",
-      category
-    );
+  if (category) {
+    jobsQuery =
+      jobsQuery.eq(
+        "category",
+        category
+      );
   }
 
-  if (workplace.trim()) {
-    query = query.eq(
-      "workplace_type",
-      workplace
-    );
+  if (workplace) {
+    jobsQuery =
+      jobsQuery.eq(
+        "workplace_type",
+        workplace
+      );
   }
 
-  if (employment.trim()) {
-    query = query.eq(
-      "employment_type",
-      employment
-    );
+  if (employment) {
+    jobsQuery =
+      jobsQuery.eq(
+        "employment_type",
+        employment
+      );
   }
 
-  if (experience.trim()) {
-    query = query.eq(
-      "experience_level",
-      experience
-    );
+  if (experience) {
+    jobsQuery =
+      jobsQuery.eq(
+        "experience_level",
+        experience
+      );
   }
 
+  /*
+   * Categories are fetched separately and only the
+   * category column is requested.
+   */
   const [
     jobsResult,
-    categoriesResult,
+    categoryResult,
   ] = await Promise.all([
-    query,
+    jobsQuery,
 
     supabaseAdmin
       .from("jobs")
       .select("category")
-      .eq("status", "published"),
+      .eq(
+        "status",
+        "published"
+      ),
   ]);
 
   if (jobsResult.error) {
@@ -150,27 +208,37 @@ export default async function JobsPage({
     );
   }
 
-  if (categoriesResult.error) {
+  if (categoryResult.error) {
     throw new Error(
-      `Failed to load categories: ${categoriesResult.error.message}`
+      `Failed to load categories: ${categoryResult.error.message}`
     );
   }
 
   const jobs =
     jobsResult.data ?? [];
 
-  const categories = Array.from(
-    new Set(
-      (categoriesResult.data ?? [])
-        .map(
-          (item) =>
-            item.category
-        )
-        .filter(Boolean)
-    )
-  ).sort();
+  const categories =
+    Array.from(
+      new Set(
+        (categoryResult.data ??
+          [])
+          .map(
+            (row) =>
+              row.category
+          )
+          .filter(
+            (
+              value
+            ): value is string =>
+              Boolean(
+                value &&
+                  value.trim()
+              )
+          )
+      )
+    ).sort();
 
-  const filtered =
+  const hasFilters =
     Boolean(
       q ||
         location ||
@@ -193,7 +261,8 @@ export default async function JobsPage({
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
-            Search the published Horizon Jobs database.
+            Search published opportunities by keyword, location,
+            category, workplace, employment type, and experience.
           </p>
         </header>
 
@@ -219,7 +288,6 @@ export default async function JobsPage({
 
               <div className="mt-6 space-y-5">
                 <Field
-                  id="q"
                   name="q"
                   label="Keyword"
                   defaultValue={q}
@@ -227,7 +295,6 @@ export default async function JobsPage({
                 />
 
                 <Field
-                  id="location"
                   name="location"
                   label="Location"
                   defaultValue={
@@ -237,7 +304,6 @@ export default async function JobsPage({
                 />
 
                 <Select
-                  id="category"
                   name="category"
                   label="Category"
                   defaultValue={
@@ -259,7 +325,6 @@ export default async function JobsPage({
                 />
 
                 <Select
-                  id="workplace"
                   name="workplace"
                   label="Workplace"
                   defaultValue={
@@ -272,15 +337,20 @@ export default async function JobsPage({
                         "Any workplace",
                     },
                     {
-                      value: "Remote",
-                      label: "Remote",
+                      value:
+                        "Remote",
+                      label:
+                        "Remote",
                     },
                     {
-                      value: "Hybrid",
-                      label: "Hybrid",
+                      value:
+                        "Hybrid",
+                      label:
+                        "Hybrid",
                     },
                     {
-                      value: "On-site",
+                      value:
+                        "On-site",
                       label:
                         "On-site",
                     },
@@ -288,7 +358,6 @@ export default async function JobsPage({
                 />
 
                 <Select
-                  id="employment"
                   name="employment"
                   label="Employment"
                   defaultValue={
@@ -340,7 +409,6 @@ export default async function JobsPage({
                 />
 
                 <Select
-                  id="experience"
                   name="experience"
                   label="Experience"
                   defaultValue={
@@ -392,15 +460,14 @@ export default async function JobsPage({
           <section className="min-w-0 flex-1">
             <div className="mb-6">
               <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                {filtered
+                {hasFilters
                   ? "Search Results"
                   : "Latest Opportunities"}
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500">
                 {jobs.length} published{" "}
-                {jobs.length ===
-                1
+                {jobs.length === 1
                   ? "job"
                   : "jobs"}{" "}
                 found.
@@ -419,7 +486,7 @@ export default async function JobsPage({
                 </h3>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Try different search criteria.
+                  Try changing your search criteria.
                 </p>
 
                 <Link
@@ -431,70 +498,86 @@ export default async function JobsPage({
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                {jobs.map((job) => (
-                  <article
-                    key={job.id}
-                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-                  >
-                    <div className="flex-1">
-                      {job.featured && (
-                        <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                          Featured
-                        </span>
-                      )}
+                {jobs.map(
+                  (job) => (
+                    <article
+                      key={
+                        job.id
+                      }
+                      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                    >
+                      <div className="flex-1">
+                        {job.featured && (
+                          <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                            Featured
+                          </span>
+                        )}
 
-                      <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">
-                        {job.title}
-                      </h3>
-
-                      <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
-                        {job.company}
-                      </p>
-
-                      <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {job.city},{" "}
-                          {job.country}
-                        </span>
-
-                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
-                          {job.category}
-                        </span>
-
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">
                           {
-                            job.workplaceType
+                            job.title
                           }
-                        </span>
+                        </h3>
 
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
                           {
-                            job.employmentType
+                            job.company
                           }
-                        </span>
+                        </p>
+
+                        <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {
+                              job.country_code
+                            }{" "}
+                            {
+                              job.city
+                            }
+                            ,{" "}
+                            {
+                              job.country
+                            }
+                          </span>
+
+                          <span className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                            {
+                              job.category
+                            }
+                          </span>
+
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {
+                              job.workplace_type
+                            }
+                          </span>
+
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {
+                              job.employment_type
+                            }
+                          </span>
+                        </div>
+
+                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                          {
+                            job.description
+                          }
+                        </p>
                       </div>
 
-                      <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                        {
-                          job.description
-                        }
-                      </p>
-                    </div>
-
-                    <div className="mt-6 border-t border-slate-100 pt-4 dark:border-slate-800">
                       <Link
                         href={`/jobs/${slugify(
                           job.country
                         )}/${slugify(
                           job.city
                         )}/${job.slug}`}
-                        className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+                        className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
                       >
                         View Job
                       </Link>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  )
+                )}
               </div>
             )}
           </section>
@@ -505,13 +588,11 @@ export default async function JobsPage({
 }
 
 function Field({
-  id,
   name,
   label,
   defaultValue,
   placeholder,
 }: {
-  id: string;
   name: string;
   label: string;
   defaultValue: string;
@@ -520,17 +601,21 @@ function Field({
   return (
     <div>
       <label
-        htmlFor={id}
+        htmlFor={name}
         className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
       >
         {label}
       </label>
 
       <input
-        id={id}
+        id={name}
         name={name}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
+        defaultValue={
+          defaultValue
+        }
+        placeholder={
+          placeholder
+        }
         className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       />
     </div>
@@ -538,13 +623,11 @@ function Field({
 }
 
 function Select({
-  id,
   name,
   label,
   defaultValue,
   options,
 }: {
-  id: string;
   name: string;
   label: string;
   defaultValue: string;
@@ -556,25 +639,33 @@ function Select({
   return (
     <div>
       <label
-        htmlFor={id}
+        htmlFor={name}
         className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
       >
         {label}
       </label>
 
       <select
-        id={id}
+        id={name}
         name={name}
-        defaultValue={defaultValue}
+        defaultValue={
+          defaultValue
+        }
         className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
         {options.map(
           (option) => (
             <option
-              key={option.value}
-              value={option.value}
+              key={
+                option.value
+              }
+              value={
+                option.value
+              }
             >
-              {option.label}
+              {
+                option.label
+              }
             </option>
           )
         )}

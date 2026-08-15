@@ -1,38 +1,50 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import Link from "next/link";
-
-import BackButton from "@/components/navigation/BackButton";
+import { notFound } from "next/navigation";
 
 const pages = {
   "privacy-policy": {
     title: "Privacy Policy",
     description:
-      "How Horizon Jobs handles information related to visitors and website functionality.",
+      "How Horizon Jobs handles information related to website visitors and platform functionality.",
     sections: [
       {
         heading:
           "Information We Collect",
         body:
-          "Horizon Jobs is designed primarily as a job discovery platform. We may process information that is technically necessary to operate the website, protect the service, respond to enquiries, and maintain site functionality.",
+          "Horizon Jobs may process technical information required to operate, secure, and improve the website. Information voluntarily submitted through contact or other forms may also be processed to respond to the request.",
       },
       {
         heading:
-          "Job Searches and Preferences",
+          "Website Usage",
         body:
-          "Search activity used within the website is intended to help visitors find relevant opportunities. Horizon Jobs does not require visitors to create an account simply to browse published job listings.",
+          "The platform is primarily designed for browsing job listings and career resources. We aim to minimize unnecessary collection of personal information.",
       },
       {
         heading:
           "Third-Party Services",
         body:
-          "The website may use third-party services for hosting, databases, advertising, security, or other technical functionality. Those services may process information according to their own policies.",
+          "Horizon Jobs may use hosting, database, analytics, advertising, security, and other third-party services. Those services may process information according to their own policies.",
+      },
+    ],
+  },
+
+  privacy: {
+    title: "Privacy",
+    description:
+      "Privacy information for Horizon Jobs visitors.",
+    sections: [
+      {
+        heading:
+          "Our Approach",
+        body:
+          "Horizon Jobs aims to provide useful employment information while avoiding unnecessary collection of personal information.",
       },
       {
         heading:
-          "Contact Requests",
+          "Contact Information",
         body:
-          "Information voluntarily provided when contacting Horizon Jobs may be used to respond to the request and maintain appropriate communication records.",
+          "Information voluntarily provided when contacting Horizon Jobs may be used to respond to the enquiry and maintain appropriate communication records.",
       },
     ],
   },
@@ -40,31 +52,25 @@ const pages = {
   terms: {
     title: "Terms & Conditions",
     description:
-      "The terms governing use of the Horizon Jobs website.",
+      "Terms governing use of the Horizon Jobs platform.",
     sections: [
       {
         heading:
           "Use of the Website",
         body:
-          "Horizon Jobs provides publicly accessible job discovery information and career resources. Visitors agree to use the website lawfully and responsibly.",
+          "Visitors agree to use Horizon Jobs lawfully and responsibly.",
       },
       {
         heading:
-          "Job Listing Information",
+          "Job Listings",
         body:
-          "Job listings may originate from employers, public recruitment sources, partner feeds, or other publicly available information. Visitors should confirm job details on the original source before applying.",
+          "Job information may originate from employers or third-party sources. Visitors should verify listing information with the original source before applying.",
       },
       {
         heading:
           "Applications",
         body:
-          "Horizon Jobs does not act as the employer or recruitment agency for published third-party opportunities. Applications are normally completed on the original employer or source website.",
-      },
-      {
-        heading:
-          "Changes to the Service",
-        body:
-          "Horizon Jobs may modify website functionality, content, categories, listings, or resources as the platform develops.",
+          "Horizon Jobs is an independent discovery platform and is not the employer or recruitment agency for third-party vacancies.",
       },
     ],
   },
@@ -72,31 +78,39 @@ const pages = {
   "cookie-policy": {
     title: "Cookie Policy",
     description:
-      "Information about cookies and related browser technologies used by Horizon Jobs.",
+      "Information about browser storage and cookies used by Horizon Jobs.",
     sections: [
       {
         heading:
-          "What Cookies Are",
+          "Cookies",
         body:
-          "Cookies are small pieces of information stored by a website in a visitor's browser. They can help websites remember preferences and support technical functionality.",
-      },
-      {
-        heading:
-          "Essential Functionality",
-        body:
-          "Horizon Jobs may use browser storage or similar technologies where necessary for features such as authentication, preferences, and website functionality.",
-      },
-      {
-        heading:
-          "Advertising",
-        body:
-          "When advertising features are enabled, advertising providers may use cookies or related technologies in accordance with their own policies and applicable settings.",
+          "Cookies and similar browser technologies may be used to provide required website functionality and remember appropriate preferences.",
       },
       {
         heading:
           "Managing Cookies",
         body:
-          "Visitors can control or remove cookies through the settings of their web browser. Restricting cookies may affect certain website functionality.",
+          "Visitors can control or remove cookies through their browser settings. Restricting cookies may affect some website functionality.",
+      },
+    ],
+  },
+
+  cookie: {
+    title: "Cookie Policy",
+    description:
+      "Information about browser storage and cookies used by Horizon Jobs.",
+    sections: [
+      {
+        heading:
+          "Cookies",
+        body:
+          "Cookies and similar browser technologies may be used to provide required website functionality and remember appropriate preferences.",
+      },
+      {
+        heading:
+          "Managing Cookies",
+        body:
+          "Visitors can control or remove cookies through their browser settings. Restricting cookies may affect some website functionality.",
       },
     ],
   },
@@ -104,31 +118,25 @@ const pages = {
   disclaimer: {
     title: "Publisher Disclaimer",
     description:
-      "Important information about Horizon Jobs, job listings, and career content.",
+      "Important information about Horizon Jobs and its published job listings.",
     sections: [
       {
         heading:
-          "Independent Job Discovery Platform",
+          "Independent Platform",
         body:
-          "Horizon Jobs is an independent job discovery platform and is not a recruitment or staffing agency.",
+          "Horizon Jobs is an independent global job discovery platform and is not a recruitment or staffing agency.",
       },
       {
         heading:
           "Listing Accuracy",
         body:
-          "Every effort is made to organize and review published information, but Horizon Jobs cannot guarantee that every listing remains available, accurate, or current at all times.",
-      },
-      {
-        heading:
-          "Verify Before Applying",
-        body:
-          "Visitors should verify salary, location, employment conditions, closing dates, eligibility requirements, and application instructions on the original employer or source website.",
+          "We make reasonable efforts to organize and review information, but listings may change or become unavailable. Always verify important details at the original source.",
       },
       {
         heading:
           "Career Information",
         body:
-          "Career resources are provided for general informational and educational purposes and should not be treated as professional legal, financial, immigration, or employment advice.",
+          "Career resources are provided for general informational purposes and are not professional legal, financial, immigration, or employment advice.",
       },
     ],
   },
@@ -154,7 +162,8 @@ export async function generateMetadata({
 
   if (!page) {
     return {
-      title: "Page Not Found | Horizon Jobs",
+      title:
+        "Page Not Found | Horizon Jobs",
     };
   }
 
@@ -181,24 +190,17 @@ export default async function LegalPage({
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <BackButton
-            label="Back"
-            fallbackHref="/"
-          />
-        </div>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-10">
+        <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-10">
           <header className="border-b border-slate-200 pb-7 dark:border-slate-800">
             <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Horizon Jobs
             </p>
 
-            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            <h1 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
               {page.title}
             </h1>
 
-            <p className="mt-4 leading-7 text-slate-600 dark:text-slate-400">
+            <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-400">
               {page.description}
             </p>
           </header>
@@ -231,7 +233,7 @@ export default async function LegalPage({
                 href="/privacy-policy"
                 className="text-indigo-600 hover:underline dark:text-indigo-400"
               >
-                Privacy
+                Privacy Policy
               </Link>
 
               <Link

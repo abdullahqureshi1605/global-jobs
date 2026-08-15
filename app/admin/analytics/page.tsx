@@ -1,99 +1,195 @@
 "use client";
 
 import {
+  useEffect,
+  useMemo,
   useState,
 } from "react";
 
-type Analysis = {
-  requestedUrl: string;
-  finalUrl: string;
-  status: number;
-  statusText: string;
-  responseTimeMs: number;
-  contentType: string;
-  contentLength: string;
-  pageSizeBytes: number;
-  title: string;
-  description: string;
-  canonical: string;
-  h1: number;
-  h2: number;
-  h3: number;
-  links: number;
-  images: number;
-  scripts: number;
-  stylesheets: number;
-  forms: number;
-  iframes: number;
-  language: string;
-  robots: string;
-  viewport: string;
-  cacheControl: string;
-  server: string;
-  poweredBy: string;
-  securityHeaders: {
-    contentSecurityPolicy: string;
-    strictTransportSecurity: string;
-    xContentTypeOptions: string;
-    xFrameOptions: string;
-    referrerPolicy: string;
+type DashboardData = {
+  summary: {
+    pageviews?: number;
+    uniqueVisitors?: number;
+    sessions?: number;
+    pagesPerSession?: number;
+    bounceRate?: number;
+    ctaClicks?: number;
+    applyClicks?: number;
+    reportClicks?: number;
+    jobViews?: number;
+    resourceViews?: number;
+    paidSessions?: number;
+    avgLoadMs?: number;
+    avgFcpMs?: number;
+    avgLcpMs?: number;
+    avgCls?: number;
+    avgTimeOnPage?: number;
+    avgScrollDepth?: number;
   };
-  checkedAt: string;
+
+  daily: Array<{
+    date: string;
+    pageviews: number;
+    uniqueVisitors: number;
+    sessions: number;
+  }>;
+
+  countries: Array<{
+    country: string;
+    code: string;
+    pageviews: number;
+    uniqueVisitors: number;
+  }>;
+
+  sources: Array<{
+    source: string;
+    medium: string;
+    campaign: string;
+    pageviews: number;
+    sessions: number;
+  }>;
+
+  pages: Array<{
+    path: string;
+    views: number;
+    uniqueVisitors: number;
+  }>;
+
+  landingPages: Array<{
+    path: string;
+    visits: number;
+  }>;
+
+  events: Array<{
+    event: string;
+    count: number;
+  }>;
+
+  cta: Array<{
+    label: string;
+    target: string;
+    count: number;
+  }>;
+
+  devices: Array<{
+    device: string;
+    count: number;
+  }>;
+
+  browsers: Array<{
+    browser: string;
+    count: number;
+  }>;
+
+  operatingSystems: Array<{
+    os: string;
+    count: number;
+  }>;
 };
 
-function formatBytes(
-  bytes: number
+const ranges = [
+  {
+    label: "Today",
+    days: 1,
+  },
+  {
+    label: "7 Days",
+    days: 7,
+  },
+  {
+    label: "30 Days",
+    days: 30,
+  },
+  {
+    label: "90 Days",
+    days: 90,
+  },
+  {
+    label: "1 Year",
+    days: 365,
+  },
+];
+
+function formatNumber(
+  value: number | undefined
 ) {
-  if (bytes < 1024) {
-    return `${bytes} B`;
+  return (
+    value ?? 0
+  ).toLocaleString();
+}
+
+function formatMs(
+  value: number | undefined
+) {
+  if (!value) {
+    return "—";
   }
 
-  if (bytes < 1024 * 1024) {
-    return `${(
-      bytes / 1024
-    ).toFixed(1)} KB`;
-  }
+  return `${Math.round(
+    value
+  )} ms`;
+}
 
+function formatPercent(
+  value: number | undefined
+) {
   return `${(
-    bytes /
-    1024 /
-    1024
-  ).toFixed(2)} MB`;
+    value ?? 0
+  ).toFixed(1)}%`;
+}
+
+function formatDate(
+  date: Date
+) {
+  return date
+    .toISOString()
+    .slice(0, 10);
 }
 
 export default function AnalyticsPage() {
-  const [url, setUrl] =
-    useState("");
+  const [range, setRange] =
+    useState(30);
+
+  const [data, setData] =
+    useState<DashboardData | null>(
+      null
+    );
 
   const [loading, setLoading] =
-    useState(false);
+    useState(true);
 
   const [error, setError] =
     useState("");
 
-  const [analysis, setAnalysis] =
-    useState<Analysis | null>(
-      null
-    );
+  const [lastUpdated, setLastUpdated] =
+    useState("");
 
-  async function runAnalysis() {
-    setError("");
-    setAnalysis(null);
-
-    if (!url.trim()) {
-      setError(
-        "Enter a page URL."
-      );
-      return;
-    }
-
+  async function loadAnalytics(
+    selectedDays = range
+  ) {
     setLoading(true);
+    setError("");
 
     try {
+      const end =
+        new Date();
+
+      const start =
+        new Date(
+          end.getTime() -
+            (selectedDays - 1) *
+              24 *
+              60 *
+              60 *
+              1000
+        );
+
       const response =
         await fetch(
-          `/api/admin/analytics/analyze?url=${encodeURIComponent(
-            url.trim()
+          `/api/admin/analytics/dashboard?start=${formatDate(
+            start
+          )}&end=${formatDate(
+            end
           )}`,
           {
             cache: "no-store",
@@ -106,333 +202,646 @@ export default function AnalyticsPage() {
       if (!response.ok) {
         throw new Error(
           result.error ||
-            "Analysis failed."
+            "Failed to load analytics."
         );
       }
 
-      setAnalysis(
-        result.analysis
+      setData(
+        result.data
+      );
+
+      setLastUpdated(
+        new Date().toLocaleTimeString()
       );
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Analysis failed."
+          : "Failed to load analytics."
       );
     } finally {
       setLoading(false);
     }
   }
 
+  useEffect(() => {
+    void loadAnalytics(
+      range
+    );
+
+    const interval =
+      window.setInterval(
+        () => {
+          void loadAnalytics(
+            range
+          );
+        },
+        60_000
+      );
+
+    return () =>
+      window.clearInterval(
+        interval
+      );
+  }, [range]);
+
+  const maxDailyViews =
+    useMemo(() => {
+      if (
+        !data?.daily.length
+      ) {
+        return 1;
+      }
+
+      return Math.max(
+        ...data.daily.map(
+          (item) =>
+            item.pageviews
+        ),
+        1
+      );
+    }, [data]);
+
+  function exportCsv() {
+    if (!data) {
+      return;
+    }
+
+    const rows: string[][] =
+      [
+        [
+          "Section",
+          "Item",
+          "Metric",
+          "Value",
+        ],
+      ];
+
+    for (const item of data.daily) {
+      rows.push([
+        "Daily",
+        item.date,
+        "Pageviews",
+        String(
+          item.pageviews
+        ),
+      ]);
+
+      rows.push([
+        "Daily",
+        item.date,
+        "Unique Visitors",
+        String(
+          item.uniqueVisitors
+        ),
+      ]);
+    }
+
+    for (const item of data.countries) {
+      rows.push([
+        "Country",
+        item.country,
+        "Pageviews",
+        String(
+          item.pageviews
+        ),
+      ]);
+
+      rows.push([
+        "Country",
+        item.country,
+        "Unique Visitors",
+        String(
+          item.uniqueVisitors
+        ),
+      ]);
+    }
+
+    for (const item of data.sources) {
+      rows.push([
+        "Traffic Source",
+        item.source,
+        "Sessions",
+        String(
+          item.sessions
+        ),
+      ]);
+    }
+
+    for (const item of data.pages) {
+      rows.push([
+        "Page",
+        item.path,
+        "Views",
+        String(
+          item.views
+        ),
+      ]);
+    }
+
+    for (const item of data.cta) {
+      rows.push([
+        "CTA",
+        item.label,
+        "Clicks",
+        String(
+          item.count
+        ),
+      ]);
+    }
+
+    const csv =
+      rows
+        .map(
+          (row) =>
+            row
+              .map(
+                (cell) =>
+                  `"${cell
+                    .replaceAll(
+                      '"',
+                      '""'
+                    )}"`
+              )
+              .join(",")
+        )
+        .join("\n");
+
+    const blob =
+      new Blob(
+        [csv],
+        {
+          type:
+            "text/csv;charset=utf-8;",
+        }
+      );
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.href = url;
+    link.download =
+      `horizon-jobs-analytics-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+
+    link.click();
+
+    URL.revokeObjectURL(
+      url
+    );
+  }
+
+  const summary =
+    data?.summary || {};
+
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <a
-            href="/admin"
-            className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-          >
-            ← Admin Dashboard
-          </a>
+        <header className="mb-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Internal Analytics
+              </p>
 
-          <p className="mt-5 text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            Website Analyzer
-          </p>
+              <h1 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
+                Horizon Jobs Analytics
+              </h1>
 
-          <h1 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
-            Horizon Jobs Analytics Center
-          </h1>
-        </div>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
+                Traffic, visitors, countries, campaigns, CTA activity,
+                job activity, device usage, and performance data collected
+                for Horizon Jobs.
+              </p>
+            </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <label
-            htmlFor="analysis-url"
-            className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
-          >
-            Horizon Jobs Page URL
-          </label>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  loadAnalytics(
+                    range
+                  )
+                }
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              >
+                Refresh
+              </button>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              id="analysis-url"
-              value={url}
-              onChange={(event) =>
-                setUrl(
-                  event.target.value
-                )
-              }
-              placeholder="https://global-jobz.netlify.app/jobs"
-              className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
+              <button
+                type="button"
+                onClick={
+                  exportCsv
+                }
+                disabled={!data}
+                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+              >
+                Export CSV
+              </button>
+            </div>
+          </div>
+        </header>
 
-            <button
-              type="button"
-              onClick={runAnalysis}
-              disabled={loading}
-              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading
-                ? "Analyzing..."
-                : "Analyze Page"}
-            </button>
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap gap-2">
+            {ranges.map(
+              (item) => (
+                <button
+                  key={
+                    item.days
+                  }
+                  type="button"
+                  onClick={() =>
+                    setRange(
+                      item.days
+                    )
+                  }
+                  className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                    range ===
+                    item.days
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              )
+            )}
           </div>
 
-          <p className="mt-3 text-xs leading-5 text-slate-500">
-            Enter a public Horizon Jobs page such as the homepage,
-            jobs page, country page, category page, or career resource.
-          </p>
-
-          {error && (
-            <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
+          {lastUpdated && (
+            <p className="mt-3 text-xs text-slate-500">
+              Last updated{" "}
+              {lastUpdated}
+              {" · "}
+              Automatically refreshes every 60 seconds.
+            </p>
           )}
         </section>
 
-        {analysis && (
+        {error && (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loading && !data ? (
+          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+            Loading analytics...
+          </div>
+        ) : data ? (
           <>
-            <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+            <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
               <Metric
-                label="Status"
-                value={`${analysis.status}`}
-              />
-
-              <Metric
-                label="Response"
-                value={`${analysis.responseTimeMs} ms`}
-              />
-
-              <Metric
-                label="Page Size"
-                value={formatBytes(
-                  analysis.pageSizeBytes
+                label="Unique Visitors"
+                value={formatNumber(
+                  summary.uniqueVisitors
                 )}
               />
 
               <Metric
-                label="H1"
-                value={`${analysis.h1}`}
+                label="Pageviews"
+                value={formatNumber(
+                  summary.pageviews
+                )}
               />
 
               <Metric
-                label="H2"
-                value={`${analysis.h2}`}
+                label="Sessions"
+                value={formatNumber(
+                  summary.sessions
+                )}
+              />
+
+              <Metric
+                label="Pages / Session"
+                value={(
+                  summary.pagesPerSession ??
+                  0
+                ).toFixed(2)}
+              />
+
+              <Metric
+                label="Bounce Rate"
+                value={formatPercent(
+                  summary.bounceRate
+                )}
+              />
+
+              <Metric
+                label="PPC Sessions"
+                value={formatNumber(
+                  summary.paidSessions
+                )}
+              />
+
+              <Metric
+                label="CTA Clicks"
+                value={formatNumber(
+                  summary.ctaClicks
+                )}
+              />
+
+              <Metric
+                label="Apply Clicks"
+                value={formatNumber(
+                  summary.applyClicks
+                )}
               />
             </section>
 
+            <section className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <Metric
+                label="Job Views"
+                value={formatNumber(
+                  summary.jobViews
+                )}
+              />
+
+              <Metric
+                label="Resource Views"
+                value={formatNumber(
+                  summary.resourceViews
+                )}
+              />
+
+              <Metric
+                label="Report Clicks"
+                value={formatNumber(
+                  summary.reportClicks
+                )}
+              />
+
+              <Metric
+                label="Avg Time on Page"
+                value={formatMs(
+                  summary.avgTimeOnPage
+                )}
+              />
+            </section>
+
+            <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Traffic Over Time
+              </h2>
+
+              <div className="mt-6 space-y-3">
+                {data.daily
+                  .slice(-30)
+                  .map(
+                    (item) => (
+                      <div
+                        key={
+                          item.date
+                        }
+                        className="grid grid-cols-[80px_1fr_70px] items-center gap-3 text-sm"
+                      >
+                        <span className="text-xs text-slate-500">
+                          {item.date.slice(
+                            5
+                          )}
+                        </span>
+
+                        <div className="h-7 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+                          <div
+                            className="h-full rounded-lg bg-indigo-500"
+                            style={{
+                              width: `${Math.max(
+                                2,
+                                (item.pageviews /
+                                  maxDailyViews) *
+                                  100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+
+                        <span className="text-right text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {formatNumber(
+                            item.pageviews
+                          )}
+                        </span>
+                      </div>
+                    )
+                  )}
+              </div>
+            </section>
+
             <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Panel title="Response">
-                <Row
-                  label="Requested URL"
-                  value={
-                    analysis.requestedUrl
-                  }
-                />
+              <DataTable
+                title="Countries"
+                columns={[
+                  "Country",
+                  "Visitors",
+                  "Views",
+                ]}
+                rows={data.countries.map(
+                  (item) => [
+                    `${item.country} ${
+                      item.code
+                        ? `(${item.code})`
+                        : ""
+                    }`,
+                    formatNumber(
+                      item.uniqueVisitors
+                    ),
+                    formatNumber(
+                      item.pageviews
+                    ),
+                  ]
+                )}
+              />
 
-                <Row
-                  label="Final URL"
-                  value={
-                    analysis.finalUrl
-                  }
-                />
-
-                <Row
-                  label="Status"
-                  value={`${analysis.status} ${analysis.statusText}`}
-                />
-
-                <Row
-                  label="Response Time"
-                  value={`${analysis.responseTimeMs} ms`}
-                />
-
-                <Row
-                  label="Content Type"
-                  value={
-                    analysis.contentType
-                  }
-                />
-
-                <Row
-                  label="Content Length"
-                  value={
-                    analysis.contentLength
-                  }
-                />
-              </Panel>
-
-              <Panel title="SEO">
-                <Row
-                  label="Title"
-                  value={
-                    analysis.title
-                  }
-                />
-
-                <Row
-                  label="Description"
-                  value={
-                    analysis.description
-                  }
-                />
-
-                <Row
-                  label="Canonical"
-                  value={
-                    analysis.canonical
-                  }
-                />
-
-                <Row
-                  label="H1"
-                  value={`${analysis.h1}`}
-                />
-
-                <Row
-                  label="H2"
-                  value={`${analysis.h2}`}
-                />
-
-                <Row
-                  label="H3"
-                  value={`${analysis.h3}`}
-                />
-
-                <Row
-                  label="Language"
-                  value={
-                    analysis.language
-                  }
-                />
-
-                <Row
-                  label="Robots"
-                  value={
-                    analysis.robots
-                  }
-                />
-
-                <Row
-                  label="Viewport"
-                  value={
-                    analysis.viewport
-                  }
-                />
-              </Panel>
-
-              <Panel title="Page Structure">
-                <Row
-                  label="Links"
-                  value={`${analysis.links}`}
-                />
-
-                <Row
-                  label="Images"
-                  value={`${analysis.images}`}
-                />
-
-                <Row
-                  label="Scripts"
-                  value={`${analysis.scripts}`}
-                />
-
-                <Row
-                  label="Stylesheets"
-                  value={`${analysis.stylesheets}`}
-                />
-
-                <Row
-                  label="Forms"
-                  value={`${analysis.forms}`}
-                />
-
-                <Row
-                  label="IFrames"
-                  value={`${analysis.iframes}`}
-                />
-              </Panel>
-
-              <Panel title="Server & Caching">
-                <Row
-                  label="Cache-Control"
-                  value={
-                    analysis.cacheControl
-                  }
-                />
-
-                <Row
-                  label="Server"
-                  value={
-                    analysis.server
-                  }
-                />
-
-                <Row
-                  label="X-Powered-By"
-                  value={
-                    analysis.poweredBy
-                  }
-                />
-
-                <Row
-                  label="Checked At"
-                  value={
-                    new Date(
-                      analysis.checkedAt
-                    ).toLocaleString()
-                  }
-                />
-              </Panel>
-
-              <Panel title="Security Headers">
-                <Row
-                  label="Content-Security-Policy"
-                  value={
-                    analysis
-                      .securityHeaders
-                      .contentSecurityPolicy
-                  }
-                />
-
-                <Row
-                  label="Strict-Transport-Security"
-                  value={
-                    analysis
-                      .securityHeaders
-                      .strictTransportSecurity
-                  }
-                />
-
-                <Row
-                  label="X-Content-Type-Options"
-                  value={
-                    analysis
-                      .securityHeaders
-                      .xContentTypeOptions
-                  }
-                />
-
-                <Row
-                  label="X-Frame-Options"
-                  value={
-                    analysis
-                      .securityHeaders
-                      .xFrameOptions
-                  }
-                />
-
-                <Row
-                  label="Referrer-Policy"
-                  value={
-                    analysis
-                      .securityHeaders
-                      .referrerPolicy
-                  }
-                />
-              </Panel>
+              <DataTable
+                title="Traffic Sources / PPC"
+                columns={[
+                  "Source",
+                  "Medium",
+                  "Sessions",
+                ]}
+                rows={data.sources.map(
+                  (item) => [
+                    item.source,
+                    item.medium,
+                    formatNumber(
+                      item.sessions
+                    ),
+                  ]
+                )}
+              />
             </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <DataTable
+                title="Top Pages"
+                columns={[
+                  "Page",
+                  "Views",
+                  "Visitors",
+                ]}
+                rows={data.pages.map(
+                  (item) => [
+                    item.path,
+                    formatNumber(
+                      item.views
+                    ),
+                    formatNumber(
+                      item.uniqueVisitors
+                    ),
+                  ]
+                )}
+              />
+
+              <DataTable
+                title="Landing Pages"
+                columns={[
+                  "Page",
+                  "Visits",
+                ]}
+                rows={data.landingPages.map(
+                  (item) => [
+                    item.path,
+                    formatNumber(
+                      item.visits
+                    ),
+                  ]
+                )}
+              />
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <DataTable
+                title="CTA Performance"
+                columns={[
+                  "CTA",
+                  "Target",
+                  "Clicks",
+                ]}
+                rows={data.cta.map(
+                  (item) => [
+                    item.label,
+                    item.target ||
+                      "—",
+                    formatNumber(
+                      item.count
+                    ),
+                  ]
+                )}
+              />
+
+              <DataTable
+                title="Events"
+                columns={[
+                  "Event",
+                  "Count",
+                ]}
+                rows={data.events.map(
+                  (item) => [
+                    item.event,
+                    formatNumber(
+                      item.count
+                    ),
+                  ]
+                )}
+              />
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <DataTable
+                title="Devices"
+                columns={[
+                  "Device",
+                  "Visitors",
+                ]}
+                rows={data.devices.map(
+                  (item) => [
+                    item.device,
+                    formatNumber(
+                      item.count
+                    ),
+                  ]
+                )}
+              />
+
+              <DataTable
+                title="Browsers"
+                columns={[
+                  "Browser",
+                  "Visitors",
+                ]}
+                rows={data.browsers.map(
+                  (item) => [
+                    item.browser,
+                    formatNumber(
+                      item.count
+                    ),
+                  ]
+                )}
+              />
+
+              <DataTable
+                title="Operating Systems"
+                columns={[
+                  "OS",
+                  "Visitors",
+                ]}
+                rows={data.operatingSystems.map(
+                  (item) => [
+                    item.os,
+                    formatNumber(
+                      item.count
+                    ),
+                  ]
+                )}
+              />
+            </div>
+
+            <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Website Performance
+              </h2>
+
+              <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
+                <Metric
+                  label="Avg Page Load"
+                  value={formatMs(
+                    summary.avgLoadMs
+                  )}
+                />
+
+                <Metric
+                  label="Avg FCP"
+                  value={formatMs(
+                    summary.avgFcpMs
+                  )}
+                />
+
+                <Metric
+                  label="Avg LCP"
+                  value={formatMs(
+                    summary.avgLcpMs
+                  )}
+                />
+
+                <Metric
+                  label="Avg CLS"
+                  value={(
+                    summary.avgCls ??
+                    0
+                  ).toFixed(3)}
+                />
+              </div>
+            </section>
           </>
-        )}
+        ) : null}
       </div>
     </main>
   );
@@ -451,49 +860,92 @@ function Metric({
         {label}
       </p>
 
-      <p className="mt-2 break-words text-2xl font-extrabold text-slate-900 dark:text-white">
+      <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">
         {value}
       </p>
     </div>
   );
 }
 
-function Panel({
+function DataTable({
   title,
-  children,
+  columns,
+  rows,
 }: {
   title: string;
-  children: React.ReactNode;
+  columns: string[];
+  rows: string[][];
 }) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">
-        {title}
-      </h2>
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          {title}
+        </h2>
+      </div>
 
-      <div className="divide-y divide-slate-100 dark:divide-slate-800">
-        {children}
+      <div className="max-h-[420px] overflow-auto">
+        {rows.length ===
+        0 ? (
+          <p className="p-6 text-sm text-slate-500">
+            No data for this period.
+          </p>
+        ) : (
+          <table className="w-full text-left">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
+              <tr>
+                {columns.map(
+                  (column) => (
+                    <th
+                      key={
+                        column
+                      }
+                      className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500"
+                    >
+                      {column}
+                    </th>
+                  )
+                )}
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {rows.map(
+                (
+                  row,
+                  index
+                ) => (
+                  <tr
+                    key={
+                      index
+                    }
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                  >
+                    {row.map(
+                      (
+                        cell,
+                        cellIndex
+                      ) => (
+                        <td
+                          key={
+                            cellIndex
+                          }
+                          className="max-w-xs truncate px-4 py-3 text-sm text-slate-700 dark:text-slate-300"
+                          title={
+                            cell
+                          }
+                        >
+                          {cell}
+                        </td>
+                      )
+                    )}
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </section>
-  );
-}
-
-function Row({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="py-3">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-        {label}
-      </p>
-
-      <p className="mt-1 break-words text-sm text-slate-800 dark:text-slate-200">
-        {value || "Not provided"}
-      </p>
-    </div>
   );
 }
