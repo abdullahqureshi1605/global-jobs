@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-
 import { MapPin } from "lucide-react";
 
 import { JobService } from "@/services/jobService";
@@ -8,14 +7,73 @@ import { slugify } from "@/lib/utils/slug";
 import { countryCodeToFlag } from "@/lib/utils/countryFlag";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export const metadata: Metadata = {
   title:
     "Jobs by Country | Horizon Jobs",
   description:
-    "Explore published global job opportunities by country.",
+    "Explore global job opportunities by country.",
 };
+
+const FLAG_CODES: Record<
+  string,
+  string
+> = {
+  "United States": "US",
+  "United Kingdom": "GB",
+  Canada: "CA",
+  Australia: "AU",
+  Germany: "DE",
+  France: "FR",
+  Netherlands: "NL",
+  Ireland: "IE",
+  Spain: "ES",
+  Italy: "IT",
+  Portugal: "PT",
+  Switzerland: "CH",
+  Austria: "AT",
+  Belgium: "BE",
+  Sweden: "SE",
+  Norway: "NO",
+  Denmark: "DK",
+  Finland: "FI",
+  Poland: "PL",
+  India: "IN",
+  Pakistan: "PK",
+  Bangladesh: "BD",
+  Nepal: "NP",
+  China: "CN",
+  Japan: "JP",
+  "South Korea": "KR",
+  Singapore: "SG",
+  Malaysia: "MY",
+  Indonesia: "ID",
+  Thailand: "TH",
+  Philippines: "PH",
+  "Saudi Arabia": "SA",
+  "United Arab Emirates": "AE",
+  Qatar: "QA",
+  Kuwait: "KW",
+  Bahrain: "BH",
+  Oman: "OM",
+  "South Africa": "ZA",
+  Nigeria: "NG",
+  Kenya: "KE",
+  Egypt: "EG",
+  Brazil: "BR",
+  Mexico: "MX",
+  Argentina: "AR",
+  Chile: "CL",
+  "New Zealand": "NZ",
+};
+
+function flagForCountry(
+  country: string
+) {
+  return countryCodeToFlag(
+    FLAG_CODES[country]
+  );
+}
 
 export default async function CountriesPage() {
   const countryMap =
@@ -41,127 +99,55 @@ export default async function CountriesPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400">
-            Explore published opportunities by country.
+            Explore published job opportunities by country.
           </p>
         </header>
 
         {countries.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-            No countries are available yet.
+            No published jobs are available yet.
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {countries.map(
-              ([country, count]) => {
-                /*
-                 * The job-service count currently returns:
-                 * country -> number of jobs.
-                 *
-                 * For the flag itself, use the country-name
-                 * mapping below until countryCode is included
-                 * in the aggregate query.
-                 */
-                const flag =
-                  countryFlagFromName(
+              ([country, count]) => (
+                <Link
+                  key={country}
+                  href={`/jobs/${slugify(
                     country
-                  );
+                  )}`}
+                  className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-4xl">
+                      {flagForCountry(
+                        country
+                      )}
+                    </span>
 
-                return (
-                  <Link
-                    key={country}
-                    href={`/jobs/${slugify(
-                      country
-                    )}`}
-                    className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-4xl">
-                        {flag}
-                      </span>
+                    <MapPin className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-500" />
+                  </div>
 
-                      <MapPin className="h-5 w-5 text-slate-400 group-hover:text-indigo-500" />
-                    </div>
+                  <h2 className="mt-5 text-lg font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
+                    {country}
+                  </h2>
 
-                    <h2 className="mt-5 text-lg font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
-                      {country}
-                    </h2>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {count} published{" "}
+                    {count === 1
+                      ? "job"
+                      : "jobs"}
+                  </p>
 
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {count} published{" "}
-                      {count === 1
-                        ? "job"
-                        : "jobs"}
-                    </p>
-                  </Link>
-                );
-              }
+                  <span className="mt-4 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                    View Jobs →
+                  </span>
+                </Link>
+              )
             )}
           </div>
         )}
       </div>
     </main>
-  );
-}
-
-function countryFlagFromName(
-  country: string
-) {
-  const countries: Record<
-    string,
-    string
-  > = {
-    "United States": "US",
-    "United Kingdom": "GB",
-    Canada: "CA",
-    Australia: "AU",
-    Germany: "DE",
-    France: "FR",
-    Netherlands: "NL",
-    Ireland: "IE",
-    Spain: "ES",
-    Italy: "IT",
-    Portugal: "PT",
-    Switzerland: "CH",
-    Austria: "AT",
-    Belgium: "BE",
-    Sweden: "SE",
-    Norway: "NO",
-    Denmark: "DK",
-    Finland: "FI",
-    Poland: "PL",
-    "Czech Republic": "CZ",
-    India: "IN",
-    Pakistan: "PK",
-    Bangladesh: "BD",
-    "Sri Lanka": "LK",
-    Nepal: "NP",
-    China: "CN",
-    Japan: "JP",
-    "South Korea": "KR",
-    Singapore: "SG",
-    Malaysia: "MY",
-    Indonesia: "ID",
-    Thailand: "TH",
-    Philippines: "PH",
-    "Saudi Arabia": "SA",
-    UAE: "AE",
-    "United Arab Emirates": "AE",
-    Qatar: "QA",
-    Kuwait: "KW",
-    Bahrain: "BH",
-    Oman: "OM",
-    "South Africa": "ZA",
-    Nigeria: "NG",
-    Kenya: "KE",
-    Egypt: "EG",
-    Brazil: "BR",
-    Mexico: "MX",
-    Argentina: "AR",
-    Chile: "CL",
-    "New Zealand": "NZ",
-  };
-
-  return countryCodeToFlag(
-    countries[country]
   );
 }

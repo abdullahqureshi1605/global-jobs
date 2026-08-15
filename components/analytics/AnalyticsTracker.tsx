@@ -25,16 +25,19 @@ const ATTRIBUTION_KEY =
 const SESSION_TIMEOUT =
   30 * 60 * 1000;
 
-type Attribution = {
-  source: string;
-  medium: string;
-  campaign: string;
-  hasGclid: boolean;
-  hasFbclid: boolean;
-};
+function createId() {
+  if (
+    typeof crypto !==
+      "undefined" &&
+    typeof crypto.randomUUID ===
+      "function"
+  ) {
+    return crypto.randomUUID();
+  }
 
-function uuid() {
-  return crypto.randomUUID();
+  return `${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
 }
 
 function getVisitorId() {
@@ -48,16 +51,17 @@ function getVisitorId() {
       return existing;
     }
 
-    const value = uuid();
+    const id =
+      createId();
 
     localStorage.setItem(
       VISITOR_KEY,
-      value
+      id
     );
 
-    return value;
+    return id;
   } catch {
-    return uuid();
+    return createId();
   }
 }
 
@@ -66,14 +70,16 @@ function getSession() {
     Date.now();
 
   try {
-    const raw =
+    const stored =
       localStorage.getItem(
         SESSION_KEY
       );
 
-    if (raw) {
+    if (stored) {
       const parsed =
-        JSON.parse(raw) as {
+        JSON.parse(
+          stored
+        ) as {
           id: string;
           lastActivity: number;
         };
@@ -99,7 +105,8 @@ function getSession() {
       }
     }
 
-    const id = uuid();
+    const id =
+      createId();
 
     localStorage.setItem(
       SESSION_KEY,
@@ -115,13 +122,13 @@ function getSession() {
     };
   } catch {
     return {
-      id: uuid(),
+      id: createId(),
       isNew: true,
     };
   }
 }
 
-function getAttribution(): Attribution {
+function getAttribution() {
   try {
     const url =
       new URL(
@@ -136,18 +143,24 @@ function getAttribution(): Attribution {
         params.get(
           "utm_source"
         ) || "",
+
       medium:
         params.get(
           "utm_medium"
         ) || "",
+
       campaign:
         params.get(
           "utm_campaign"
         ) || "",
+
       hasGclid:
         Boolean(
-          params.get("gclid")
+          params.get(
+            "gclid"
+          )
         ),
+
       hasFbclid:
         Boolean(
           params.get(
@@ -184,7 +197,7 @@ function getAttribution(): Attribution {
       );
     }
   } catch {
-    // Continue with defaults.
+    // ignore
   }
 
   return {
@@ -196,38 +209,39 @@ function getAttribution(): Attribution {
   };
 }
 
-function referrerHost() {
+function getReferrerHost() {
   try {
     if (
       !document.referrer
     ) {
-      return "";
+      return null;
     }
 
     return new URL(
       document.referrer
-    ).hostname.slice(0, 120);
+    ).hostname;
   } catch {
-    return "";
+    return null;
   }
 }
 
-function detectDevice() {
-  const width =
-    window.innerWidth;
-
-  if (width < 768) {
+function getDevice() {
+  if (
+    window.innerWidth < 768
+  ) {
     return "mobile";
   }
 
-  if (width < 1024) {
+  if (
+    window.innerWidth < 1024
+  ) {
     return "tablet";
   }
 
   return "desktop";
 }
 
-function detectBrowser() {
+function getBrowser() {
   const ua =
     navigator.userAgent;
 
@@ -238,25 +252,19 @@ function detectBrowser() {
   }
 
   if (
-    ua.includes("Chrome/") &&
-    !ua.includes(
-      "Edg/"
-    )
-  ) {
-    return "Chrome";
-  }
-
-  if (
     ua.includes("Firefox/")
   ) {
     return "Firefox";
   }
 
   if (
-    ua.includes("Safari/") &&
-    !ua.includes(
-      "Chrome/"
-    )
+    ua.includes("Chrome/")
+  ) {
+    return "Chrome";
+  }
+
+  if (
+    ua.includes("Safari/")
   ) {
     return "Safari";
   }
@@ -264,7 +272,7 @@ function detectBrowser() {
   return "Other";
 }
 
-function detectOS() {
+function getOS() {
   const ua =
     navigator.userAgent;
 
@@ -289,9 +297,7 @@ function detectOS() {
   }
 
   if (
-    /Mac OS X/i.test(
-      ua
-    )
+    /Mac OS X/i.test(ua)
   ) {
     return "macOS";
   }
@@ -305,11 +311,41 @@ function detectOS() {
   return "Other";
 }
 
+function getScrollDepth() {
+  const height =
+    Math.max(
+      document.body
+        .scrollHeight,
+      document.documentElement
+        .scrollHeight
+    );
+
+  const viewport =
+    window.innerHeight;
+
+  if (
+    height <= viewport
+  ) {
+    return 100;
+  }
+
+  return Math.min(
+    100,
+    Math.round(
+      ((window.scrollY +
+        viewport) /
+        height) *
+        100
+    )
+  );
+}
+
 function sendEvent(
-  event: Record<
-    string,
-    unknown
-  >
+  event:
+    Record<
+      string,
+      unknown
+    >
 ) {
   try {
     const visitorId =
@@ -335,7 +371,7 @@ function sendEvent(
         document.title,
 
       referrer_host:
-        referrerHost(),
+        getReferrerHost(),
 
       utm_source:
         attribution.source,
@@ -353,13 +389,13 @@ function sendEvent(
         attribution.hasFbclid,
 
       device_type:
-        detectDevice(),
+        getDevice(),
 
       browser:
-        detectBrowser(),
+        getBrowser(),
 
       operating_system:
-        detectOS(),
+        getOS(),
 
       screen_width:
         window.screen.width,
@@ -385,63 +421,40 @@ function sendEvent(
       );
 
     if (
-      navigator.sendBeacon
+      typeof navigator
+        .sendBeacon ===
+      "function"
     ) {
-      navigator.sendBeacon(
-        TRACK_URL,
-        blob
-      );
+      const sent =
+        navigator.sendBeacon(
+          TRACK_URL,
+          blob
+        );
 
-      return;
+      if (sent) {
+        return;
+      }
     }
 
     void fetch(
       TRACK_URL,
       {
-        method: "POST",
-        body,
+        method:
+          "POST",
+
         headers: {
           "Content-Type":
             "application/json",
         },
+
+        body,
+
         keepalive: true,
       }
     );
   } catch {
     // Analytics must never break the website.
   }
-}
-
-function scrollDepth() {
-  const bodyHeight =
-    Math.max(
-      document.body
-        .scrollHeight,
-      document.documentElement
-        .scrollHeight
-    );
-
-  const viewport =
-    window.innerHeight;
-
-  const scrollTop =
-    window.scrollY;
-
-  if (
-    bodyHeight <= viewport
-  ) {
-    return 100;
-  }
-
-  return Math.min(
-    100,
-    Math.round(
-      ((scrollTop +
-        viewport) /
-        bodyHeight) *
-        100
-    )
-  );
 }
 
 export default function AnalyticsTracker() {
@@ -451,7 +464,7 @@ export default function AnalyticsTracker() {
   const searchParams =
     useSearchParams();
 
-  const pageStarted =
+  const startedAt =
     useRef(
       Date.now()
     );
@@ -459,7 +472,7 @@ export default function AnalyticsTracker() {
   const maxScroll =
     useRef(0);
 
-  const exitSent =
+  const sentExit =
     useRef(false);
 
   useEffect(() => {
@@ -478,11 +491,11 @@ export default function AnalyticsTracker() {
       return;
     }
 
-    pageStarted.current =
+    startedAt.current =
       Date.now();
 
     maxScroll.current = 0;
-    exitSent.current =
+    sentExit.current =
       false;
 
     const session =
@@ -496,123 +509,79 @@ export default function AnalyticsTracker() {
         session.isNew,
     });
 
-    const performanceTimer =
-      window.setTimeout(
-        () => {
-          try {
-            const navigation =
-              performance
-                .getEntriesByType(
-                  "navigation"
-                )[0] as
-                | PerformanceNavigationTiming
-                | undefined;
+    let performanceTimer:
+      number | undefined;
 
-            let lcp = 0;
-            let cls = 0;
-
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      performanceTimer =
+        window.setTimeout(
+          () => {
             try {
-              const lcpEntries =
+              const navigation =
+                performance
+                  .getEntriesByType(
+                    "navigation"
+                  )[0] as
+                  | PerformanceNavigationTiming
+                  | undefined;
+
+              const paints =
                 performance.getEntriesByType(
-                  "largest-contentful-paint"
+                  "paint"
                 );
 
-              const last =
-                lcpEntries[
-                  lcpEntries.length -
-                    1
-                ];
-
-              if (last) {
-                lcp =
-                  Math.round(
-                    last.startTime
-                  );
-              }
-            } catch {}
-
-            try {
-              const clsEntries =
-                performance.getEntriesByType(
-                  "layout-shift"
-                ) as Array<
-                  PerformanceEntry & {
-                    value?: number;
-                    hadRecentInput?: boolean;
-                  }
-                >;
-
-              cls =
-                clsEntries.reduce(
-                  (
-                    total,
-                    entry
-                  ) => {
-                    if (
-                      entry.hadRecentInput
-                    ) {
-                      return total;
-                    }
-
-                    return (
-                      total +
-                      (entry.value ||
-                        0)
-                    );
-                  },
-                  0
+              const fcp =
+                paints.find(
+                  (entry) =>
+                    entry.name ===
+                    "first-contentful-paint"
                 );
-            } catch {}
 
-            sendEvent({
-              event_name:
-                "page_performance",
+              sendEvent({
+                event_name:
+                  "page_performance",
 
-              load_ms:
-                navigation?.loadEventEnd
-                  ? Math.round(
-                      navigation.loadEventEnd
-                    )
-                  : null,
+                load_ms:
+                  navigation?.loadEventEnd
+                    ? Math.round(
+                        navigation.loadEventEnd
+                      )
+                    : null,
 
-              fcp_ms:
-                getPaint(
-                  "first-contentful-paint"
-                ),
-
-              lcp_ms:
-                lcp || null,
-
-              cls,
-
-              duration_ms:
-                Math.round(
-                  performance.now()
-                ),
-            });
-          } catch {
-            // Never break the page.
-          }
-        },
-        1200
-      );
+                fcp_ms:
+                  fcp
+                    ? Math.round(
+                        fcp.startTime
+                      )
+                    : null,
+              });
+            } catch {
+              // ignore
+            }
+          },
+          1200
+        );
+    }
 
     function onScroll() {
       maxScroll.current =
         Math.max(
           maxScroll.current,
-          scrollDepth()
+          getScrollDepth()
         );
     }
 
     function sendExit() {
       if (
-        exitSent.current
+        sentExit.current
       ) {
         return;
       }
 
-      exitSent.current =
+      sentExit.current =
         true;
 
       sendEvent({
@@ -620,11 +589,8 @@ export default function AnalyticsTracker() {
           "page_exit",
 
         duration_ms:
-          Math.max(
-            0,
-            Date.now() -
-              pageStarted.current
-          ),
+          Date.now() -
+          startedAt.current,
 
         scroll_depth:
           maxScroll.current,
@@ -643,17 +609,17 @@ export default function AnalyticsTracker() {
     function onClick(
       event: MouseEvent
     ) {
-      const target =
+      const element =
         event.target as
           | HTMLElement
           | null;
 
-      if (!target) {
+      if (!element) {
         return;
       }
 
       const clickable =
-        target.closest(
+        element.closest(
           "a,button,[role='button']"
         ) as
           | HTMLElement
@@ -662,12 +628,6 @@ export default function AnalyticsTracker() {
       if (!clickable) {
         return;
       }
-
-      const href =
-        clickable
-          .getAttribute(
-            "href"
-          ) || "";
 
       const label =
         (
@@ -683,24 +643,22 @@ export default function AnalyticsTracker() {
             /\s+/g,
             " "
           )
-          .slice(0, 120);
+          .slice(
+            0,
+            120
+          );
 
-      const targetUrl =
-        href.slice(
-          0,
-          500
-        );
+      const href =
+        clickable.getAttribute(
+          "href"
+        ) || "";
 
-      const lower =
+      const combined =
         `${label} ${href}`.toLowerCase();
 
       if (
-        lower.includes(
+        combined.includes(
           "apply"
-        ) &&
-        href &&
-        !href.startsWith(
-          "/jobs/"
         )
       ) {
         sendEvent({
@@ -711,18 +669,18 @@ export default function AnalyticsTracker() {
             label,
 
           event_target:
-            targetUrl,
+            href,
         });
 
         return;
       }
 
       if (
-        href.includes(
-          "/report-job"
-        ) ||
-        lower.includes(
+        combined.includes(
           "report job"
+        ) ||
+        href.includes(
+          "/report"
         )
       ) {
         sendEvent({
@@ -733,7 +691,7 @@ export default function AnalyticsTracker() {
             label,
 
           event_target:
-            targetUrl,
+            href,
         });
 
         return;
@@ -747,7 +705,7 @@ export default function AnalyticsTracker() {
           label,
 
         event_target:
-          targetUrl,
+          href,
       });
     }
 
@@ -776,9 +734,14 @@ export default function AnalyticsTracker() {
     );
 
     return () => {
-      window.clearTimeout(
-        performanceTimer
-      );
+      if (
+        performanceTimer !==
+        undefined
+      ) {
+        window.clearTimeout(
+          performanceTimer
+        );
+      }
 
       window.removeEventListener(
         "scroll",
@@ -809,29 +772,4 @@ export default function AnalyticsTracker() {
   ]);
 
   return null;
-}
-
-function getPaint(
-  name: string
-) {
-  try {
-    const entries =
-      performance.getEntriesByType(
-        "paint"
-      );
-
-    const entry =
-      entries.find(
-        (item) =>
-          item.name === name
-      );
-
-    return entry
-      ? Math.round(
-          entry.startTime
-        )
-      : null;
-  } catch {
-    return null;
-  }
 }

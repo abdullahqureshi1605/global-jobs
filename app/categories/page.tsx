@@ -7,14 +7,14 @@ import {
   getCategoryIcon,
 } from "@/lib/utils/categoryIcon";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const dynamic =
+  "force-dynamic";
 
 export const metadata: Metadata = {
   title:
     "Jobs by Category | Horizon Jobs",
   description:
-    "Explore global job opportunities by career category.",
+    "Explore global employment opportunities by career category.",
 };
 
 export default async function CategoriesPage() {
@@ -80,6 +80,10 @@ export default async function CategoriesPage() {
                         ? "job"
                         : "jobs"}
                     </p>
+
+                    <span className="mt-4 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                      View Jobs →
+                    </span>
                   </Link>
                 );
               }
