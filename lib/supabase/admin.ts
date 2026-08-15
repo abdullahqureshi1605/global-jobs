@@ -1,34 +1,27 @@
 import {
-  createClient as createSupabaseClient,
+  createClient,
 } from "@supabase/supabase-js";
 
-function requireEnv(
-  name: string
-): string {
-  const value =
-    process.env[name]?.trim();
-
-  if (!value) {
-    throw new Error(
-      `Missing ${name} environment variable.`
-    );
-  }
-
-  return value;
-}
-
 const supabaseUrl =
-  requireEnv(
-    "NEXT_PUBLIC_SUPABASE_URL"
-  );
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 
 const supabaseSecretKey =
-  requireEnv(
-    "SUPABASE_SECRET_KEY"
+  process.env.SUPABASE_SECRET_KEY?.trim();
+
+if (!supabaseUrl) {
+  throw new Error(
+    "Missing NEXT_PUBLIC_SUPABASE_URL environment variable."
   );
+}
+
+if (!supabaseSecretKey) {
+  throw new Error(
+    "Missing SUPABASE_SECRET_KEY environment variable."
+  );
+}
 
 export const supabaseAdmin =
-  createSupabaseClient(
+  createClient(
     supabaseUrl,
     supabaseSecretKey,
     {

@@ -4,7 +4,7 @@ import { Briefcase } from "lucide-react";
 import { JobService } from "@/services/jobService";
 import { slugify } from "@/lib/utils/slug";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata = {
   title: "Jobs by Category | Horizon Jobs",
@@ -13,75 +13,73 @@ export const metadata = {
 };
 
 export default async function CategoriesPage() {
-  const jobs = await JobService.getPublishedJobs();
+  const categoryCounts =
+    await JobService.getPublishedCategoryCounts();
 
-  const categoryMap = new Map<string, number>();
-
-  for (const job of jobs) {
-    categoryMap.set(
-      job.category,
-      (categoryMap.get(job.category) || 0) + 1
+  const categories =
+    Array.from(
+      categoryCounts.entries()
+    ).sort(
+      (a, b) => b[1] - a[1]
     );
-  }
-
-  const categories = Array.from(categoryMap.entries()).sort(
-    (a, b) => b[1] - a[1]
-  );
 
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10 sm:py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        <header className="mb-10">
-          <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">
+        <header className="mb-8 sm:mb-10">
+          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
             Career Areas
           </p>
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mt-2">
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             Jobs by Category
           </h1>
 
-          <p className="text-sm text-slate-500 mt-3">
-            Explore published opportunities by the type of work you
-            are looking for.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Explore published opportunities by the type of work you are
+            looking for.
           </p>
         </header>
 
         {categories.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border p-10 text-center text-sm text-slate-500">
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
             No job categories are available yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {categories.map(
+              ([category, count]) => (
+                <Link
+                  key={category}
+                  href={`/categories/${slugify(
+                    category
+                  )}`}
+                  className="group rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:-translate-y-0.5 hover:border-indigo-500/50 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+                    <Briefcase className="h-5 w-5" />
+                  </div>
 
-            {categories.map(([category, count]) => (
-              <Link
-                key={category}
-                href={`/categories/${slugify(category)}`}
-                className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:shadow-xl transition-all"
-              >
-                <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-5">
-                  <Briefcase className="w-5 h-5" />
-                </div>
+                  <h2 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
+                    {category}
+                  </h2>
 
-                <h2 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                  {category}
-                </h2>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    {count} published{" "}
+                    {count === 1
+                      ? "job"
+                      : "jobs"}
+                  </p>
 
-                <p className="text-sm text-slate-500 mt-2">
-                  {count} published{" "}
-                  {count === 1 ? "job" : "jobs"}
-                </p>
-
-                <span className="inline-block mt-5 text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                  View jobs →
-                </span>
-              </Link>
-            ))}
-
+                  <span className="mt-5 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                    View jobs →
+                  </span>
+                </Link>
+              )
+            )}
           </div>
         )}
-
       </div>
     </main>
   );
