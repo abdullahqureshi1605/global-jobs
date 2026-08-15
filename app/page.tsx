@@ -1,575 +1,304 @@
 import Link from "next/link";
 
-import {
-  ArrowRight,
-  Briefcase,
-  Globe2,
-  MapPin,
-  Search,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { JobService } from "@/services/jobService";
+import { slugify } from "@/lib/utils/slug";
 
-import JobList from "@/components/jobs/JobList";
-import {
-  JobService,
-} from "@/services/jobService";
-
-import {
-  ResourceService,
-} from "@/services/resourceService";
-
-import {
-  slugify,
-} from "@/lib/utils/slug";
-
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata = {
-  title:
-    "Horizon Jobs | Global Job Discovery Platform",
-
+  title: "Horizon Jobs | Global Job Discovery",
   description:
-    "Discover global employment opportunities, verified job listings, and practical career resources.",
-
-  alternates: {
-    canonical: "/",
-  },
+    "Discover global job opportunities and practical career resources with Horizon Jobs.",
 };
+
+function formatSalary(
+  min: number | null | undefined,
+  max: number | null | undefined,
+  currency: string
+) {
+  if (
+    min === null ||
+    min === undefined ||
+    max === null ||
+    max === undefined ||
+    !currency
+  ) {
+    return "";
+  }
+
+  return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+}
 
 export default async function HomePage() {
   const [
-    jobs,
-    resources,
+    latestJobs,
+    countryMap,
+    categoryMap,
   ] = await Promise.all([
-    JobService.getPublishedJobs(),
-    ResourceService.getPublishedResources(),
+    JobService.getLatestPublishedJobs(6),
+    JobService.getPublishedCountryCounts(),
+    JobService.getPublishedCategoryCounts(),
   ]);
 
-  const latestJobs =
-    jobs.slice(0, 6);
+  const countries =
+    Array.from(countryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4);
 
-  const latestResources =
-    resources.slice(0, 3);
-
-  const countryCounts =
-    new Map<
-      string,
-      number
-    >();
-
-  const categoryCounts =
-    new Map<
-      string,
-      number
-    >();
-
-  for (const job of jobs) {
-    countryCounts.set(
-      job.country,
-      (countryCounts.get(
-        job.country
-      ) || 0) + 1
-    );
-
-    categoryCounts.set(
-      job.category,
-      (categoryCounts.get(
-        job.category
-      ) || 0) + 1
-    );
-  }
-
-  const topCountries =
-    Array.from(
-      countryCounts.entries()
-    )
-      .sort(
-        (a, b) =>
-          b[1] - a[1]
-      )
-      .slice(0, 8);
-
-  const topCategories =
-    Array.from(
-      categoryCounts.entries()
-    )
-      .sort(
-        (a, b) =>
-          b[1] - a[1]
-      )
-      .slice(0, 8);
+  const categories =
+    Array.from(categoryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4);
 
   return (
     <main className="min-h-screen bg-slate-100 dark:bg-slate-950">
+      {/* HERO */}
+      <section className="bg-slate-900 px-4 py-14 text-white sm:px-6 sm:py-16 lg:px-8">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">
+            Global Employment Intelligence
+          </p>
 
-      {/* Compact Hero */}
-      <section className="bg-slate-900 text-white">
+          <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl">
+            Find Your Next Opportunity
+          </h1>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+            Discover published job opportunities across countries,
+            categories, workplace types, and career levels.
+          </p>
 
-          <div className="max-w-4xl mx-auto text-center">
-
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              Global Job Discovery
-            </div>
-
-            <h1 className="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
-              Find Your Next Job
-            </h1>
-
-            <p className="mt-4 text-sm sm:text-base lg:text-lg text-slate-300 leading-6 sm:leading-7 max-w-2xl mx-auto">
-              Search global opportunities and discover practical career
-              resources in one place.
-            </p>
-
-            <form
-              action="/jobs"
-              method="GET"
-              className="mt-7 sm:mt-8 bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-2xl shadow-xl grid grid-cols-1 md:grid-cols-12 gap-2.5 text-left"
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/jobs"
+              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
             >
+              Find Jobs
+            </Link>
 
-              <div className="md:col-span-5 relative">
-
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-
-                <input
-                  type="search"
-                  name="keyword"
-                  placeholder="Job title, keyword, company"
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm border-0 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-
-              </div>
-
-              <div className="md:col-span-4 relative">
-
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-
-                <input
-                  type="search"
-                  name="location"
-                  placeholder="Country or city"
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm border-0 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-
-              </div>
-
-              <div className="md:col-span-3">
-
-                <button
-                  type="submit"
-                  className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold flex items-center justify-center gap-2"
-                >
-                  Search Jobs
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-              </div>
-
-            </form>
-
-            <div className="mt-4 flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-xs text-slate-400">
-
-              <span>
-                Popular:
-              </span>
-
-              <Link
-                href="/jobs?keyword=Software"
-                className="hover:text-white underline underline-offset-2"
-              >
-                Software
-              </Link>
-
-              <Link
-                href="/jobs?keyword=Data"
-                className="hover:text-white underline underline-offset-2"
-              >
-                Data
-              </Link>
-
-              <Link
-                href="/jobs?workplace=Remote"
-                className="hover:text-white underline underline-offset-2"
-              >
-                Remote
-              </Link>
-
-              <Link
-                href="/jobs?location=Dubai"
-                className="hover:text-white underline underline-offset-2"
-              >
-                Dubai
-              </Link>
-
-            </div>
-
+            <Link
+              href="/career-resources"
+              className="rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Career Resources
+            </Link>
           </div>
-
         </div>
-
       </section>
 
-      {/* Stats */}
-      <section className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-
-            <StatCard
-              icon={
-                <Briefcase className="w-5 h-5" />
-              }
-              value={
-                jobs.length.toLocaleString()
-              }
-              label="Published Jobs"
-            />
-
-            <StatCard
-              icon={
-                <Globe2 className="w-5 h-5" />
-              }
-              value={
-                countryCounts.size.toLocaleString()
-              }
-              label="Countries"
-            />
-
-            <StatCard
-              icon={
-                <ShieldCheck className="w-5 h-5" />
-              }
-              value="Verified"
-              label="Source-Focused Listings"
-            />
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* Latest Jobs */}
-      <section
-        id="latest-jobs"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14"
-      >
-
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-
+      {/* LATEST JOBS */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-
-            <p className="text-xs uppercase tracking-wider font-semibold text-indigo-600 dark:text-indigo-400">
-              Fresh Opportunities
+            <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              Latest Opportunities
             </p>
 
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
-              Latest Jobs
+            <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+              Recently Published Jobs
             </h2>
 
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              A small selection of the latest published opportunities.
+            </p>
           </div>
 
           <Link
             href="/jobs"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400"
+            className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
           >
-            View all jobs
-            <ArrowRight className="w-4 h-4" />
+            View All Jobs →
           </Link>
-
         </div>
 
-        {latestJobs.length > 0 ? (
-          <JobList
-            jobs={latestJobs}
-          />
-        ) : (
-          <EmptyState
-            message="No published jobs are available yet."
-          />
-        )}
-
-      </section>
-
-      {/* Countries */}
-      <section className="bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 py-12 sm:py-14">
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="mb-6">
-
-            <p className="text-xs uppercase tracking-wider font-semibold text-indigo-600 dark:text-indigo-400">
-              Global Markets
-            </p>
-
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
-              Explore by Country
-            </h2>
-
+        {latestJobs.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+            No published jobs are available yet.
           </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {latestJobs.map((job) => (
+              <article
+                key={job.id}
+                className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex-1">
+                  {job.featured && (
+                    <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                      Featured
+                    </span>
+                  )}
 
-          {topCountries.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-
-              {topCountries.map(
-                ([country, count]) => (
-                  <Link
-                    key={country}
-                    href={
-                      `/jobs/${slugify(
-                        country
-                      )}`
-                    }
-                    className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 hover:border-indigo-500/50 hover:shadow-lg transition-all"
-                  >
-
-                    <div className="flex items-start justify-between gap-3">
-
-                      <div>
-
-                        <h3 className="font-semibold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                          {country}
-                        </h3>
-
-                        <p className="text-xs text-slate-500 mt-1">
-                          {count}{" "}
-                          {count === 1
-                            ? "job"
-                            : "jobs"}
-                        </p>
-
-                      </div>
-
-                      <MapPin className="w-4 h-4 text-slate-400" />
-
-                    </div>
-
-                  </Link>
-                )
-              )}
-
-            </div>
-          ) : (
-            <EmptyState
-              message="Country data will appear when jobs are published."
-            />
-          )}
-
-        </div>
-
-      </section>
-
-      {/* Categories */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
-
-        <div className="mb-6">
-
-          <p className="text-xs uppercase tracking-wider font-semibold text-indigo-600 dark:text-indigo-400">
-            Career Areas
-          </p>
-
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
-            Explore by Category
-          </h2>
-
-        </div>
-
-        {topCategories.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-            {topCategories.map(
-              ([category, count]) => (
-                <Link
-                  key={category}
-                  href={
-                    `/categories/${slugify(
-                      category
-                    )}`
-                  }
-                  className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-indigo-500/50 hover:shadow-lg transition-all"
-                >
-
-                  <Briefcase className="w-5 h-5 text-indigo-500 mb-4" />
-
-                  <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                    {category}
+                  <h3 className="mt-3 line-clamp-2 text-lg font-bold text-slate-900 dark:text-white">
+                    {job.title}
                   </h3>
 
-                  <p className="text-xs text-slate-500 mt-1">
-                    {count}{" "}
-                    {count === 1
-                      ? "job"
-                      : "jobs"}
+                  <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
+                    {job.company}
                   </p>
 
-                </Link>
-              )
-            )}
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      {job.city}, {job.country}
+                    </span>
 
+                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                      {job.category}
+                    </span>
+
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      {job.workplaceType}
+                    </span>
+                  </div>
+
+                  {job.salaryMin !== null &&
+                    job.salaryMin !== undefined &&
+                    job.salaryMax !== null &&
+                    job.salaryMax !== undefined && (
+                      <p className="mt-4 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                        {formatSalary(
+                          job.salaryMin,
+                          job.salaryMax,
+                          job.salaryCurrency
+                        )}
+                      </p>
+                    )}
+                </div>
+
+                <div className="mt-6 border-t border-slate-100 pt-4 dark:border-slate-800">
+                  <Link
+                    href={`/jobs/${slugify(
+                      job.country
+                    )}/${slugify(
+                      job.city
+                    )}/${job.slug}`}
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+                  >
+                    View Job
+                  </Link>
+                </div>
+              </article>
+            ))}
           </div>
-        ) : (
-          <EmptyState
-            message="Category data will appear when jobs are published."
-          />
         )}
 
+        <div className="mt-6 text-center">
+          <Link
+            href="/jobs"
+            className="inline-flex rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            Browse All Jobs
+          </Link>
+        </div>
       </section>
 
-      {/* Career Resources */}
-      <section className="bg-slate-900 text-white py-12 sm:py-14">
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-
+      {/* COUNTRIES */}
+      <section className="border-y border-slate-200 bg-white py-10 dark:border-slate-800 dark:bg-slate-900">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-
-              <p className="text-xs uppercase tracking-wider font-semibold text-indigo-300">
-                Career Knowledge
+              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Global Markets
               </p>
 
-              <h2 className="text-2xl sm:text-3xl font-bold mt-1">
-                Career Resources
+              <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                Explore Countries
               </h2>
-
             </div>
 
             <Link
-              href="/career-resources"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-300"
+              href="/countries"
+              className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
             >
-              View all resources
-              <ArrowRight className="w-4 h-4" />
+              View All Countries →
             </Link>
-
           </div>
 
-          {latestResources.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {countries.map(([country, count]) => (
+              <Link
+                key={country}
+                href={`/jobs/${slugify(country)}`}
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+              >
+                <span className="text-lg">🌍</span>
 
-              {latestResources.map(
-                (resource) => (
-                  <article
-                    key={resource.id}
-                    className="rounded-2xl border border-slate-800 bg-slate-950 p-6"
-                  >
+                <h3 className="mt-3 font-bold text-slate-900 dark:text-white">
+                  {country}
+                </h3>
 
-                    <span className="text-xs font-semibold text-indigo-300">
-                      {resource.category}
-                    </span>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {count} published{" "}
+                  {count === 1 ? "job" : "jobs"}
+                </p>
+              </Link>
+            ))}
+          </div>
 
-                    <h3 className="text-lg font-bold mt-3">
-                      {resource.title}
-                    </h3>
-
-                    <p className="text-sm text-slate-400 mt-3 line-clamp-3">
-                      {resource.description}
-                    </p>
-
-                    <Link
-                      href={
-                        `/career-resources/${resource.slug}`
-                      }
-                      className="inline-flex items-center gap-2 mt-5 text-sm font-semibold text-indigo-300 hover:text-white"
-                    >
-                      Read article
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-
-                  </article>
-                )
-              )}
-
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-slate-800 bg-slate-950 p-8 text-sm text-slate-400">
-              New career resources will appear here after publication.
-            </div>
-          )}
-
+          <div className="mt-5 text-center">
+            <Link
+              href="/countries"
+              className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              Browse All Countries
+            </Link>
+          </div>
         </div>
-
       </section>
 
-      {/* Trust */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
+      {/* CATEGORIES */}
+      <section className="py-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Career Areas
+              </p>
 
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-7 sm:p-9">
+              <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                Explore Categories
+              </h2>
+            </div>
 
-          <p className="text-xs uppercase tracking-wider font-semibold text-indigo-600 dark:text-indigo-400">
-            Platform Standard
-          </p>
+            <Link
+              href="/categories"
+              className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              View All Categories →
+            </Link>
+          </div>
 
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-2">
-            Clear job sources. Straightforward discovery.
-          </h2>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {categories.map(([category, count]) => (
+              <Link
+                key={category}
+                href={`/categories/${slugify(category)}`}
+                className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <span className="text-lg">💼</span>
 
-          <p className="text-sm text-slate-500 leading-7 mt-4 max-w-3xl">
-            Horizon Jobs organizes employment information and sends applicants
-            to the original job source. We are not a staffing agency and do
-            not charge applicants simply to discover jobs through the platform.
-          </p>
+                <h3 className="mt-3 font-bold text-slate-900 dark:text-white">
+                  {category}
+                </h3>
 
-          <Link
-            href="/about"
-            className="inline-flex items-center gap-2 mt-6 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold"
-          >
-            Learn About Horizon Jobs
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {count} published{" "}
+                  {count === 1 ? "job" : "jobs"}
+                </p>
+              </Link>
+            ))}
+          </div>
 
+          <div className="mt-5 text-center">
+            <Link
+              href="/categories"
+              className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              Browse All Categories
+            </Link>
+          </div>
         </div>
-
       </section>
-
     </main>
-  );
-}
-
-function StatCard({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-}) {
-  return (
-    <div className="flex items-center gap-4">
-
-      <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-        {icon}
-      </div>
-
-      <div>
-
-        <strong className="block text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-          {value}
-        </strong>
-
-        <span className="text-xs text-slate-500">
-          {label}
-        </span>
-
-      </div>
-
-    </div>
-  );
-}
-
-function EmptyState({
-  message,
-}: {
-  message: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-sm text-slate-500">
-      {message}
-    </div>
   );
 }

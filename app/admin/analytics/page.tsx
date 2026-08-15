@@ -1,361 +1,723 @@
-import Link from "next/link";
-import { getServerSession } from "next-auth";
+"use client";
 
-import { authOptions } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-export const dynamic =
-  "force-dynamic";
+type Analysis = {
+  url: string;
+  title: string;
+  description: string;
+  canonical: string;
+  h1: number;
+  h2: number;
+  h3: number;
+  links: number;
+  images: number;
+  brokenImages: number;
+  resourceCount: number;
+  jsCount: number;
+  cssCount: number;
+  imageCount: number;
+  fontCount: number;
+  transferBytes: number;
+  loadTime: number;
+  domContentLoaded: number;
+  firstPaint: number;
+  firstContentfulPaint: number;
+  viewport: string;
+  connection: string;
+  downlink: string;
+  rtt: string;
+  memory: string;
+  online: boolean;
+  analyzedAt: string;
+};
 
-export default async function AdminAnalyticsPage() {
-  const session =
-    await getServerSession(
-      authOptions
-    );
+function formatBytes(bytes: number) {
+  if (!bytes) return "0 B";
 
-  if (!session?.user) {
-    return (
-      <main className="min-h-screen bg-slate-100 dark:bg-slate-950 px-4 py-16">
-        <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            Admin Access Required
-          </h1>
+  const units = [
+    "B",
+    "KB",
+    "MB",
+    "GB",
+  ];
 
-          <Link
-            href="/admin/login"
-            className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
-          >
-            Go to Admin Login
-          </Link>
-        </div>
-      </main>
-    );
+  let size = bytes;
+  let unit = 0;
+
+  while (
+    size >= 1024 &&
+    unit < units.length - 1
+  ) {
+    size /= 1024;
+    unit++;
   }
 
-  const [
-    jobsResult,
-    resourcesResult,
-    reportsResult,
-  ] = await Promise.all([
-    supabaseAdmin
-      .from("jobs")
-      .select(
-        "id, status, featured",
-        {
-          count: "exact",
-          head: false,
-        }
-      ),
+  return `${size.toFixed(
+    unit === 0 ? 0 : 1
+  )} ${units[unit]}`;
+}
 
-    supabaseAdmin
-      .from("resources")
-      .select(
-        "id, status, featured",
-        {
-          count: "exact",
-          head: false,
-        }
-      ),
+function formatMs(value: number) {
+  if (
+    !Number.isFinite(value) ||
+    value <= 0
+  ) {
+    return "—";
+  }
 
-    supabaseAdmin
-      .from("job_reports")
-      .select(
-        "id",
-        {
-          count: "exact",
-          head: false,
-        }
-      ),
-  ]);
+  return `${Math.round(value)} ms`;
+}
 
-  const jobs =
-    jobsResult.data ?? [];
+export default function AnalyticsPage() {
+  const [url, setUrl] =
+    useState("");
 
-  const resources =
-    resourcesResult.data ?? [];
+  const [analysis, setAnalysis] =
+    useState<Analysis | null>(null);
 
-  const totalReports =
-    reportsResult.count ?? 0;
+  const [loading, setLoading] =
+    useState(false);
 
-  const publishedJobs =
-    jobs.filter(
-      (job) =>
-        job.status ===
-        "published"
-    ).length;
+  const [error, setError] =
+    useState("");
 
-  const featuredJobs =
-    jobs.filter(
-      (job) =>
-        job.status ===
-          "published" &&
-        Boolean(job.featured)
-    ).length;
+  useEffect(() => {
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      setUrl(
+        window.location.origin
+      );
+    }
+  }, []);
 
-  const publishedResources =
-    resources.filter(
-      (resource) =>
-        resource.status ===
-        "published"
-    ).length;
+  async function analyze() {
+    setError("");
+    setLoading(true);
 
-  const featuredResources =
-    resources.filter(
-      (resource) =>
-        resource.status ===
-          "published" &&
-        Boolean(resource.featured)
-    ).length;
+    try {
+      const parsed =
+        new URL(url.trim());
+
+      if (
+        parsed.origin !==
+        window.location.origin
+      ) {
+        throw new Error(
+          "Only Horizon Jobs pages on this deployment can be analyzed."
+        );
+      }
+
+      const iframe =
+        document.getElementById(
+          "website-analyzer-frame"
+        ) as HTMLIFrameElement | null;
+
+      if (
+        !iframe ||
+        !iframe.contentWindow ||
+        !iframe.contentDocument
+      ) {
+        throw new Error(
+          "Load the page in the analyzer first."
+        );
+      }
+
+      const win =
+        iframe.contentWindow;
+
+      const doc =
+        iframe.contentDocument;
+
+      const navigation =
+        win.performance.getEntriesByType(
+          "navigation"
+        )[0] as
+          | PerformanceNavigationTiming
+          | undefined;
+
+      const resources =
+        win.performance.getEntriesByType(
+          "resource"
+        ) as PerformanceResourceTiming[];
+
+      const paints =
+        win.performance.getEntriesByType(
+          "paint"
+        );
+
+      const firstPaintEntry =
+        paints.find(
+          (entry) =>
+            entry.name ===
+            "first-paint"
+        );
+
+      const fcpEntry =
+        paints.find(
+          (entry) =>
+            entry.name ===
+            "first-contentful-paint"
+        );
+
+      const images =
+        Array.from(
+          doc.images
+        );
+
+      const scripts =
+        resources.filter(
+          (item) =>
+            item.initiatorType ===
+            "script"
+        );
+
+      const styles =
+        resources.filter(
+          (item) =>
+            item.initiatorType ===
+              "css" ||
+            item.name.endsWith(
+              ".css"
+            )
+        );
+
+      const imageResources =
+        resources.filter(
+          (item) =>
+            item.initiatorType ===
+              "img" ||
+            /\.(png|jpe?g|webp|avif|gif|svg)(\?|$)/i.test(
+              item.name
+            )
+        );
+
+      const fonts =
+        resources.filter(
+          (item) =>
+            item.initiatorType ===
+              "font" ||
+            /\.(woff2?|ttf|otf)(\?|$)/i.test(
+              item.name
+            )
+        );
+
+      const transferBytes =
+        resources.reduce(
+          (total, item) =>
+            total +
+            (item.transferSize ||
+              item.encodedBodySize ||
+              0),
+          0
+        );
+
+      const connection =
+        (
+          win.navigator as Navigator & {
+            connection?: {
+              effectiveType?: string;
+              downlink?: number;
+              rtt?: number;
+            };
+          }
+        ).connection;
+
+      const memory =
+        (
+          win.navigator as Navigator & {
+            deviceMemory?: number;
+          }
+        ).deviceMemory;
+
+      const result: Analysis = {
+        url: win.location.href,
+
+        title:
+          doc.title ||
+          "Missing",
+
+        description:
+          doc
+            .querySelector(
+              'meta[name="description"]'
+            )
+            ?.getAttribute(
+              "content"
+            ) ||
+          "Missing",
+
+        canonical:
+          doc
+            .querySelector(
+              'link[rel="canonical"]'
+            )
+            ?.getAttribute(
+              "href"
+            ) ||
+          "Missing",
+
+        h1:
+          doc.querySelectorAll(
+            "h1"
+          ).length,
+
+        h2:
+          doc.querySelectorAll(
+            "h2"
+          ).length,
+
+        h3:
+          doc.querySelectorAll(
+            "h3"
+          ).length,
+
+        links:
+          doc.querySelectorAll(
+            "a"
+          ).length,
+
+        images:
+          images.length,
+
+        brokenImages:
+          images.filter(
+            (image) =>
+              image.complete &&
+              image.naturalWidth === 0
+          ).length,
+
+        resourceCount:
+          resources.length,
+
+        jsCount:
+          scripts.length,
+
+        cssCount:
+          styles.length,
+
+        imageCount:
+          imageResources.length,
+
+        fontCount:
+          fonts.length,
+
+        transferBytes,
+
+        loadTime:
+          navigation?.loadEventEnd ||
+          0,
+
+        domContentLoaded:
+          navigation?.domContentLoadedEventEnd ||
+          0,
+
+        firstPaint:
+          firstPaintEntry?.startTime ||
+          0,
+
+        firstContentfulPaint:
+          fcpEntry?.startTime ||
+          0,
+
+        viewport:
+          `${win.innerWidth} × ${win.innerHeight}`,
+
+        connection:
+          connection?.effectiveType ||
+          "Unknown",
+
+        downlink:
+          connection?.downlink !==
+          undefined
+            ? `${connection.downlink} Mbps`
+            : "Unknown",
+
+        rtt:
+          connection?.rtt !==
+          undefined
+            ? `${connection.rtt} ms`
+            : "Unknown",
+
+        memory:
+          memory !== undefined
+            ? `${memory} GB`
+            : "Unknown",
+
+        online:
+          win.navigator.onLine,
+
+        analyzedAt:
+          new Date().toISOString(),
+      };
+
+      setAnalysis(result);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to analyze page."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10">
+    <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
         <div className="mb-8">
-          <Link
+          <a
             href="/admin"
             className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
           >
             ← Admin Dashboard
-          </Link>
+          </a>
 
           <p className="mt-5 text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            Platform Insights
+            Website Analyzer
           </p>
 
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            Analytics Center
+          <h1 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
+            Horizon Jobs Analytics Center
           </h1>
 
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Monitor visitor traffic and website performance using
-            Google Analytics and Netlify Analytics, while keeping
-            important Horizon Jobs platform metrics in one place.
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Measure your website directly from the browser without adding
+            visitor analytics requests to your public pages.
           </p>
         </div>
 
-        {/* Platform content metrics */}
-        <section>
-          <h2 className="mb-5 text-xl font-bold text-slate-900 dark:text-white">
-            Website Content
-          </h2>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-5">
-            <MetricCard
-              label="Published Jobs"
-              value={publishedJobs}
-              icon="💼"
-            />
-
-            <MetricCard
-              label="Featured Jobs"
-              value={featuredJobs}
-              icon="⭐"
-            />
-
-            <MetricCard
-              label="Published Resources"
-              value={
-                publishedResources
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-col gap-3 md:flex-row">
+            <input
+              value={url}
+              onChange={(event) =>
+                setUrl(
+                  event.target.value
+                )
               }
-              icon="📚"
+              className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              placeholder="https://global-jobz.netlify.app/jobs"
             />
 
-            <MetricCard
-              label="Featured Resources"
-              value={
-                featuredResources
-              }
-              icon="✨"
-            />
+            <button
+              type="button"
+              onClick={() => {
+                const frame =
+                  document.getElementById(
+                    "website-analyzer-frame"
+                  ) as HTMLIFrameElement | null;
 
-            <MetricCard
-              label="Job Reports"
-              value={totalReports}
-              icon="🚩"
-            />
+                if (frame) {
+                  frame.src =
+                    url.trim();
+                }
+              }}
+              className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Load
+            </button>
+
+            <button
+              type="button"
+              onClick={analyze}
+              disabled={loading}
+              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {loading
+                ? "Analyzing..."
+                : "Analyze"}
+            </button>
           </div>
-        </section>
 
-        {/* Traffic analytics */}
-        <section className="mt-10">
-          <h2 className="mb-5 text-xl font-bold text-slate-900 dark:text-white">
-            Traffic Analytics
-          </h2>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <AnalyticsCard
-              title="Google Analytics 4"
-              description="Use GA4 for detailed visitor behavior, traffic sources, page views, countries, devices, engagement, acquisition, and realtime traffic."
-              icon="📊"
-              buttonText="Open Google Analytics"
-              href="https://analytics.google.com/"
-            />
-
-            <AnalyticsCard
-              title="Netlify Analytics"
-              description="Use Netlify's built-in analytics and Real User Monitoring for traffic and real-world performance data directly from your deployment."
-              icon="⚡"
-              buttonText="Open Netlify Analytics"
-              href="https://app.netlify.com/"
-            />
-          </div>
-        </section>
-
-        {/* Recommended monitoring */}
-        <section className="mt-10 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Recommended Monitoring Setup
-              </h2>
-
-              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Keep Google Analytics as the main source for detailed
-                traffic and user behavior. Use Netlify Analytics for
-                deployment-level traffic and real-user performance.
-              </p>
-
-              <div className="mt-5 space-y-3 text-sm text-slate-600 dark:text-slate-400">
-                <CheckItem>
-                  Daily visitors
-                </CheckItem>
-
-                <CheckItem>
-                  Page views
-                </CheckItem>
-
-                <CheckItem>
-                  Top landing pages
-                </CheckItem>
-
-                <CheckItem>
-                  Traffic sources
-                </CheckItem>
-
-                <CheckItem>
-                  Countries and devices
-                </CheckItem>
-
-                <CheckItem>
-                  Engagement and user behavior
-                </CheckItem>
-
-                <CheckItem>
-                  Real-user performance
-                </CheckItem>
-              </div>
+          {error && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {error}
             </div>
+          )}
+        </section>
 
-            <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5 dark:border-indigo-900 dark:bg-indigo-950/30">
-              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                Performance Rule
-              </p>
-
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-800 dark:text-slate-200">
-                Analytics must never become a dependency for rendering
-                the public website.
-              </p>
-            </div>
+        <section className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+            <h2 className="font-bold text-slate-900 dark:text-white">
+              Analyzer Preview
+            </h2>
           </div>
+
+          <iframe
+            id="website-analyzer-frame"
+            src={url || undefined}
+            title="Horizon Jobs Analyzer"
+            className="h-[600px] w-full bg-white"
+          />
         </section>
 
-        {/* Important note */}
-        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950/20">
-          <p className="text-sm leading-6 text-amber-800 dark:text-amber-300">
-            Traffic analytics themselves are provided by the external
-            analytics platforms. This admin page is your central launch
-            point and website-content dashboard; it does not duplicate
-            every visitor event in Supabase.
-          </p>
-        </section>
+        {analysis && (
+          <>
+            <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+              <Metric
+                label="Page Load"
+                value={formatMs(
+                  analysis.loadTime
+                )}
+              />
+
+              <Metric
+                label="FCP"
+                value={formatMs(
+                  analysis.firstContentfulPaint
+                )}
+              />
+
+              <Metric
+                label="Resources"
+                value={`${analysis.resourceCount}`}
+              />
+
+              <Metric
+                label="JavaScript"
+                value={`${analysis.jsCount}`}
+              />
+
+              <Metric
+                label="Transferred"
+                value={formatBytes(
+                  analysis.transferBytes
+                )}
+              />
+            </section>
+
+            <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <Panel title="Performance">
+                <Row
+                  label="Load"
+                  value={formatMs(
+                    analysis.loadTime
+                  )}
+                />
+
+                <Row
+                  label="DOMContentLoaded"
+                  value={formatMs(
+                    analysis.domContentLoaded
+                  )}
+                />
+
+                <Row
+                  label="First Paint"
+                  value={formatMs(
+                    analysis.firstPaint
+                  )}
+                />
+
+                <Row
+                  label="First Contentful Paint"
+                  value={formatMs(
+                    analysis.firstContentfulPaint
+                  )}
+                />
+              </Panel>
+
+              <Panel title="Resources">
+                <Row
+                  label="Total"
+                  value={`${analysis.resourceCount}`}
+                />
+
+                <Row
+                  label="JavaScript"
+                  value={`${analysis.jsCount}`}
+                />
+
+                <Row
+                  label="CSS"
+                  value={`${analysis.cssCount}`}
+                />
+
+                <Row
+                  label="Images"
+                  value={`${analysis.imageCount}`}
+                />
+
+                <Row
+                  label="Fonts"
+                  value={`${analysis.fontCount}`}
+                />
+
+                <Row
+                  label="Transferred"
+                  value={formatBytes(
+                    analysis.transferBytes
+                  )}
+                />
+              </Panel>
+
+              <Panel title="SEO Structure">
+                <Row
+                  label="Title"
+                  value={analysis.title}
+                />
+
+                <Row
+                  label="Description"
+                  value={
+                    analysis.description
+                  }
+                />
+
+                <Row
+                  label="Canonical"
+                  value={
+                    analysis.canonical
+                  }
+                />
+
+                <Row
+                  label="H1"
+                  value={`${analysis.h1}`}
+                />
+
+                <Row
+                  label="H2"
+                  value={`${analysis.h2}`}
+                />
+
+                <Row
+                  label="H3"
+                  value={`${analysis.h3}`}
+                />
+
+                <Row
+                  label="Links"
+                  value={`${analysis.links}`}
+                />
+
+                <Row
+                  label="Images"
+                  value={`${analysis.images}`}
+                />
+
+                <Row
+                  label="Broken Images"
+                  value={`${analysis.brokenImages}`}
+                />
+              </Panel>
+
+              <Panel title="Browser">
+                <Row
+                  label="Viewport"
+                  value={
+                    analysis.viewport
+                  }
+                />
+
+                <Row
+                  label="Connection"
+                  value={
+                    analysis.connection
+                  }
+                />
+
+                <Row
+                  label="Downlink"
+                  value={
+                    analysis.downlink
+                  }
+                />
+
+                <Row
+                  label="RTT"
+                  value={
+                    analysis.rtt
+                  }
+                />
+
+                <Row
+                  label="Memory"
+                  value={
+                    analysis.memory
+                  }
+                />
+
+                <Row
+                  label="Online"
+                  value={
+                    analysis.online
+                      ? "Yes"
+                      : "No"
+                  }
+                />
+              </Panel>
+            </section>
+          </>
+        )}
       </div>
     </main>
   );
 }
 
-function MetricCard({
+function Metric({
   label,
   value,
-  icon,
 }: {
   label: string;
-  value: number;
-  icon: string;
+  value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex items-start justify-between gap-4">
-        <span className="text-2xl">
-          {icon}
-        </span>
-
-        <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
-          {value}
-        </span>
-      </div>
-
-      <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-slate-400">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </p>
-    </div>
-  );
-}
 
-function AnalyticsCard({
-  title,
-  description,
-  icon,
-  buttonText,
-  href,
-}: {
-  title: string;
-  description: string;
-  icon: string;
-  buttonText: string;
-  href: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-2xl dark:bg-indigo-950/50">
-        {icon}
-      </div>
-
-      <h3 className="mt-6 text-xl font-bold text-slate-900 dark:text-white">
-        {title}
-      </h3>
-
-      <p className="mt-3 min-h-[96px] text-sm leading-6 text-slate-500 dark:text-slate-400">
-        {description}
+      <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">
+        {value}
       </p>
-
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-6 inline-flex items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
-      >
-        {buttonText}
-        <span className="ml-2">
-          ↗
-        </span>
-      </a>
     </div>
   );
 }
 
-function CheckItem({
+function Panel({
+  title,
   children,
 }: {
+  title: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-        ✓
-      </span>
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">
+        {title}
+      </h2>
 
-      <span>{children}</span>
+      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function Row({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="py-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words text-sm text-slate-800 dark:text-slate-200">
+        {value}
+      </p>
     </div>
   );
 }
