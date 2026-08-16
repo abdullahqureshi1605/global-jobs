@@ -84,21 +84,6 @@ function asStringArray(
   );
 }
 
-function slug(
-  value: string
-) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(
-      /[^a-z0-9]+/g,
-      "-"
-    )
-    .replace(
-      /^-+|-+$/g,
-      "");
-}
-
 function Info({
   label,
   children,
@@ -121,7 +106,6 @@ function Info({
 
 export default function JobDetailContent({
   job,
-  context,
 }: Props) {
   const CategoryIcon =
     getCategoryIcon(
@@ -143,113 +127,9 @@ export default function JobDetailContent({
       job.benefits
     );
 
-  const countryHref =
-    `/countries/${slug(
-      job.country
-    )}`;
-
-  const cityHref =
-    `/countries/${slug(
-      job.country
-    )}/${slug(
-      job.city
-    )}`;
-
-  const categoryHref =
-    `/categories/${slug(
-      job.category
-    )}`;
-
-  const breadcrumbs =
-    context.type ===
-    "country-city"
-      ? [
-          {
-            label: "Countries",
-            href: "/countries",
-          },
-          {
-            label: job.country,
-            href: countryHref,
-          },
-          {
-            label: job.city,
-            href: cityHref,
-          },
-          {
-            label: job.title,
-          },
-        ]
-      : context.type ===
-        "category"
-      ? [
-          {
-            label: "Categories",
-            href: "/categories",
-          },
-          {
-            label: job.category,
-            href: categoryHref,
-          },
-          {
-            label: job.title,
-          },
-        ]
-      : [
-          {
-            label: "Jobs",
-            href: "/jobs",
-          },
-          {
-            label: job.title,
-          },
-        ];
-
   return (
     <main className="min-h-screen bg-slate-100 py-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        {/* BREADCRUMBS */}
-        <nav
-          aria-label="Breadcrumb"
-          className="mb-6 flex flex-wrap items-center gap-2 text-sm"
-        >
-          <Link
-            href="/"
-            className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-          >
-            Home
-          </Link>
-
-          {breadcrumbs.map(
-            (
-              item,
-              index
-            ) => (
-              <div
-                key={`${item.label}-${index}`}
-                className="flex items-center gap-2"
-              >
-                <span className="text-slate-400">
-                  /
-                </span>
-
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <span className="font-semibold text-slate-950 dark:text-white">
-                    {item.label}
-                  </span>
-                )}
-              </div>
-            )
-          )}
-        </nav>
 
         {/* MAIN LAYOUT */}
         <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -359,9 +239,7 @@ export default function JobDetailContent({
                       />
 
                       <span>
-                        {
-                          job.country
-                        }
+                        {job.country}
                       </span>
                     </span>
                   </Info>
