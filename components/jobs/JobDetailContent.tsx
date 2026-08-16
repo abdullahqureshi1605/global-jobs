@@ -209,8 +209,6 @@ export default function JobDetailContent({
     <main className="min-h-screen bg-slate-100 py-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        
-
         {/* MAIN LAYOUT */}
         <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
 
@@ -250,11 +248,11 @@ export default function JobDetailContent({
               {job.salaryMin != null &&
                 job.salaryMax != null && (
                   <div className="border-b border-slate-200 py-6 dark:border-slate-800">
-                    <p className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                    <p className="mt-2 text-sm font-extrabold text-emerald-250 dark:text-emerald-200">
                       Salary
                     </p>
 
-                    <p className="mt-2 text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">
+                    <p className="mt-2 text-sm font-extrabold text-emerald-250 dark:text-emerald-200">
                       {job.salaryCurrency}{" "}
                       {Number(
                         job.salaryMin
@@ -306,6 +304,7 @@ export default function JobDetailContent({
                 </h2>
 
                 <div className="mt-5 space-y-5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-white">
                   <Info label="Country">
                     <span className="inline-flex items-center gap-2">
                       <CountryFlag
@@ -364,7 +363,7 @@ export default function JobDetailContent({
                     <Info label="Closing Date">
                       {job.closingDate}
                     </Info>
-                  )}
+                  )}</p>
                 </div>
               </div>
             </div>
