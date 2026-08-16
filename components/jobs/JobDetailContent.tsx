@@ -131,7 +131,6 @@ export default function JobDetailContent({
     <main className="min-h-screen bg-slate-100 py-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        {/* MAIN LAYOUT */}
         <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
 
           {/* LEFT SIDEBAR */}
@@ -140,7 +139,6 @@ export default function JobDetailContent({
 
               {/* JOB SUMMARY */}
               <div className="border-b border-slate-200 pb-6 dark:border-slate-800">
-
                 <CountryFlag
                   countryCode={
                     job.countryCode
