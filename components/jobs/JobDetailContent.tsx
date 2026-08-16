@@ -304,7 +304,7 @@ export default function JobDetailContent({
                 </h2>
 
                 <div className="mt-5 space-y-5">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-white">
+                  
                   <Info label="Country">
                     <span className="inline-flex items-center gap-2">
                       <CountryFlag
@@ -363,7 +363,7 @@ export default function JobDetailContent({
                     <Info label="Closing Date">
                       {job.closingDate}
                     </Info>
-                  )}</p>
+                  )}
                 </div>
               </div>
             </div>
