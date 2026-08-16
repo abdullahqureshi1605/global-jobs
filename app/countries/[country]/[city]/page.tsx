@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { CityService } from "@/services/cityService";
 import { JobService } from "@/services/jobService";
 import { slugify } from "@/lib/utils/slug";
+import CountryFlag from "@/components/countries/CountryFlag";
 import {
   getCategoryIcon,
 } from "@/lib/utils/categoryIcon";
