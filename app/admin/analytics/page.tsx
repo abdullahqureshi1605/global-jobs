@@ -98,12 +98,13 @@ export default function AnalyticsHomePage() {
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div>
         <Link
               href="/admin"
                 className="inline-flex items-center text-sm font-semibold text-indigo-600 transition hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
                   >
                     ← Admin Dashboard
-                      </Link>
+                      </Link></div>
         <header className="mb-10">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
             Administration

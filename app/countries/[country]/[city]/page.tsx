@@ -30,14 +30,12 @@ const COUNTRY_NAMES: Record<
   australia: "Australia",
   germany: "Germany",
   france: "France",
-  netherlands:
-    "Netherlands",
+  netherlands: "Netherlands",
   ireland: "Ireland",
   spain: "Spain",
   italy: "Italy",
   portugal: "Portugal",
-  switzerland:
-    "Switzerland",
+  switzerland: "Switzerland",
   austria: "Austria",
   belgium: "Belgium",
   sweden: "Sweden",
@@ -45,29 +43,24 @@ const COUNTRY_NAMES: Record<
   denmark: "Denmark",
   finland: "Finland",
   poland: "Poland",
-  bangladesh:
-    "Bangladesh",
+  bangladesh: "Bangladesh",
   nepal: "Nepal",
   china: "China",
   japan: "Japan",
-  "south-korea":
-    "South Korea",
+  "south-korea": "South Korea",
   singapore: "Singapore",
   malaysia: "Malaysia",
   indonesia: "Indonesia",
   thailand: "Thailand",
-  philippines:
-    "Philippines",
-  "saudi-arabia":
-    "Saudi Arabia",
+  philippines: "Philippines",
+  "saudi-arabia": "Saudi Arabia",
   "united-arab-emirates":
     "United Arab Emirates",
   qatar: "Qatar",
   kuwait: "Kuwait",
   bahrain: "Bahrain",
   oman: "Oman",
-  "south-africa":
-    "South Africa",
+  "south-africa": "South Africa",
   nigeria: "Nigeria",
   kenya: "Kenya",
   egypt: "Egypt",
@@ -75,35 +68,8 @@ const COUNTRY_NAMES: Record<
   mexico: "Mexico",
   argentina: "Argentina",
   chile: "Chile",
-  "new-zealand":
-    "New Zealand",
+  "new-zealand": "New Zealand",
 };
-
-function resolveCountry(
-  slug: string
-) {
-  return (
-    COUNTRY_NAMES[slug] ??
-    null
-  );
-}
-
-function titleize(
-  value: string
-) {
-  return decodeURIComponent(
-    value
-  )
-    .replace(
-      /[-_]+/g,
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      (char) =>
-        char.toUpperCase()
-    );
-}
 
 export const dynamic =
   "force-dynamic";
@@ -117,28 +83,22 @@ export async function generateMetadata({
   } = await params;
 
   const countryName =
-    resolveCountry(
-      country
-    );
-
-  const cityName =
-    titleize(
-      city
-    );
+    COUNTRY_NAMES[country];
 
   return {
     title:
-      `${cityName}, ${
-        countryName ??
-        titleize(country)
-      } Jobs | Horizon Jobs`,
+      `${city} Jobs in ${
+        countryName ?? country
+      } | Horizon Jobs`,
 
     description:
-      `Explore published jobs in ${cityName}.`,
+      `Find jobs in ${city}, ${
+        countryName ?? country
+      }.`,
   };
 }
 
-export default async function CityJobsPage({
+export default async function CityPage({
   params,
 }: Props) {
   const {
@@ -147,58 +107,50 @@ export default async function CityJobsPage({
   } = await params;
 
   const countryName =
-    resolveCountry(
-      country
-    );
+    COUNTRY_NAMES[country];
 
   if (!countryName) {
     notFound();
   }
 
-  const cityCounts =
+  const cities =
     await CityService.getCityCounts(
       countryName
     );
 
-  const matchedCity =
-    cityCounts.find(
+  const matchingCity =
+    cities.find(
       (item) =>
-        slugify(
-          item.city
-        ) === city
+        slugify(item.city) ===
+        city
     );
 
-  if (!matchedCity) {
+  if (!matchingCity) {
     notFound();
   }
 
-  const allCountryJobs =
+  const jobs =
     await JobService.getJobsByCountry(
       countryName
     );
 
   const cityJobs =
-    allCountryJobs.filter(
+    jobs.filter(
       (job) =>
-        slugify(
-          job.city
-        ) === city
+        slugify(job.city) ===
+        city
     );
-
-  const cityName =
-    matchedCity.city;
 
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* SIMPLE CITY HEADER */}
         <header className="mb-8">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
             City Jobs
           </p>
 
           <h1 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
-            Jobs in {cityName}
+            Jobs in {matchingCity.city}
           </h1>
 
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -210,23 +162,17 @@ export default async function CityJobsPage({
           </p>
         </header>
 
-        {/* CITY JOBS ONLY */}
-        {cityJobs.length ===
-        0 ? (
+        {cityJobs.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              No jobs available
+              No Jobs Available
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
-              There are currently no published jobs in {cityName}.
-            </p>
-
             <Link
-              href={`/jobs/${country}`}
+              href={`/countries/${country}`}
               className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white"
             >
-              Back to {countryName} Cities
+              Back to {countryName}
             </Link>
           </div>
         ) : (
@@ -254,7 +200,7 @@ export default async function CityJobsPage({
                         {job.title}
                       </h2>
 
-                      <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {job.company}
                       </p>
 
@@ -281,11 +227,7 @@ export default async function CityJobsPage({
                     </div>
 
                     <Link
-                      href={`/jobs/${slugify(
-                        job.country
-                      )}/${slugify(
-                        job.city
-                      )}/${job.slug}`}
+                      href={`/jobs/${job.slug}`}
                       className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
                     >
                       View Job
