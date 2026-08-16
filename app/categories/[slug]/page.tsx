@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { JobService } from "@/services/jobService";
 import { slugify } from "@/lib/utils/slug";
 import {
@@ -13,72 +15,65 @@ interface Props {
   }>;
 }
 
-const CATEGORY_NAMES: Record<
-  string,
-  string
-> = {
-  "technology-it":
-    "Technology & IT",
-  "data-analytics":
-    "Data & Analytics",
-  healthcare:
-    "Healthcare",
-  "finance-accounting":
-    "Finance & Accounting",
-  administration:
-    "Administration",
-  "customer-service":
-    "Customer Service",
-  sales: "Sales",
-  marketing:
-    "Marketing",
-  "human-resources":
-    "Human Resources",
-  engineering:
-    "Engineering",
-  "logistics-supply-chain":
-    "Logistics & Supply Chain",
-  hospitality:
-    "Hospitality",
-  education:
-    "Education",
-  "legal-compliance":
-    "Legal & Compliance",
-  government:
-    "Government",
-  "security-cybersecurity":
-    "Security & Cybersecurity",
-  "software-development":
-    "Software Development",
-  "project-management":
-    "Project Management",
-  "operations-management":
-    "Operations & Management",
-  design: "Design",
-  "media-communications":
-    "Media & Communications",
-  "real-estate":
-    "Real Estate",
-  manufacturing:
-    "Manufacturing",
-  retail: "Retail",
-  "construction-trades":
-    "Construction & Trades",
-  "nonprofit-ngo":
-    "Nonprofit & NGO",
-  "science-research":
-    "Science & Research",
-};
-
 export const dynamic =
   "force-dynamic";
 
-function resolveCategory(
+async function resolveCategory(
   slug: string
 ) {
+  const {
+    data,
+    error,
+  } =
+    await supabaseAdmin
+      .from("jobs")
+      .select("category")
+      .eq(
+        "status",
+        "published"
+      )
+      .not(
+        "category",
+        "is",
+        null
+      );
+
+  if (error) {
+    throw new Error(
+      `Failed to resolve category: ${error.message}`
+    );
+  }
+
+  const categories =
+    Array.from(
+      new Set(
+        (data ?? [])
+          .map(
+            (row) =>
+              row.category
+          )
+          .filter(
+            (
+              value
+            ): value is string =>
+              typeof value ===
+                "string" &&
+              value.trim() !== ""
+          )
+          .map(
+            (value) =>
+              value.trim()
+          )
+      )
+    );
+
   return (
-    CATEGORY_NAMES[slug] ??
-    null
+    categories.find(
+      (category) =>
+        slugify(
+          category
+        ) === slug
+    ) ?? null
   );
 }
 
@@ -89,7 +84,7 @@ export async function generateMetadata({
     await params;
 
   const category =
-    resolveCategory(
+    await resolveCategory(
       slug
     );
 
@@ -99,7 +94,7 @@ export async function generateMetadata({
       : "Category Jobs | Horizon Jobs",
 
     description: category
-      ? `Explore published ${category} jobs.`
+      ? `Explore published ${category} jobs on Horizon Jobs.`
       : "Explore published jobs by category.",
   };
 }
@@ -111,14 +106,12 @@ export default async function CategoryJobsPage({
     await params;
 
   const category =
-    resolveCategory(
+    await resolveCategory(
       slug
     );
 
   if (!category) {
-    return (
-      <NotFound />
-    );
+    notFound();
   }
 
   const jobs =
@@ -160,15 +153,12 @@ export default async function CategoryJobsPage({
           </p>
         </header>
 
-        {jobs.length === 0 ? (
+        {jobs.length ===
+        0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               No jobs available
             </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              There are currently no published jobs in this category.
-            </p>
 
             <Link
               href="/categories"
@@ -183,7 +173,7 @@ export default async function CategoryJobsPage({
               (job) => (
                 <article
                   key={job.id}
-                  className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                  className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
                 >
                   <div className="flex-1">
                     {job.featured && (
@@ -200,31 +190,29 @@ export default async function CategoryJobsPage({
                       {job.company}
                     </p>
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {job.country}
                       </span>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {job.city}
                       </span>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {
-                          job.workplaceType
-                        }
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {job.workplaceType}
                       </span>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {
-                          job.employmentType
-                        }
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {job.employmentType}
                       </span>
                     </div>
 
-                    <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                      {job.description}
-                    </p>
+                    {job.description && (
+                      <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                        {job.description}
+                      </p>
+                    )}
                   </div>
 
                   <Link
@@ -242,31 +230,6 @@ export default async function CategoryJobsPage({
             )}
           </div>
         )}
-      </div>
-    </main>
-  );
-}
-
-function NotFound() {
-  return (
-    <main className="min-h-screen bg-slate-100 py-16 dark:bg-slate-950">
-      <div className="mx-auto max-w-2xl px-4 text-center">
-        <div className="rounded-3xl border border-slate-200 bg-white p-12 dark:border-slate-800 dark:bg-slate-900">
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">
-            Category Not Found
-          </h1>
-
-          <p className="mt-3 text-sm text-slate-500">
-            This category is not currently available.
-          </p>
-
-          <Link
-            href="/categories"
-            className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white"
-          >
-            Browse Categories
-          </Link>
-        </div>
       </div>
     </main>
   );
