@@ -65,35 +65,37 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-slate-100 dark:bg-slate-950">
       {/* HERO */}
-      <section className="bg-slate-900 px-4 py-14 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">
-            Global Employment Intelligence
-          </p>
+      <section className="bg-slate-900 px-4 py-16 sm:px-6 sm:py-[4.5rem] lg:px-8 lg:py-[5.4rem] xl:py-[5.75rem] 2xl:py-[6.1rem] text-white">
+        <div className="mx-auto flex min-h-[300px] max-w-5xl items-center justify-center text-center sm:min-h-[330px] lg:min-h-[360px] xl:min-h-[390px]">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">
+              Global Employment Intelligence
+            </p>
 
-          <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl">
-            Find Your Next Opportunity
-          </h1>
+            <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+              Find Your Next Opportunity
+            </h1>
 
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-            Discover published opportunities across countries,
-            categories, workplace types, and career levels.
-          </p>
+            <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+              Discover published opportunities across countries,
+              categories, workplace types, and career levels.
+            </p>
 
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/jobs"
-              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              Find Jobs
-            </Link>
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              <Link
+                href="/jobs"
+                className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
+              >
+                Find Jobs
+              </Link>
 
-            <Link
-              href="/career-resources"
-              className="rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
-            >
-              Career Resources
-            </Link>
+              <Link
+                href="/career-resources"
+                className="rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Career Resources
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -119,8 +121,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {latestJobs.length ===
-        0 ? (
+        {latestJobs.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
             No published jobs are available yet.
           </div>
@@ -258,24 +259,38 @@ export default async function HomePage() {
                   href={`/jobs/${slugify(
                     country
                   )}`}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800/50"
+                  className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800/50"
                 >
-                  <span className="text-4xl">
-                    {countryCodeToFlag(
-                      countryCode
-                    )}
-                  </span>
+                  <div className="flex min-h-[116px] flex-col justify-between">
+                    <div className="flex items-start justify-between">
+                      <span
+                        className="block text-4xl leading-none sm:text-5xl"
+                        aria-label={`${country} flag`}
+                        role="img"
+                      >
+                        {countryCodeToFlag(
+                          countryCode
+                        )}
+                      </span>
 
-                  <h3 className="mt-3 font-bold text-slate-900 dark:text-white">
-                    {country}
-                  </h3>
+                      <span className="text-xs font-semibold text-indigo-600 opacity-0 transition group-hover:opacity-100 dark:text-indigo-400">
+                        →
+                      </span>
+                    </div>
 
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {count} published{" "}
-                    {count === 1
-                      ? "job"
-                      : "jobs"}
-                  </p>
+                    <div className="mt-4">
+                      <h3 className="font-bold text-slate-900 dark:text-white">
+                        {country}
+                      </h3>
+
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {count} published{" "}
+                        {count === 1
+                          ? "job"
+                          : "jobs"}
+                      </p>
+                    </div>
+                  </div>
                 </Link>
               )
             )}

@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CityService } from "@/services/cityService";
 import { JobService } from "@/services/jobService";
 import { slugify } from "@/lib/utils/slug";
-import { countryCodeToFlag } from "@/lib/utils/countryFlag";
-import {
-  getCategoryIcon,
-} from "@/lib/utils/categoryIcon";
 
 interface Props {
   params: Promise<{
@@ -80,15 +77,6 @@ const COUNTRY_NAMES: Record<
 export const dynamic =
   "force-dynamic";
 
-async function resolveCountry(
-  slug: string
-) {
-  return (
-    COUNTRY_NAMES[slug] ??
-    null
-  );
-}
-
 export async function generateMetadata({
   params,
 }: Props): Promise<Metadata> {
@@ -96,9 +84,9 @@ export async function generateMetadata({
     await params;
 
   const countryName =
-    await resolveCountry(
+    COUNTRY_NAMES[
       country
-    );
+    ];
 
   return {
     title: countryName
@@ -106,8 +94,8 @@ export async function generateMetadata({
       : "Country Jobs | Horizon Jobs",
 
     description: countryName
-      ? `Explore published jobs in ${countryName}.`
-      : "Explore published jobs by country.",
+      ? `Explore jobs and opportunities in ${countryName}.`
+      : "Explore jobs by country.",
   };
 }
 
@@ -118,127 +106,143 @@ export default async function CountryJobsPage({
     await params;
 
   const countryName =
-    await resolveCountry(
+    COUNTRY_NAMES[
       country
-    );
+    ];
 
   if (!countryName) {
     return (
-      <NotFound />
+      <main className="min-h-screen bg-slate-100 py-16 dark:bg-slate-950">
+        <div className="mx-auto max-w-2xl px-4 text-center">
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">
+            Country Not Found
+          </h1>
+        </div>
+      </main>
     );
   }
+
+  const cityCounts =
+    await CityService.getCityCounts(
+      countryName
+    );
 
   const jobs =
     await JobService.getJobsByCountry(
       countryName
     );
 
-  const countryCode =
-    jobs[0]?.countryCode ??
-    "";
-
-  const flag =
-    countryCodeToFlag(
-      countryCode
-    );
-
   return (
     <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <header className="mb-8">
-          <div className="flex items-center gap-4">
-            <span className="text-5xl">
-              {flag}
-            </span>
+        <header className="mb-10">
+          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            Country Jobs
+          </p>
 
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                Country Jobs
-              </p>
+          <h1 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
+            Jobs in {countryName}
+          </h1>
 
-              <h1 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
-                Jobs in{" "}
-                {countryName}
-              </h1>
-            </div>
-          </div>
-
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             {jobs.length} published{" "}
             {jobs.length === 1
               ? "job"
               : "jobs"}{" "}
-            available.
+            across{" "}
+            {cityCounts.length}{" "}
+            cities.
           </p>
         </header>
 
-        {jobs.length === 0 ? (
-          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              No jobs available
+        {/* CITY CARDS */}
+        {cityCounts.length >
+          0 && (
+          <section className="mb-10">
+            <div className="mb-5">
+              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                Jobs by City
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Choose a city to see only jobs available there.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {cityCounts.map(
+                (item) => (
+                  <Link
+                    key={
+                      item.city
+                    }
+                    href={`/jobs/${country}/${slugify(
+                      item.city
+                    )}`}
+                    className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
+                      {item.city}
+                    </h3>
+
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                      {item.count}{" "}
+                      {item.count === 1
+                        ? "job"
+                        : "jobs"}
+                    </p>
+
+                    <span className="mt-4 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                      View City Jobs →
+                    </span>
+                  </Link>
+                )
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ALL COUNTRY JOBS */}
+        <section>
+          <div className="mb-5">
+            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              All Jobs in {countryName}
             </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              There are currently no published jobs in{" "}
-              {countryName}.
-            </p>
-
-            <Link
-              href="/countries"
-              className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white"
-            >
-              Browse Countries
-            </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {jobs.map(
-              (job) => {
-                const CategoryIcon =
-                  getCategoryIcon(
-                    job.category
-                  );
 
-                return (
+          {jobs.length ===
+          0 ? (
+            <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
+              <p className="text-sm text-slate-500">
+                No published jobs available.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {jobs.map(
+                (job) => (
                   <article
                     key={job.id}
-                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
                   >
                     <div className="flex-1">
-                      {job.featured && (
-                        <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                          Featured
-                        </span>
-                      )}
-
-                      <h2 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                         {job.title}
-                      </h2>
+                      </h3>
 
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {job.company}
                       </p>
 
-                      <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
-                          <CategoryIcon className="h-3.5 w-3.5" />
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
                           {job.category}
                         </span>
 
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {job.city}
                         </span>
-
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {
-                            job.workplaceType
-                          }
-                        </span>
                       </div>
-
-                      <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                        {job.description}
-                      </p>
                     </div>
 
                     <Link
@@ -252,36 +256,11 @@ export default async function CountryJobsPage({
                       View Job
                     </Link>
                   </article>
-                );
-              }
-            )}
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-
-function NotFound() {
-  return (
-    <main className="min-h-screen bg-slate-100 py-16 dark:bg-slate-950">
-      <div className="mx-auto max-w-2xl px-4 text-center">
-        <div className="rounded-3xl border border-slate-200 bg-white p-12 dark:border-slate-800 dark:bg-slate-900">
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">
-            Country Not Found
-          </h1>
-
-          <p className="mt-3 text-sm text-slate-500">
-            This country is not currently available.
-          </p>
-
-          <Link
-            href="/countries"
-            className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white"
-          >
-            Browse Countries
-          </Link>
-        </div>
+                )
+              )}
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );

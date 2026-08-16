@@ -518,6 +518,12 @@ export default function PageAnalyticsPage() {
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link
+              href="/admin"
+                className="inline-flex items-center text-sm font-semibold text-indigo-600 transition hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+                  >
+                    ← Admin Dashboard
+                      </Link>
+            <Link
               href="/admin/analytics"
               className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
             >

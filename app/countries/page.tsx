@@ -5,7 +5,6 @@ import { MapPin } from "lucide-react";
 
 import { TaxonomyService } from "@/services/taxonomyService";
 import { slugify } from "@/lib/utils/slug";
-import { countryCodeToFlag } from "@/lib/utils/countryFlag";
 
 export const dynamic =
   "force-dynamic";
@@ -16,6 +15,88 @@ export const metadata: Metadata = {
   description:
     "Explore global job opportunities by country.",
 };
+
+const COUNTRY_CODES: Record<
+  string,
+  string
+> = {
+  "United States": "US",
+  "United Kingdom": "GB",
+  Canada: "CA",
+  Australia: "AU",
+  Germany: "DE",
+  France: "FR",
+  Netherlands: "NL",
+  Ireland: "IE",
+  Spain: "ES",
+  Italy: "IT",
+  Portugal: "PT",
+  Switzerland: "CH",
+  Austria: "AT",
+  Belgium: "BE",
+  Sweden: "SE",
+  Norway: "NO",
+  Denmark: "DK",
+  Finland: "FI",
+  Poland: "PL",
+  India: "IN",
+  Pakistan: "PK",
+  Bangladesh: "BD",
+  Nepal: "NP",
+  China: "CN",
+  Japan: "JP",
+  "South Korea": "KR",
+  Singapore: "SG",
+  Malaysia: "MY",
+  Indonesia: "ID",
+  Thailand: "TH",
+  Philippines: "PH",
+  "Saudi Arabia": "SA",
+  "United Arab Emirates": "AE",
+  Qatar: "QA",
+  Kuwait: "KW",
+  Bahrain: "BH",
+  Oman: "OM",
+  "South Africa": "ZA",
+  Nigeria: "NG",
+  Kenya: "KE",
+  Egypt: "EG",
+  Brazil: "BR",
+  Mexico: "MX",
+  Argentina: "AR",
+  Chile: "CL",
+  "New Zealand": "NZ",
+};
+
+function countryFlag(
+  country: string,
+  databaseCode?: string
+) {
+  const code =
+    (
+      databaseCode ||
+      COUNTRY_CODES[country] ||
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+  if (
+    code.length !== 2
+  ) {
+    return "🌍";
+  }
+
+  return String.fromCodePoint(
+    ...code
+      .split("")
+      .map(
+        (character) =>
+          127397 +
+          character.charCodeAt(0)
+      )
+  );
+}
 
 export default async function CountriesPage() {
   const countries =
@@ -43,43 +124,77 @@ export default async function CountriesPage() {
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               No published jobs are available yet.
             </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Check back soon for new opportunities.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {countries.map((country) => (
-              <Link
-                key={country.country}
-                href={`/jobs/${slugify(
-                  country.country
-                )}`}
-                className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-4xl">
-                    {countryCodeToFlag(
-                      country.countryCode
-                    )}
-                  </span>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {countries.map(
+              ({
+                country,
+                countryCode,
+                count,
+              }) => {
+                const flag =
+                  countryFlag(
+                    country,
+                    countryCode
+                  );
 
-                  <MapPin className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-500" />
-                </div>
+                return (
+                  <Link
+                    key={country}
+                    href={`/jobs/${slugify(
+                      country
+                    )}`}
+                    className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    {/* FLAG */}
+                    <div className="flex items-center justify-between">
+                      <div
+                        className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-5xl leading-none dark:bg-slate-800"
+                        role="img"
+                        aria-label={`${country} flag`}
+                      >
+                        <span
+                          className="block select-none"
+                          style={{
+                            fontFamily:
+                              "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif",
+                          }}
+                        >
+                          {flag}
+                        </span>
+                      </div>
 
-                <h2 className="mt-5 text-lg font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
-                  {country.country}
-                </h2>
+                      <MapPin className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-500" />
+                    </div>
 
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {country.count} published{" "}
-                  {country.count === 1
-                    ? "job"
-                    : "jobs"}
-                </p>
+                    {/* COUNTRY NAME */}
+                    <h2 className="mt-5 text-xl font-bold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
+                      {country}
+                    </h2>
 
-                <span className="mt-4 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                  View Jobs →
-                </span>
-              </Link>
-            ))}
+                    {/* JOB COUNT */}
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                      {count} published{" "}
+                      {count === 1
+                        ? "job"
+                        : "jobs"}
+                    </p>
+
+                    <div className="mt-5 inline-flex items-center text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                      View Jobs
+                      <span className="ml-1 transition-transform group-hover:translate-x-1">
+                        →
+                      </span>
+                    </div>
+                  </Link>
+                );
+              }
+            )}
           </div>
         )}
       </div>
