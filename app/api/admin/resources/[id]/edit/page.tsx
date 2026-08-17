@@ -1,15 +1,14 @@
 "use client";
 
 import {
+  FormEvent,
   useEffect,
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface ResourceForm {
-  id: string;
-
   title: string;
   slug: string;
   category: string;
@@ -32,8 +31,6 @@ interface ResourceForm {
 }
 
 const initialForm: ResourceForm = {
-  id: "",
-
   title: "",
   slug: "",
   category: "",
@@ -55,37 +52,22 @@ const initialForm: ResourceForm = {
   seoDescription: "",
 };
 
-function stringValue(
-  value: unknown
-): string {
-  return value === null ||
-    value === undefined
-    ? ""
-    : String(value);
+function dateValue(value: unknown) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value).slice(0, 10);
 }
 
-function dateOnly(
-  value: unknown
-): string {
-  const text =
-    stringValue(value);
-
-  return text
-    ? text.slice(0, 10)
-    : "";
-}
-
-export default function EditResourcePage({
-  params,
-}: {
-  params: Promise<{
-    id: string;
-  }>;
-}) {
+export default function EditResourcePage() {
   const router = useRouter();
 
-  const [resourceId, setResourceId] =
-    useState("");
+  const params = useParams<{
+    id: string;
+  }>();
+
+  const id = params?.id;
 
   const [form, setForm] =
     useState<ResourceForm>(
@@ -98,108 +80,118 @@ export default function EditResourcePage({
   const [saving, setSaving] =
     useState(false);
 
-  const [message, setMessage] =
-    useState("");
-
   const [error, setError] =
     useState("");
 
+  const [message, setMessage] =
+    useState("");
+
   useEffect(() => {
-    let active = true;
+    if (!id) {
+      return;
+    }
+
+    let cancelled = false;
 
     async function loadResource() {
+      setLoading(true);
+      setError("");
+
       try {
-        const { id } =
-          await params;
-
-        if (!active) {
-          return;
-        }
-
-        setResourceId(id);
-
         const response =
           await fetch(
-            `/api/admin/resources/${encodeURIComponent(
-              id
-            )}`,
+            `/api/admin/resources/${id}`,
             {
+              method: "GET",
               cache: "no-store",
             }
           );
 
-        const result =
-          await response.json();
+        const contentType =
+          response.headers.get(
+            "content-type"
+          ) || "";
+
+        const raw =
+          await response.text();
+
+        let result: any = null;
+
+        if (raw.trim()) {
+          if (
+            contentType.includes(
+              "application/json"
+            )
+          ) {
+            result = JSON.parse(raw);
+          } else {
+            throw new Error(
+              `Server returned ${response.status} with a non-JSON response.`
+            );
+          }
+        }
 
         if (!response.ok) {
           throw new Error(
-            result.error ||
+            result?.error ||
               "Failed to load resource."
           );
         }
 
         const resource =
-          result.resource;
+          result?.resource;
 
-        if (!active) {
+        if (!resource) {
+          throw new Error(
+            "Resource data was not returned by the server."
+          );
+        }
+
+        if (cancelled) {
           return;
         }
 
         setForm({
-          id:
-            stringValue(
-              resource.id
-            ),
-
           title:
-            stringValue(
-              resource.title
-            ),
+            resource.title ?? "",
 
           slug:
-            stringValue(
-              resource.slug
-            ),
+            resource.slug ?? "",
 
           category:
-            stringValue(
-              resource.category
-            ),
+            resource.category ?? "",
 
           description:
-            stringValue(
-              resource.description
-            ),
+            resource.description ??
+            "",
 
           content:
-            stringValue(
-              resource.content
-            ),
+            resource.content ?? "",
 
           author:
-            stringValue(
-              resource.author
-            ),
+            resource.author ?? "",
 
           authorRole:
-            stringValue(
-              resource.author_role
-            ),
+            resource.author_role ??
+            resource.authorRole ??
+            "",
 
           publishedDate:
-            dateOnly(
-              resource.published_date
+            dateValue(
+              resource.published_date ??
+                resource.publishedDate
             ),
 
           updatedDate:
-            dateOnly(
-              resource.updated_date
+            dateValue(
+              resource.updated_date ??
+                resource.updatedDate
             ),
 
           readTime:
-            stringValue(
-              resource.read_time
-            ),
+            resource.read_time ??
+            resource.readTime ??
+            "",
 
           featured:
             Boolean(
@@ -207,24 +199,21 @@ export default function EditResourcePage({
             ),
 
           status:
-            stringValue(
-              resource.status
-            ) || "draft",
+            resource.status ??
+            "draft",
 
           seoTitle:
-            stringValue(
-              resource.seo_title
-            ),
+            resource.seo_title ??
+            resource.seoTitle ??
+            "",
 
           seoDescription:
-            stringValue(
-              resource.seo_description
-            ),
+            resource.seo_description ??
+            resource.seoDescription ??
+            "",
         });
-
-        setError("");
       } catch (loadError) {
-        if (!active) {
+        if (cancelled) {
           return;
         }
 
@@ -234,24 +223,22 @@ export default function EditResourcePage({
             : "Failed to load resource."
         );
       } finally {
-        if (active) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
     }
 
-    void loadResource();
+    loadResource();
 
     return () => {
-      active = false;
+      cancelled = true;
     };
-  }, [params]);
+  }, [id]);
 
-  function updateField<
-    K extends keyof ResourceForm
-  >(
-    field: K,
-    value: ResourceForm[K]
+  function updateField(
+    field: keyof ResourceForm,
+    value: string | boolean
   ) {
     setForm((current) => ({
       ...current,
@@ -260,29 +247,24 @@ export default function EditResourcePage({
   }
 
   async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (!resourceId) {
-      setError(
-        "Resource ID is missing."
-      );
+    if (!id) {
       return;
     }
 
     setSaving(true);
-    setMessage("");
     setError("");
+    setMessage("");
 
     try {
       const response =
         await fetch(
-          `/api/admin/resources/${encodeURIComponent(
-            resourceId
-          )}`,
+          `/api/admin/resources/${id}`,
           {
-            method: "PATCH",
+            method: "PUT",
             headers: {
               "Content-Type":
                 "application/json",
@@ -293,25 +275,41 @@ export default function EditResourcePage({
           }
         );
 
-      const result =
-        await response.json();
+      const raw =
+        await response.text();
+
+      let result: any = null;
+
+      if (raw.trim()) {
+        try {
+          result =
+            JSON.parse(raw);
+        } catch {
+          throw new Error(
+            `Server returned ${response.status} with invalid JSON.`
+          );
+        }
+      }
 
       if (!response.ok) {
         throw new Error(
-          result.error ||
+          result?.error ||
             "Failed to update resource."
         );
       }
 
       setMessage(
-        "Resource updated successfully."
+        "Career resource updated successfully."
       );
 
-      setTimeout(() => {
-        router.push(
-          "/admin/resources"
-        );
-      }, 900);
+      setTimeout(
+        () => {
+          router.push(
+            "/admin/resources"
+          );
+        },
+        700
+      );
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -325,42 +323,34 @@ export default function EditResourcePage({
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Loading resource...
-            </p>
-          </div>
+      <main className="min-h-screen bg-slate-100 px-4 py-16 dark:bg-slate-950">
+        <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-sm text-slate-500">
+            Loading career resource...
+          </p>
         </div>
       </main>
     );
   }
 
-  if (error && !form.id) {
+  if (error && !form.title) {
     return (
-      <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10">
-        <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-red-200 bg-white p-8 dark:border-red-900 dark:bg-slate-900">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              Unable to load resource
-            </h1>
+      <main className="min-h-screen bg-slate-100 px-4 py-16 dark:bg-slate-950">
+        <div className="mx-auto max-w-3xl">
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                "/admin/resources"
+              )
+            }
+            className="mb-6 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+          >
+            ← Back to Resources
+          </button>
 
-            <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-              {error}
-            </p>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push(
-                  "/admin/resources"
-                )
-              }
-              className="mt-6 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              Back to Resources
-            </button>
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+            {error}
           </div>
         </div>
       </main>
@@ -368,8 +358,9 @@ export default function EditResourcePage({
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10">
+    <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+
         <div className="mb-8">
           <button
             type="button"
@@ -384,27 +375,27 @@ export default function EditResourcePage({
           </button>
 
           <p className="mt-5 text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            Resource Management
+            Administration
           </p>
 
-          <h1 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
+          <h1 className="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white sm:text-4xl">
             Edit Career Resource
           </h1>
 
-          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Edit the complete resource without creating a duplicate article.
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Update the existing article or career guide.
           </p>
         </div>
 
-        {message && (
-          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
-            {message}
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
           </div>
         )}
 
-        {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
-            {error}
+        {message && (
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+            {message}
           </div>
         )}
 
@@ -412,16 +403,18 @@ export default function EditResourcePage({
           onSubmit={handleSubmit}
           className="space-y-8"
         >
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
               Basic Information
             </h2>
 
-            <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <Field
                 label="Title"
                 required
-                value={form.title}
+                value={
+                  form.title
+                }
                 onChange={(value) =>
                   updateField(
                     "title",
@@ -431,20 +424,11 @@ export default function EditResourcePage({
               />
 
               <Field
-                label="Slug"
-                value={form.slug}
-                onChange={(value) =>
-                  updateField(
-                    "slug",
-                    value
-                  )
-                }
-              />
-
-              <Field
                 label="Category"
                 required
-                value={form.category}
+                value={
+                  form.category
+                }
                 onChange={(value) =>
                   updateField(
                     "category",
@@ -454,9 +438,24 @@ export default function EditResourcePage({
               />
 
               <Field
+                label="Slug"
+                value={
+                  form.slug
+                }
+                onChange={(value) =>
+                  updateField(
+                    "slug",
+                    value
+                  )
+                }
+              />
+
+              <Field
                 label="Author"
                 required
-                value={form.author}
+                value={
+                  form.author
+                }
                 onChange={(value) =>
                   updateField(
                     "author",
@@ -481,6 +480,7 @@ export default function EditResourcePage({
               <Field
                 label="Read Time"
                 required
+                placeholder="6 min read"
                 value={
                   form.readTime
                 }
@@ -490,57 +490,12 @@ export default function EditResourcePage({
                     value
                   )
                 }
-                placeholder="5 min read"
-              />
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Article Content
-            </h2>
-
-            <div className="mt-6 space-y-5">
-              <TextArea
-                label="Short Description"
-                required
-                rows={5}
-                value={
-                  form.description
-                }
-                onChange={(value) =>
-                  updateField(
-                    "description",
-                    value
-                  )
-                }
               />
 
-              <TextArea
-                label="Full Content"
-                required
-                rows={18}
-                value={form.content}
-                onChange={(value) =>
-                  updateField(
-                    "content",
-                    value
-                  )
-                }
-              />
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Publication
-            </h2>
-
-            <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
               <Field
                 label="Published Date"
-                type="date"
                 required
+                type="date"
                 value={
                   form.publishedDate
                 }
@@ -565,55 +520,54 @@ export default function EditResourcePage({
                   )
                 }
               />
-
-              <SelectField
-                label="Status"
-                value={form.status}
-                onChange={(value) =>
-                  updateField(
-                    "status",
-                    value
-                  )
-                }
-                options={[
-                  "draft",
-                  "published",
-                  "archived",
-                ]}
-              />
-
-              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-4 dark:border-slate-800 dark:bg-slate-800/50">
-                <input
-                  id="featured"
-                  type="checkbox"
-                  checked={
-                    form.featured
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "featured",
-                      event.target.checked
-                    )
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                />
-
-                <label
-                  htmlFor="featured"
-                  className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Featured resource
-                </label>
-              </div>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
+              Resource Content
+            </h2>
+
+            <div className="space-y-5">
+              <TextAreaField
+                label="Description"
+                required
+                value={
+                  form.description
+                }
+                onChange={(value) =>
+                  updateField(
+                    "description",
+                    value
+                  )
+                }
+                rows={5}
+              />
+
+              <TextAreaField
+                label="Content"
+                required
+                value={
+                  form.content
+                }
+                onChange={(value) =>
+                  updateField(
+                    "content",
+                    value
+                  )
+                }
+                rows={18}
+                help="Use Markdown headings such as ## and ### inside the article body for SEO structure."
+              />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
               SEO
             </h2>
 
-            <div className="mt-6 space-y-5">
+            <div className="space-y-5">
               <Field
                 label="SEO Title"
                 value={
@@ -627,9 +581,8 @@ export default function EditResourcePage({
                 }
               />
 
-              <TextArea
+              <TextAreaField
                 label="SEO Description"
-                rows={5}
                 value={
                   form.seoDescription
                 }
@@ -639,8 +592,53 @@ export default function EditResourcePage({
                     value
                   )
                 }
+                rows={4}
               />
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
+              Publishing
+            </h2>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <SelectField
+                label="Status"
+                value={
+                  form.status
+                }
+                onChange={(value) =>
+                  updateField(
+                    "status",
+                    value
+                  )
+                }
+                options={[
+                  "published",
+                  "draft",
+                  "archived",
+                ]}
+              />
+            </div>
+
+            <label className="mt-5 flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={
+                  form.featured
+                }
+                onChange={(event) =>
+                  updateField(
+                    "featured",
+                    event.target.checked
+                  )
+                }
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+              />
+
+              Featured Resource
+            </label>
           </section>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -651,7 +649,7 @@ export default function EditResourcePage({
                   "/admin/resources"
                 )
               }
-              className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             >
               Cancel
             </button>
@@ -659,10 +657,10 @@ export default function EditResourcePage({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving
-                ? "Saving Changes..."
+                ? "Saving..."
                 : "Save Changes"}
             </button>
           </div>
@@ -676,86 +674,43 @@ function Field({
   label,
   value,
   onChange,
-  type = "text",
-  placeholder,
   required = false,
+  placeholder,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (
     value: string
   ) => void;
-  type?: string;
-  placeholder?: string;
   required?: boolean;
+  placeholder?: string;
+  type?: string;
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label}
-
         {required && (
           <span className="ml-1 text-red-500">
             *
           </span>
         )}
-      </label>
+      </span>
 
       <input
         type={type}
         value={value}
-        onChange={(event) =>
-          onChange(
-            event.target.value
-          )
-        }
+        required={required}
         placeholder={placeholder}
-        required={required}
-        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-      />
-    </div>
-  );
-}
-
-function TextArea({
-  label,
-  value,
-  onChange,
-  rows,
-  required = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (
-    value: string
-  ) => void;
-  rows: number;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-        {label}
-
-        {required && (
-          <span className="ml-1 text-red-500">
-            *
-          </span>
-        )}
-      </label>
-
-      <textarea
-        rows={rows}
-        value={value}
         onChange={(event) =>
           onChange(
             event.target.value
           )
         }
-        required={required}
-        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-indigo-950"
       />
-    </div>
+    </label>
   );
 }
 
@@ -773,10 +728,10 @@ function SelectField({
   options: string[];
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label}
-      </label>
+      </span>
 
       <select
         value={value}
@@ -785,7 +740,7 @@ function SelectField({
             event.target.value
           )
         }
-        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
       >
         {options.map(
           (option) => (
@@ -798,6 +753,55 @@ function SelectField({
           )
         )}
       </select>
-    </div>
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  required = false,
+  help,
+  rows = 6,
+}: {
+  label: string;
+  value: string;
+  onChange: (
+    value: string
+  ) => void;
+  required?: boolean;
+  help?: string;
+  rows?: number;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+        {label}
+        {required && (
+          <span className="ml-1 text-red-500">
+            *
+          </span>
+        )}
+      </span>
+
+      {help && (
+        <span className="mb-2 block text-xs text-slate-500 dark:text-slate-400">
+          {help}
+        </span>
+      )}
+
+      <textarea
+        value={value}
+        required={required}
+        rows={rows}
+        onChange={(event) =>
+          onChange(
+            event.target.value
+          )
+        }
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+      />
+    </label>
   );
 }

@@ -1,24 +1,21 @@
 "use client";
 
 import {
+  FormEvent,
   useEffect,
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface JobForm {
-  id: string;
-
   title: string;
   slug: string;
   company: string;
   companyLogo: string;
-
   country: string;
   countryCode: string;
   city: string;
-
   category: string;
   subcategory: string;
   industry: string;
@@ -33,7 +30,6 @@ interface JobForm {
   salaryPeriod: string;
 
   description: string;
-
   requirements: string;
   responsibilities: string;
   benefits: string;
@@ -51,18 +47,14 @@ interface JobForm {
   featured: boolean;
 }
 
-const emptyForm: JobForm = {
-  id: "",
-
+const initialForm: JobForm = {
   title: "",
   slug: "",
   company: "",
   companyLogo: "",
-
   country: "",
   countryCode: "",
   city: "",
-
   category: "",
   subcategory: "",
   industry: "",
@@ -77,7 +69,6 @@ const emptyForm: JobForm = {
   salaryPeriod: "year",
 
   description: "",
-
   requirements: "",
   responsibilities: "",
   benefits: "",
@@ -90,201 +81,219 @@ const emptyForm: JobForm = {
   closingDate: "",
   lastVerified: "",
 
-  verificationStatus: "unverified",
+  verificationStatus:
+    "unverified",
+
   status: "draft",
+
   featured: false,
 };
 
-function formatDate(value: unknown) {
+function arrayToText(
+  value: unknown
+) {
+  return Array.isArray(value)
+    ? value.join("\n")
+    : "";
+}
+
+function dateValue(
+  value: unknown
+) {
   if (!value) {
     return "";
   }
 
-  const stringValue =
-    String(value);
-
-  return stringValue.slice(0, 10);
+  return String(value).slice(
+    0,
+    10
+  );
 }
 
-function stringValue(value: unknown) {
-  return value === null ||
-    value === undefined
-    ? ""
-    : String(value);
-}
+export default function EditJobPage() {
+  const router =
+    useRouter();
 
-function arrayToText(value: unknown) {
-  if (!Array.isArray(value)) {
-    return "";
-  }
+  const params =
+    useParams<{
+      id: string;
+    }>();
 
-  return value.join("\n");
-}
-
-export default function EditJobPage({
-  params,
-}: {
-  params: Promise<{
-    id: string;
-  }>;
-}) {
-  const router = useRouter();
-
-  const [jobId, setJobId] =
-    useState("");
+  const id =
+    params?.id;
 
   const [form, setForm] =
-    useState<JobForm>(emptyForm);
+    useState<JobForm>(
+      initialForm
+    );
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [saving, setSaving] =
-    useState(false);
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
 
-  const [message, setMessage] =
-    useState("");
+  const [
+    message,
+    setMessage,
+  ] = useState("");
 
-  const [error, setError] =
-    useState("");
+  const [
+    error,
+    setError,
+  ] = useState("");
 
   useEffect(() => {
-    let active = true;
+    if (!id) {
+      return;
+    }
+
+    let cancelled = false;
 
     async function loadJob() {
+      setLoading(true);
+      setError("");
+
       try {
-        const { id } =
-          await params;
-
-        if (!active) {
-          return;
-        }
-
-        setJobId(id);
-
         const response =
           await fetch(
-            `/api/admin/jobs/${encodeURIComponent(
-              id
-            )}`,
+            `/api/admin/jobs/${id}`,
             {
+              method: "GET",
               cache: "no-store",
             }
           );
 
-        const result =
-          await response.json();
+        const contentType =
+          response.headers.get(
+            "content-type"
+          ) || "";
+
+        const raw =
+          await response.text();
+
+        let result: any =
+          null;
+
+        if (raw.trim()) {
+          if (
+            contentType.includes(
+              "application/json"
+            )
+          ) {
+            result =
+              JSON.parse(raw);
+          } else {
+            throw new Error(
+              `Server returned ${response.status} with a non-JSON response.`
+            );
+          }
+        }
 
         if (!response.ok) {
           throw new Error(
-            result.error ||
+            result?.error ||
               "Failed to load job."
           );
         }
 
         const job =
-          result.job;
+          result?.job;
 
-        if (!active) {
+        if (!job) {
+          throw new Error(
+            "Job data was not returned by the server."
+          );
+        }
+
+        if (cancelled) {
           return;
         }
 
         setForm({
-          id: stringValue(job.id),
-
           title:
-            stringValue(
-              job.title
-            ),
+            job.title ?? "",
 
           slug:
-            stringValue(
-              job.slug
-            ),
+            job.slug ?? "",
 
           company:
-            stringValue(
-              job.company
-            ),
+            job.company ?? "",
 
           companyLogo:
-            stringValue(
-              job.company_logo
-            ),
+            job.company_logo ??
+            job.companyLogo ??
+            "",
 
           country:
-            stringValue(
-              job.country
-            ),
+            job.country ?? "",
 
           countryCode:
-            stringValue(
-              job.country_code
-            ),
+            job.country_code ??
+            job.countryCode ??
+            "",
 
           city:
-            stringValue(
-              job.city
-            ),
+            job.city ?? "",
 
           category:
-            stringValue(
-              job.category
-            ),
+            job.category ?? "",
 
           subcategory:
-            stringValue(
-              job.subcategory
-            ),
+            job.subcategory ??
+            "",
 
           industry:
-            stringValue(
-              job.industry
-            ),
+            job.industry ?? "",
 
           employmentType:
-            stringValue(
-              job.employment_type
-            ) ||
+            job.employment_type ??
+            job.employmentType ??
             "Full-time",
 
           workplaceType:
-            stringValue(
-              job.workplace_type
-            ) ||
+            job.workplace_type ??
+            job.workplaceType ??
             "On-site",
 
           experienceLevel:
-            stringValue(
-              job.experience_level
-            ) ||
+            job.experience_level ??
+            job.experienceLevel ??
             "Entry Level",
 
           salaryMin:
-            stringValue(
-              job.salary_min
-            ),
+            job.salary_min !=
+              null
+              ? String(
+                  job.salary_min
+                )
+              : "",
 
           salaryMax:
-            stringValue(
-              job.salary_max
-            ),
+            job.salary_max !=
+              null
+              ? String(
+                  job.salary_max
+                )
+              : "",
 
           salaryCurrency:
-            stringValue(
-              job.salary_currency
-            ),
+            job.salary_currency ??
+            job.salaryCurrency ??
+            "",
 
           salaryPeriod:
-            stringValue(
-              job.salary_period
-            ) ||
+            job.salary_period ??
+            job.salaryPeriod ??
             "year",
 
           description:
-            stringValue(
-              job.description
-            ),
+            job.description ??
+            "",
 
           requirements:
             arrayToText(
@@ -302,45 +311,45 @@ export default function EditJobPage({
             ),
 
           sourceName:
-            stringValue(
-              job.source_name
-            ),
+            job.source_name ??
+            job.sourceName ??
+            "",
 
           sourceUrl:
-            stringValue(
-              job.source_url
-            ),
+            job.source_url ??
+            job.sourceUrl ??
+            "",
 
           applyUrl:
-            stringValue(
-              job.apply_url
-            ),
+            job.apply_url ??
+            job.applyUrl ??
+            "",
 
           datePosted:
-            formatDate(
-              job.date_posted
+            dateValue(
+              job.date_posted ??
+                job.datePosted
             ),
 
           closingDate:
-            formatDate(
-              job.closing_date
+            dateValue(
+              job.closing_date ??
+                job.closingDate
             ),
 
           lastVerified:
-            formatDate(
-              job.last_verified
+            dateValue(
+              job.last_verified ??
+                job.lastVerified
             ),
 
           verificationStatus:
-            stringValue(
-              job.verification_status
-            ) ||
+            job.verification_status ??
+            job.verificationStatus ??
             "unverified",
 
           status:
-            stringValue(
-              job.status
-            ) ||
+            job.status ??
             "draft",
 
           featured:
@@ -348,59 +357,63 @@ export default function EditJobPage({
               job.featured
             ),
         });
-
-        setError("");
-      } catch (loadError) {
-        if (!active) {
+      } catch (
+        loadError
+      ) {
+        if (
+          cancelled
+        ) {
           return;
         }
 
         setError(
-          loadError instanceof Error
+          loadError instanceof
+            Error
             ? loadError.message
             : "Failed to load job."
         );
       } finally {
-        if (active) {
+        if (
+          !cancelled
+        ) {
           setLoading(false);
         }
       }
     }
 
-    void loadJob();
+    loadJob();
 
     return () => {
-      active = false;
+      cancelled = true;
     };
-  }, [params]);
+  }, [id]);
 
-  function updateField<
-    K extends keyof JobForm
-  >(
-    field: K,
-    value: JobForm[K]
+  function updateField(
+    field: keyof JobForm,
+    value:
+      | string
+      | boolean
   ) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setForm(
+      (current) => ({
+        ...current,
+        [field]: value,
+      })
+    );
   }
 
   async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (!jobId) {
-      setError(
-        "Job ID is missing."
-      );
+    if (!id) {
       return;
     }
 
     setSaving(true);
-    setMessage("");
     setError("");
+    setMessage("");
 
     try {
       const payload = {
@@ -436,11 +449,9 @@ export default function EditJobPage({
 
       const response =
         await fetch(
-          `/api/admin/jobs/${encodeURIComponent(
-            jobId
-          )}`,
+          `/api/admin/jobs/${id}`,
           {
-            method: "PATCH",
+            method: "PUT",
             headers: {
               "Content-Type":
                 "application/json",
@@ -451,12 +462,26 @@ export default function EditJobPage({
           }
         );
 
-      const result =
-        await response.json();
+      const raw =
+        await response.text();
+
+      let result: any =
+        null;
+
+      if (raw.trim()) {
+        try {
+          result =
+            JSON.parse(raw);
+        } catch {
+          throw new Error(
+            `Server returned ${response.status} with invalid JSON.`
+          );
+        }
+      }
 
       if (!response.ok) {
         throw new Error(
-          result.error ||
+          result?.error ||
             "Failed to update job."
         );
       }
@@ -465,14 +490,19 @@ export default function EditJobPage({
         "Job updated successfully."
       );
 
-      setTimeout(() => {
-        router.push(
-          "/admin/jobs"
-        );
-      }, 900);
-    } catch (saveError) {
+      setTimeout(
+        () =>
+          router.push(
+            "/admin/jobs"
+          ),
+        700
+      );
+    } catch (
+      saveError
+    ) {
       setError(
-        saveError instanceof Error
+        saveError instanceof
+          Error
           ? saveError.message
           : "Failed to update job."
       );
@@ -483,42 +513,34 @@ export default function EditJobPage({
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Loading job...
-            </p>
-          </div>
+      <main className="min-h-screen bg-slate-100 px-4 py-16 dark:bg-slate-950">
+        <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-sm text-slate-500">
+            Loading job...
+          </p>
         </div>
       </main>
     );
   }
 
-  if (error && !form.id) {
+  if (error && !form.title) {
     return (
-      <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10">
-        <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-red-200 bg-white p-8 dark:border-red-900 dark:bg-slate-900">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              Unable to load job
-            </h1>
+      <main className="min-h-screen bg-slate-100 px-4 py-16 dark:bg-slate-950">
+        <div className="mx-auto max-w-3xl">
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                "/admin/jobs"
+              )
+            }
+            className="mb-6 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+          >
+            ← Back to Jobs
+          </button>
 
-            <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-              {error}
-            </p>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push(
-                  "/admin/jobs"
-                )
-              }
-              className="mt-6 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              Back to Jobs
-            </button>
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+            {error}
           </div>
         </div>
       </main>
@@ -526,8 +548,9 @@ export default function EditJobPage({
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-10">
+    <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+
         <div className="mb-8">
           <button
             type="button"
@@ -536,63 +559,54 @@ export default function EditJobPage({
                 "/admin/jobs"
               )
             }
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 hover:underline dark:text-indigo-400"
+            className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
           >
             ← Back to Jobs
           </button>
 
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                Job Management
-              </p>
+          <p className="mt-5 text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            Administration
+          </p>
 
-              <h1 className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
-                Edit Job
-              </h1>
+          <h1 className="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white sm:text-4xl">
+            Edit Job
+          </h1>
 
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Update the complete job listing without creating a new record.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-900">
-              <span className="text-slate-500 dark:text-slate-400">
-                Status:
-              </span>{" "}
-              <span className="font-semibold text-slate-900 dark:text-white">
-                {form.status}
-              </span>
-            </div>
-          </div>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Update the existing job listing.
+          </p>
         </div>
 
-        {message && (
-          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
-            {message}
-          </div>
-        )}
-
         {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </div>
         )}
 
+        {message && (
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+            {message}
+          </div>
+        )}
+
         <form
-          onSubmit={handleSubmit}
+          onSubmit={
+            handleSubmit
+          }
           className="space-y-8"
         >
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
               Basic Information
             </h2>
 
-            <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <Field
                 label="Job Title"
                 required
-                value={form.title}
+                value={
+                  form.title
+                }
                 onChange={(value) =>
                   updateField(
                     "title",
@@ -604,7 +618,9 @@ export default function EditJobPage({
               <Field
                 label="Company"
                 required
-                value={form.company}
+                value={
+                  form.company
+                }
                 onChange={(value) =>
                   updateField(
                     "company",
@@ -616,7 +632,9 @@ export default function EditJobPage({
               <Field
                 label="Country"
                 required
-                value={form.country}
+                value={
+                  form.country
+                }
                 onChange={(value) =>
                   updateField(
                     "country",
@@ -628,7 +646,10 @@ export default function EditJobPage({
               <Field
                 label="Country Code"
                 required
-                value={form.countryCode}
+                placeholder="pk"
+                value={
+                  form.countryCode
+                }
                 onChange={(value) =>
                   updateField(
                     "countryCode",
@@ -640,7 +661,9 @@ export default function EditJobPage({
               <Field
                 label="City"
                 required
-                value={form.city}
+                value={
+                  form.city
+                }
                 onChange={(value) =>
                   updateField(
                     "city",
@@ -650,31 +673,11 @@ export default function EditJobPage({
               />
 
               <Field
-                label="Company Logo URL"
-                value={form.companyLogo}
-                onChange={(value) =>
-                  updateField(
-                    "companyLogo",
-                    value
-                  )
-                }
-              />
-
-              <Field
-                label="Industry"
-                value={form.industry}
-                onChange={(value) =>
-                  updateField(
-                    "industry",
-                    value
-                  )
-                }
-              />
-
-              <Field
                 label="Category"
                 required
-                value={form.category}
+                value={
+                  form.category
+                }
                 onChange={(value) =>
                   updateField(
                     "category",
@@ -685,7 +688,9 @@ export default function EditJobPage({
 
               <Field
                 label="Subcategory"
-                value={form.subcategory}
+                value={
+                  form.subcategory
+                }
                 onChange={(value) =>
                   updateField(
                     "subcategory",
@@ -695,8 +700,23 @@ export default function EditJobPage({
               />
 
               <Field
+                label="Industry"
+                value={
+                  form.industry
+                }
+                onChange={(value) =>
+                  updateField(
+                    "industry",
+                    value
+                  )
+                }
+              />
+
+              <Field
                 label="Slug"
-                value={form.slug}
+                value={
+                  form.slug
+                }
                 onChange={(value) =>
                   updateField(
                     "slug",
@@ -704,15 +724,28 @@ export default function EditJobPage({
                   )
                 }
               />
+
+              <Field
+                label="Company Logo URL"
+                value={
+                  form.companyLogo
+                }
+                onChange={(value) =>
+                  updateField(
+                    "companyLogo",
+                    value
+                  )
+                }
+              />
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Employment Details
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
+              Job Classification
             </h2>
 
-            <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               <SelectField
                 label="Employment Type"
                 value={
@@ -746,9 +779,9 @@ export default function EditJobPage({
                   )
                 }
                 options={[
-                  "Remote",
-                  "Hybrid",
                   "On-site",
+                  "Hybrid",
+                  "Remote",
                 ]}
               />
 
@@ -773,16 +806,18 @@ export default function EditJobPage({
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Compensation
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
+              Salary
             </h2>
 
-            <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
               <Field
-                label="Minimum Salary"
+                label="Minimum"
                 type="number"
-                value={form.salaryMin}
+                value={
+                  form.salaryMin
+                }
                 onChange={(value) =>
                   updateField(
                     "salaryMin",
@@ -792,9 +827,11 @@ export default function EditJobPage({
               />
 
               <Field
-                label="Maximum Salary"
+                label="Maximum"
                 type="number"
-                value={form.salaryMax}
+                value={
+                  form.salaryMax
+                }
                 onChange={(value) =>
                   updateField(
                     "salaryMax",
@@ -817,7 +854,7 @@ export default function EditJobPage({
               />
 
               <SelectField
-                label="Salary Period"
+                label="Period"
                 value={
                   form.salaryPeriod
                 }
@@ -836,16 +873,15 @@ export default function EditJobPage({
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Job Description
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
+              Job Content
             </h2>
 
-            <div className="mt-6">
+            <div className="space-y-5">
               <TextAreaField
                 label="Description"
                 required
-                rows={8}
                 value={
                   form.description
                 }
@@ -856,27 +892,10 @@ export default function EditJobPage({
                   )
                 }
               />
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-3">
-              <TextAreaField
-                label="Requirements"
-                rows={8}
-                value={
-                  form.requirements
-                }
-                onChange={(value) =>
-                  updateField(
-                    "requirements",
-                    value
-                  )
-                }
-                placeholder="One requirement per line"
-              />
 
               <TextAreaField
                 label="Responsibilities"
-                rows={8}
+                help="One item per line."
                 value={
                   form.responsibilities
                 }
@@ -886,33 +905,46 @@ export default function EditJobPage({
                     value
                   )
                 }
-                placeholder="One responsibility per line"
+              />
+
+              <TextAreaField
+                label="Requirements"
+                help="One item per line."
+                value={
+                  form.requirements
+                }
+                onChange={(value) =>
+                  updateField(
+                    "requirements",
+                    value
+                  )
+                }
               />
 
               <TextAreaField
                 label="Benefits"
-                rows={8}
-                value={form.benefits}
+                help="One item per line."
+                value={
+                  form.benefits
+                }
                 onChange={(value) =>
                   updateField(
                     "benefits",
                     value
                   )
                 }
-                placeholder="One benefit per line"
               />
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Source & Verification
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
+              Source & Application
             </h2>
 
-            <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <Field
                 label="Source Name"
-                required
                 value={
                   form.sourceName
                 }
@@ -926,8 +958,6 @@ export default function EditJobPage({
 
               <Field
                 label="Source URL"
-                required
-                type="url"
                 value={
                   form.sourceUrl
                 }
@@ -940,34 +970,17 @@ export default function EditJobPage({
               />
 
               <Field
-                label="Application URL"
+                label="Apply URL"
                 required
-                type="url"
-                value={form.applyUrl}
+                value={
+                  form.applyUrl
+                }
                 onChange={(value) =>
                   updateField(
                     "applyUrl",
                     value
                   )
                 }
-              />
-
-              <SelectField
-                label="Verification Status"
-                value={
-                  form.verificationStatus
-                }
-                onChange={(value) =>
-                  updateField(
-                    "verificationStatus",
-                    value
-                  )
-                }
-                options={[
-                  "verified",
-                  "reviewed",
-                  "unverified",
-                ]}
               />
 
               <Field
@@ -1014,15 +1027,35 @@ export default function EditJobPage({
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-6 text-xl font-bold text-slate-950 dark:text-white">
               Publishing
             </h2>
 
-            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <SelectField
+                label="Verification Status"
+                value={
+                  form.verificationStatus
+                }
+                onChange={(value) =>
+                  updateField(
+                    "verificationStatus",
+                    value
+                  )
+                }
+                options={[
+                  "verified",
+                  "reviewed",
+                  "unverified",
+                ]}
+              />
+
               <SelectField
                 label="Status"
-                value={form.status}
+                value={
+                  form.status
+                }
                 onChange={(value) =>
                   updateField(
                     "status",
@@ -1030,37 +1063,31 @@ export default function EditJobPage({
                   )
                 }
                 options={[
-                  "draft",
                   "published",
+                  "draft",
                   "archived",
                 ]}
               />
-
-              <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 dark:border-slate-800 dark:bg-slate-800/50">
-                <input
-                  id="featured"
-                  type="checkbox"
-                  checked={
-                    form.featured
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "featured",
-                      event.target
-                        .checked
-                    )
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                />
-
-                <label
-                  htmlFor="featured"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Mark as featured job
-                </label>
-              </div>
             </div>
+
+            <label className="mt-5 flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={
+                  form.featured
+                }
+                onChange={(event) =>
+                  updateField(
+                    "featured",
+                    event.target
+                      .checked
+                  )
+                }
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+              />
+
+              Featured Job
+            </label>
           </section>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -1071,7 +1098,7 @@ export default function EditJobPage({
                   "/admin/jobs"
                 )
               }
-              className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             >
               Cancel
             </button>
@@ -1079,10 +1106,10 @@ export default function EditJobPage({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving
-                ? "Saving Changes..."
+                ? "Saving..."
                 : "Save Changes"}
             </button>
           </div>
@@ -1096,89 +1123,43 @@ function Field({
   label,
   value,
   onChange,
-  type = "text",
-  placeholder,
   required = false,
+  placeholder,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (
     value: string
   ) => void;
-  type?: string;
-  placeholder?: string;
   required?: boolean;
+  placeholder?: string;
+  type?: string;
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label}
-
         {required && (
           <span className="ml-1 text-red-500">
             *
           </span>
         )}
-      </label>
+      </span>
 
       <input
         type={type}
         value={value}
+        required={required}
+        placeholder={placeholder}
         onChange={(event) =>
           onChange(
             event.target.value
           )
         }
-        placeholder={placeholder}
-        required={required}
-        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-indigo-950"
       />
-    </div>
-  );
-}
-
-function TextAreaField({
-  label,
-  value,
-  onChange,
-  rows = 5,
-  placeholder,
-  required = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (
-    value: string
-  ) => void;
-  rows?: number;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-        {label}
-
-        {required && (
-          <span className="ml-1 text-red-500">
-            *
-          </span>
-        )}
-      </label>
-
-      <textarea
-        rows={rows}
-        value={value}
-        onChange={(event) =>
-          onChange(
-            event.target.value
-          )
-        }
-        placeholder={placeholder}
-        required={required}
-        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-      />
-    </div>
+    </label>
   );
 }
 
@@ -1196,10 +1177,10 @@ function SelectField({
   options: string[];
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label}
-      </label>
+      </span>
 
       <select
         value={value}
@@ -1208,7 +1189,7 @@ function SelectField({
             event.target.value
           )
         }
-        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
       >
         {options.map(
           (option) => (
@@ -1221,6 +1202,53 @@ function SelectField({
           )
         )}
       </select>
-    </div>
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  required = false,
+  help,
+}: {
+  label: string;
+  value: string;
+  onChange: (
+    value: string
+  ) => void;
+  required?: boolean;
+  help?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+        {label}
+        {required && (
+          <span className="ml-1 text-red-500">
+            *
+          </span>
+        )}
+      </span>
+
+      {help && (
+        <span className="mb-2 block text-xs text-slate-500">
+          {help}
+        </span>
+      )}
+
+      <textarea
+        value={value}
+        required={required}
+        onChange={(event) =>
+          onChange(
+            event.target.value
+          )
+        }
+        rows={6}
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+      />
+    </label>
   );
 }
