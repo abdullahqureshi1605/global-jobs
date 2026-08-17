@@ -35,7 +35,8 @@ export async function DELETE(
     if (!id) {
       return NextResponse.json(
         {
-          error: "Job ID is required.",
+          error:
+            "Report ID is required.",
         },
         { status: 400 }
       );
@@ -44,20 +45,20 @@ export async function DELETE(
     const {
       error,
     } = await supabaseAdmin
-      .from("jobs")
+      .from("job_reports")
       .delete()
       .eq("id", id);
 
     if (error) {
       console.error(
-        "Job deletion failed:",
+        "Report deletion failed:",
         error
       );
 
       return NextResponse.json(
         {
           error:
-            "Failed to delete job.",
+            "Failed to delete report.",
           details:
             error.message,
         },
@@ -70,7 +71,7 @@ export async function DELETE(
     });
   } catch (error) {
     console.error(
-      "Unexpected job deletion error:",
+      "Unexpected report deletion error:",
       error
     );
 
