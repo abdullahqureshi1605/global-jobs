@@ -13,6 +13,7 @@ const TABLES = {
   activities: "crm_activities",
   content: "crm_content",
   targets: "crm_job_targets",
+  social: "crm_social_posts",
 } as const;
 
 type ModuleName =
