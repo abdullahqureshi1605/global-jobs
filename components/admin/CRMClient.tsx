@@ -13,13 +13,11 @@ import Link from "next/link";
 import {
   Activity,
   BarChart3,
-  BriefcaseBusiness,
   Building2,
   CheckCircle2,
   CircleDollarSign,
   FileText,
-  LayoutDashboard,
-  List,
+  Megaphone,
   Pencil,
   Plus,
   Target,
@@ -37,19 +35,13 @@ type ModuleName =
   | "tasks"
   | "content"
   | "targets"
+  | "social"
   | "activities";
-
-type ViewMode =
-  | "dashboard"
-  | "sheet"
-  | "board";
 
 interface CRMRecord {
   id?: string;
   created_at?: string | null;
   updated_at?: string | null;
-  target_jobs?: number;
-  actual_jobs?: number;
   [key: string]: unknown;
 }
 
@@ -57,7 +49,7 @@ interface CRMClientProps {
   userEmail: string;
 }
 
-interface ModuleDefinition {
+interface ModuleItem {
   key: ModuleName;
   label: string;
   icon: ComponentType<{
@@ -65,12 +57,12 @@ interface ModuleDefinition {
   }>;
 }
 
-interface ColumnDefinition {
-  key: string;
+interface StatItem {
   label: string;
+  value: string | number;
 }
 
-const MODULES: ModuleDefinition[] = [
+const MODULES: ModuleItem[] = [
   {
     key: "leads",
     label: "Leads",
@@ -88,7 +80,7 @@ const MODULES: ModuleDefinition[] = [
   },
   {
     key: "deals",
-    label: "Deals",
+    label: "Revenue",
     icon: CircleDollarSign,
   },
   {
@@ -107,8 +99,13 @@ const MODULES: ModuleDefinition[] = [
     icon: Target,
   },
   {
+    key: "social",
+    label: "Social",
+    icon: Megaphone,
+  },
+  {
     key: "activities",
-    label: "Activities",
+    label: "Activity",
     icon: Activity,
   },
 ];
@@ -201,6 +198,23 @@ const EMPTY_FORMS: Record<
     notes: "",
   },
 
+  social: {
+    platform: "Facebook",
+    account_name: "",
+    post_type: "Job Post",
+    title: "",
+    target_country: "",
+    target_category: "",
+    target_url: "",
+    status: "Draft",
+    scheduled_at: "",
+    published_at: "",
+    impressions: 0,
+    clicks: 0,
+    leads_generated: 0,
+    notes: "",
+  },
+
   activities: {
     activity_type: "Note",
     title: "",
@@ -211,18 +225,87 @@ const EMPTY_FORMS: Record<
 
 function getModuleLabel(
   module: ModuleName
-) {
-  return (
-    MODULES.find(
-      (item) =>
-        item.key === module
-    )?.label ?? module
+): string {
+  const item = MODULES.find(
+    (entry) =>
+      entry.key === module
   );
+
+  return item?.label ?? module;
+}
+
+function getDescription(
+  module: ModuleName
+): string {
+  switch (module) {
+    case "leads":
+      return "Recruiter, affiliate and partnership opportunities.";
+
+    case "companies":
+      return "Recruiter, employer and partner organizations.";
+
+    case "contacts":
+      return "People connected to companies and business relationships.";
+
+    case "deals":
+      return "Commercial opportunities and revenue.";
+
+    case "tasks":
+      return "Research, outreach and follow-up work.";
+
+    case "content":
+      return "Articles, guides and publishing progress.";
+
+    case "targets":
+      return "Target jobs versus actual job supply.";
+
+    case "social":
+      return "Social campaigns, posts, clicks and leads.";
+
+    case "activities":
+      return "Business communication and operational history.";
+
+    default:
+      return "";
+  }
+}
+
+function getAddLabel(
+  module: ModuleName
+): string {
+  switch (module) {
+    case "leads":
+      return "Add Lead";
+
+    case "companies":
+      return "Add Company";
+
+    case "contacts":
+      return "Add Contact";
+
+    case "deals":
+      return "Add Deal";
+
+    case "tasks":
+      return "Add Task";
+
+    case "content":
+      return "Add Content";
+
+    case "targets":
+      return "Add Target";
+
+    case "social":
+      return "Add Campaign";
+
+    case "activities":
+      return "Log Activity";
+  }
 }
 
 function formatDate(
   value: unknown
-) {
+): string {
   if (!value) {
     return "—";
   }
@@ -231,16 +314,27 @@ function formatDate(
     String(value)
   );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return String(value);
   }
 
-  return date.toLocaleDateString();
+  return date.toLocaleDateString(
+    undefined,
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  );
 }
 
-function formatDateInput(
+function formatInputDate(
   value: unknown
-) {
+): string {
   if (!value) {
     return "";
   }
@@ -251,9 +345,9 @@ function formatDateInput(
   );
 }
 
-async function readResponse(
+async function parseResponse(
   response: Response
-) {
+): Promise<any> {
   const raw =
     await response.text();
 
@@ -268,32 +362,366 @@ async function readResponse(
   }
 }
 
+function getStats(
+  module: ModuleName,
+  records: CRMRecord[]
+): StatItem[] {
+  switch (module) {
+    case "leads":
+      return [
+        {
+          label: "Total",
+          value: records.length,
+        },
+        {
+          label: "Hot",
+          value: records.filter(
+            (item) =>
+              item.priority === "Hot"
+          ).length,
+        },
+        {
+          label: "Interested",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Interested"
+          ).length,
+        },
+        {
+          label: "Qualified",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Qualified"
+          ).length,
+        },
+      ];
+
+    case "companies":
+      return [
+        {
+          label: "Companies",
+          value: records.length,
+        },
+        {
+          label: "Prospects",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "prospect"
+          ).length,
+        },
+        {
+          label: "Active",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "active"
+          ).length,
+        },
+        {
+          label: "Countries",
+          value: new Set(
+            records
+              .map((item) =>
+                String(
+                  item.country ??
+                    ""
+                ).trim()
+              )
+              .filter(Boolean)
+          ).size,
+        },
+      ];
+
+    case "contacts":
+      return [
+        {
+          label: "Contacts",
+          value: records.length,
+        },
+        {
+          label: "Emails",
+          value: records.filter(
+            (item) =>
+              Boolean(
+                item.email
+              )
+          ).length,
+        },
+        {
+          label: "Phones",
+          value: records.filter(
+            (item) =>
+              Boolean(
+                item.phone
+              )
+          ).length,
+        },
+        {
+          label: "Active",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "active"
+          ).length,
+        },
+      ];
+
+    case "deals":
+      return [
+        {
+          label: "Total Deals",
+          value: records.length,
+        },
+        {
+          label: "Open",
+          value: records.filter(
+            (item) =>
+              ![
+                "Won",
+                "Lost",
+              ].includes(
+                String(
+                  item.stage ??
+                    ""
+                )
+              )
+          ).length,
+        },
+        {
+          label: "Won",
+          value: records.filter(
+            (item) =>
+              item.stage ===
+              "Won"
+          ).length,
+        },
+        {
+          label: "Revenue",
+          value: `$${records
+            .filter(
+              (item) =>
+                item.stage ===
+                "Won"
+            )
+            .reduce(
+              (sum, item) =>
+                sum +
+                (Number(
+                  item.amount
+                ) || 0),
+              0
+            )
+            .toLocaleString()}`,
+        },
+      ];
+
+    case "tasks":
+      return [
+        {
+          label: "Total",
+          value: records.length,
+        },
+        {
+          label: "Pending",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Pending"
+          ).length,
+        },
+        {
+          label: "Progress",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "In Progress"
+          ).length,
+        },
+        {
+          label: "Completed",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Completed"
+          ).length,
+        },
+      ];
+
+    case "content":
+      return [
+        {
+          label: "Total",
+          value: records.length,
+        },
+        {
+          label: "Published",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Published"
+          ).length,
+        },
+        {
+          label: "Writing",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Writing"
+          ).length,
+        },
+        {
+          label: "Planned",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Planned"
+          ).length,
+        },
+      ];
+
+    case "targets": {
+      const target =
+        records.reduce(
+          (sum, item) =>
+            sum +
+            (Number(
+              item.target_jobs
+            ) || 0),
+          0
+        );
+
+      const actual =
+        records.reduce(
+          (sum, item) =>
+            sum +
+            (Number(
+              item.actual_jobs
+            ) || 0),
+          0
+        );
+
+      return [
+        {
+          label: "Target",
+          value: target,
+        },
+        {
+          label: "Actual",
+          value: actual,
+        },
+        {
+          label: "Gap",
+          value: Math.max(
+            target -
+              actual,
+            0
+          ),
+        },
+        {
+          label: "Sources",
+          value: new Set(
+            records
+              .map((item) =>
+                String(
+                  item.source ??
+                    ""
+                ).trim()
+              )
+              .filter(Boolean)
+          ).size,
+        },
+      ];
+    }
+
+    case "social":
+      return [
+        {
+          label: "Posts",
+          value: records.length,
+        },
+        {
+          label: "Published",
+          value: records.filter(
+            (item) =>
+              item.status ===
+              "Published"
+          ).length,
+        },
+        {
+          label: "Clicks",
+          value: records.reduce(
+            (sum, item) =>
+              sum +
+              (Number(
+                item.clicks
+              ) || 0),
+            0
+          ),
+        },
+        {
+          label: "Leads",
+          value: records.reduce(
+            (sum, item) =>
+              sum +
+              (Number(
+                item.leads_generated
+              ) || 0),
+            0
+          ),
+        },
+      ];
+
+    case "activities":
+      return [
+        {
+          label: "Total",
+          value: records.length,
+        },
+        {
+          label: "Emails",
+          value: records.filter(
+            (item) =>
+              item.activity_type ===
+              "Email"
+          ).length,
+        },
+        {
+          label: "Calls",
+          value: records.filter(
+            (item) =>
+              item.activity_type ===
+              "Call"
+          ).length,
+        },
+        {
+          label: "Follow-ups",
+          value: records.filter(
+            (item) =>
+              item.activity_type ===
+              "Follow-up"
+          ).length,
+        },
+      ];
+  }
+}
+
 export default function CRMClient({
   userEmail,
 }: CRMClientProps) {
   const [module, setModule] =
-    useState<ModuleName>("leads");
-
-  const [view, setView] =
-    useState<ViewMode>(
-      "dashboard"
+    useState<ModuleName>(
+      "leads"
     );
-
-  // IMPORTANT:
-  // Form visibility is intentionally separate
-  // from ViewMode. This prevents the old
-  // ViewMode/"form" TypeScript error.
-  const [
-    formOpen,
-    setFormOpen,
-  ] = useState(false);
 
   const [records, setRecords] =
     useState<CRMRecord[]>([]);
 
   const [
-    companyRecords,
-    setCompanyRecords,
+    companies,
+    setCompanies,
   ] = useState<CRMRecord[]>([]);
 
   const [loading, setLoading] =
@@ -302,31 +730,31 @@ export default function CRMClient({
   const [saving, setSaving] =
     useState(false);
 
+  const [formOpen, setFormOpen] =
+    useState(false);
+
   const [editing, setEditing] =
     useState<CRMRecord | null>(
       null
     );
 
   const [form, setForm] =
-    useState<CRMRecord>(
-      EMPTY_FORMS.leads
-    );
+    useState<CRMRecord>({
+      ...EMPTY_FORMS.leads,
+    });
 
   const [search, setSearch] =
-    useState("");
-
-  const [error, setError] =
     useState("");
 
   const [message, setMessage] =
     useState("");
 
-  const selectedModule =
-    getModuleLabel(module);
+  const [error, setError] =
+    useState("");
 
-  async function loadModule(
-    selectedModule: ModuleName
-  ) {
+  const loadModule = async (
+    selected: ModuleName
+  ) => {
     setLoading(true);
     setError("");
 
@@ -334,7 +762,7 @@ export default function CRMClient({
       const response =
         await fetch(
           `/api/admin/crm?module=${encodeURIComponent(
-            selectedModule
+            selected
           )}`,
           {
             method: "GET",
@@ -349,16 +777,14 @@ export default function CRMClient({
         );
 
       const result =
-        await readResponse(
+        await parseResponse(
           response
         );
 
       if (!response.ok) {
         throw new Error(
           result?.error ??
-            `Failed to load ${getModuleLabel(
-              selectedModule
-            )}.`
+            "Failed to load CRM data."
         );
       }
 
@@ -369,53 +795,49 @@ export default function CRMClient({
           ? result.data
           : []
       );
-    } catch (loadError) {
+    } catch (err) {
       setError(
-        loadError instanceof
-          Error
-          ? loadError.message
+        err instanceof Error
+          ? err.message
           : "Failed to load CRM data."
       );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function loadCompanies() {
-    try {
-      const response =
-        await fetch(
-          "/api/admin/crm?module=companies",
-          {
-            method: "GET",
-            credentials:
-              "same-origin",
-            cache: "no-store",
-            headers: {
-              Accept:
-                "application/json",
-            },
-          }
-        );
+  const loadCompanies =
+    async () => {
+      try {
+        const response =
+          await fetch(
+            "/api/admin/crm?module=companies",
+            {
+              method: "GET",
+              credentials:
+                "same-origin",
+              cache: "no-store",
+            }
+          );
 
-      const result =
-        await readResponse(
-          response
-        );
+        const result =
+          await parseResponse(
+            response
+          );
 
-      if (response.ok) {
-        setCompanyRecords(
-          Array.isArray(
-            result?.data
-          )
-            ? result.data
-            : []
-        );
+        if (response.ok) {
+          setCompanies(
+            Array.isArray(
+              result?.data
+            )
+              ? result.data
+              : []
+          );
+        }
+      } catch {
+        // Non-critical.
       }
-    } catch {
-      // Supporting data.
-    }
-  }
+    };
 
   useEffect(() => {
     void loadCompanies();
@@ -424,247 +846,6 @@ export default function CRMClient({
   useEffect(() => {
     void loadModule(module);
   }, [module]);
-
-  function clearMessages() {
-    setError("");
-    setMessage("");
-  }
-
-  function resetForm() {
-    setEditing(null);
-
-    setForm({
-      ...EMPTY_FORMS[module],
-    });
-
-    setFormOpen(false);
-    clearMessages();
-  }
-
-  function openCreateForm() {
-    setEditing(null);
-
-    setForm({
-      ...EMPTY_FORMS[module],
-    });
-
-    clearMessages();
-    setFormOpen(true);
-  }
-
-  function openEditForm(
-    record: CRMRecord
-  ) {
-    const next: CRMRecord = {
-      ...EMPTY_FORMS[module],
-      ...record,
-    };
-
-    if (module === "deals") {
-      next.expected_close_date =
-        formatDateInput(
-          next.expected_close_date
-        );
-    }
-
-    if (module === "tasks") {
-      next.due_date =
-        formatDateInput(
-          next.due_date
-        );
-    }
-
-    if (module === "content") {
-      next.target_month =
-        formatDateInput(
-          next.target_month
-        );
-
-      next.published_at =
-        formatDateInput(
-          next.published_at
-        );
-    }
-
-    if (module === "targets") {
-      next.target_month =
-        formatDateInput(
-          next.target_month
-        );
-    }
-
-    setEditing(record);
-    setForm(next);
-    clearMessages();
-    setFormOpen(true);
-  }
-
-  async function saveRecord() {
-    setSaving(true);
-    clearMessages();
-
-    try {
-      const editingId =
-        editing?.id;
-
-      const isEditing =
-        Boolean(editingId);
-
-      const url = isEditing
-        ? `/api/admin/crm/${module}/${editingId}`
-        : "/api/admin/crm";
-
-      const payload: CRMRecord = {
-        ...form,
-      };
-
-      delete payload.id;
-      delete payload.created_at;
-      delete payload.updated_at;
-
-      if (
-        module === "targets"
-      ) {
-        payload.target_jobs =
-          Number(
-            payload.target_jobs
-          ) || 0;
-
-        payload.actual_jobs =
-          Number(
-            payload.actual_jobs
-          ) || 0;
-      }
-
-      const response =
-        await fetch(url, {
-          method: isEditing
-            ? "PUT"
-            : "POST",
-          credentials:
-            "same-origin",
-          headers: {
-            Accept:
-              "application/json",
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify(
-            isEditing
-              ? payload
-              : {
-                  module,
-                  data: payload,
-                }
-          ),
-        });
-
-      const result =
-        await readResponse(
-          response
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          result?.error ??
-            "Failed to save CRM record."
-        );
-      }
-
-      setMessage(
-        isEditing
-          ? "Record updated successfully."
-          : "Record created successfully."
-      );
-
-      resetForm();
-
-      await loadModule(module);
-
-      setView("sheet");
-    } catch (saveError) {
-      setError(
-        saveError instanceof
-          Error
-          ? saveError.message
-          : "Failed to save CRM record."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function deleteRecord(
-    record: CRMRecord
-  ) {
-    if (!record.id) {
-      return;
-    }
-
-    const confirmed =
-      window.confirm(
-        "Delete this CRM record permanently?"
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      const response =
-        await fetch(
-          `/api/admin/crm/${module}/${record.id}`,
-          {
-            method: "DELETE",
-            credentials:
-              "same-origin",
-            headers: {
-              Accept:
-                "application/json",
-            },
-          }
-        );
-
-      const result =
-        await readResponse(
-          response
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          result?.error ??
-            "Failed to delete CRM record."
-        );
-      }
-
-      setMessage(
-        "Record deleted successfully."
-      );
-
-      await loadModule(module);
-    } catch (deleteError) {
-      setError(
-        deleteError instanceof
-          Error
-          ? deleteError.message
-          : "Failed to delete CRM record."
-      );
-    }
-  }
-
-  function changeModule(
-    nextModule: ModuleName
-  ) {
-    setModule(nextModule);
-    setSearch("");
-    setEditing(null);
-    setForm({
-      ...EMPTY_FORMS[nextModule],
-    });
-    setFormOpen(false);
-    setView("dashboard");
-    clearMessages();
-  }
 
   const filteredRecords =
     useMemo(() => {
@@ -690,535 +871,527 @@ export default function CRMClient({
       search,
     ]);
 
-  const dashboard =
-    useMemo(() => {
-      const leads =
-        module === "leads"
-          ? records
-          : [];
+  function changeModule(
+    next: ModuleName
+  ) {
+    setModule(next);
+    setSearch("");
+    setFormOpen(false);
+    setEditing(null);
+    setForm({
+      ...EMPTY_FORMS[next],
+    });
+    setMessage("");
+    setError("");
+  }
 
-      const deals =
-        module === "deals"
-          ? records
-          : [];
+  function openCreate() {
+    setEditing(null);
+    setForm({
+      ...EMPTY_FORMS[module],
+    });
+    setFormOpen(true);
+    setMessage("");
+    setError("");
+  }
 
-      const tasks =
-        module === "tasks"
-          ? records
-          : [];
+  function openEdit(
+    record: CRMRecord
+  ) {
+    const next: CRMRecord = {
+      ...EMPTY_FORMS[module],
+      ...record,
+    };
 
-      const content =
-        module === "content"
-          ? records
-          : [];
-
-      const targets =
-        module === "targets"
-          ? records
-          : [];
-
-      const wonRevenue =
-        deals
-          .filter(
-            (deal) =>
-              deal.stage ===
-              "Won"
-          )
-          .reduce(
-            (
-              total,
-              deal
-            ) =>
-              total +
-              (Number(
-                deal.amount
-              ) || 0),
-            0
-          );
-
-      const targetJobs =
-        targets.reduce(
-          (
-            total,
-            item
-          ) =>
-            total +
-            (Number(
-              item.target_jobs
-            ) || 0),
-          0
+    if (module === "content") {
+      next.target_month =
+        formatInputDate(
+          next.target_month
         );
 
-      const actualJobs =
-        targets.reduce(
-          (
-            total,
-            item
-          ) =>
-            total +
-            (Number(
-              item.actual_jobs
-            ) || 0),
-          0
+      next.published_at =
+        formatInputDate(
+          next.published_at
         );
+    }
 
-      return {
-        leads:
-          leads.length,
+    if (module === "targets") {
+      next.target_month =
+        formatInputDate(
+          next.target_month
+        );
+    }
 
-        hotLeads:
-          leads.filter(
-            (lead) =>
-              lead.priority ===
-              "Hot"
-          ).length,
+    if (module === "deals") {
+      next.expected_close_date =
+        formatInputDate(
+          next.expected_close_date
+        );
+    }
 
-        openDeals:
-          deals.filter(
-            (deal) =>
-              ![
-                "Won",
-                "Lost",
-              ].includes(
-                String(
-                  deal.stage ??
-                    ""
-                )
-              )
-          ).length,
+    if (module === "tasks") {
+      next.due_date =
+        formatInputDate(
+          next.due_date
+        );
+    }
 
-        wonRevenue,
+    setEditing(record);
+    setForm(next);
+    setFormOpen(true);
+    setMessage("");
+    setError("");
+  }
 
-        openTasks:
-          tasks.filter(
-            (task) =>
-              ![
-                "Completed",
-                "Cancelled",
-              ].includes(
-                String(
-                  task.status ??
-                    ""
-                )
-              )
-          ).length,
+  function closeForm() {
+    setFormOpen(false);
+    setEditing(null);
+    setForm({
+      ...EMPTY_FORMS[module],
+    });
+  }
 
-        publishedContent:
-          content.filter(
-            (item) =>
-              item.status ===
-              "Published"
-          ).length,
+  async function saveRecord() {
+    setSaving(true);
+    setError("");
+    setMessage("");
 
-        targetJobs,
-        actualJobs,
+    try {
+      const isEditing =
+        Boolean(editing?.id);
+
+      const payload: CRMRecord = {
+        ...form,
       };
-    }, [
-      module,
-      records,
-    ]);
 
-  const showBoard =
-    module === "leads" ||
-    module === "deals" ||
-    module === "tasks" ||
-    module === "content";
+      delete payload.id;
+      delete payload.created_at;
+      delete payload.updated_at;
+
+      const response =
+        await fetch(
+          isEditing
+            ? `/api/admin/crm/${module}/${editing?.id}`
+            : "/api/admin/crm",
+          {
+            method: isEditing
+              ? "PUT"
+              : "POST",
+            credentials:
+              "same-origin",
+            headers: {
+              Accept:
+                "application/json",
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify(
+              isEditing
+                ? payload
+                : {
+                    module,
+                    data: payload,
+                  }
+            ),
+          }
+        );
+
+      const result =
+        await parseResponse(
+          response
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error ??
+            "Failed to save record."
+        );
+      }
+
+      setMessage(
+        isEditing
+          ? "Record updated successfully."
+          : "Record created successfully."
+      );
+
+      closeForm();
+
+      await loadModule(module);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to save record."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteRecord(
+    record: CRMRecord
+  ) {
+    if (!record.id) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Delete this record permanently?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response =
+        await fetch(
+          `/api/admin/crm/${module}/${record.id}`,
+          {
+            method: "DELETE",
+            credentials:
+              "same-origin",
+            headers: {
+              Accept:
+                "application/json",
+            },
+          }
+        );
+
+      const result =
+        await parseResponse(
+          response
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error ??
+            "Failed to delete record."
+        );
+      }
+
+      setMessage(
+        "Record deleted successfully."
+      );
+
+      await loadModule(module);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to delete record."
+      );
+    }
+  }
+
+  const stats = getStats(
+    module,
+    records
+  );
 
   return (
-    <main className="min-h-screen bg-slate-100 py-8 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-slate-100 dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
 
-        {/* HEADER */}
-        <header className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <Link
-              href="/admin"
-              className="inline-flex items-center text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-            >
-              ← Admin Dashboard
-            </Link>
-
-            <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">
-              Horizon Jobs
-            </p>
-
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-              Business CRM
-            </h1>
-
-            <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-              Manage leads, companies,
-              contacts, deals, tasks,
-              content targets, job targets,
-              and business activity.
-            </p>
-
-            <p className="mt-2 text-xs text-slate-400">
-              Signed in as{" "}
-              {userEmail}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={
-              openCreateForm
-            }
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-500"
+        {/* SMALL ADMIN LINK ONLY */}
+        <div className="mb-4">
+          <Link
+            href="/admin"
+            className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
           >
-            <Plus className="h-4 w-4" />
-            Add{" "}
-            {selectedModule.slice(
-              0,
-              -1
-            )}
-          </button>
-        </header>
+            ← Admin Dashboard
+          </Link>
+        </div>
 
-        {/* VIEW NAVIGATION */}
-        <section className="mb-5 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* CRM CONTAINER */}
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
-          <ViewButton
-            active={
-              view ===
-              "dashboard"
-            }
-            onClick={() => {
-              setFormOpen(false);
-              setView(
-                "dashboard"
-              );
-            }}
-            icon={
-              LayoutDashboard
-            }
-            label="Dashboard"
-          />
+          {/* NAVIGATION BELONGS INSIDE CRM */}
+          <nav className="overflow-x-auto border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40">
+            <div className="flex min-w-max">
+              {MODULES.map(
+                (item) => {
+                  const Icon =
+                    item.icon;
 
-          <ViewButton
-            active={
-              view === "sheet" &&
-              !formOpen
-            }
-            onClick={() => {
-              setFormOpen(false);
-              setView("sheet");
-            }}
-            icon={List}
-            label="Sheet"
-          />
+                  const active =
+                    module ===
+                    item.key;
 
-          <ViewButton
-            active={
-              view === "board" &&
-              !formOpen
-            }
-            onClick={() => {
-              if (!showBoard) {
-                return;
-              }
-
-              setFormOpen(false);
-              setView("board");
-            }}
-            icon={
-              BriefcaseBusiness
-            }
-            label="Board"
-            disabled={!showBoard}
-          />
-
-          <ViewButton
-            active={formOpen}
-            onClick={
-              openCreateForm
-            }
-            icon={Pencil}
-            label="Form"
-          />
-        </section>
-
-        {/* MODULE NAVIGATION */}
-        <section className="mb-6 overflow-x-auto">
-          <div className="flex min-w-max gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            {MODULES.map(
-              (item) => {
-                const Icon =
-                  item.icon;
-
-                const active =
-                  module ===
-                  item.key;
-
-                return (
-                  <button
-                    key={
-                      item.key
-                    }
-                    type="button"
-                    onClick={() =>
-                      changeModule(
+                  return (
+                    <button
+                      key={
                         item.key
-                      )
-                    }
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                      active
-                        ? "bg-indigo-600 text-white"
-                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {
-                      item.label
-                    }
-                  </button>
-                );
-              }
-            )}
-          </div>
-        </section>
+                      }
+                      type="button"
+                      onClick={() =>
+                        changeModule(
+                          item.key
+                        )
+                      }
+                      className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold ${
+                        active
+                          ? "border-indigo-600 text-indigo-600"
+                          : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {
+                        item.label
+                      }
+                    </button>
+                  );
+                }
+              )}
+            </div>
+          </nav>
 
-        {message && (
-          <Alert
-            type="success"
-            message={message}
-            onClose={() =>
-              setMessage("")
-            }
-          />
-        )}
-
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            onClose={() =>
-              setError("")
-            }
-          />
-        )}
-
-        {/* FORM IS CONTROLLED BY formOpen, NOT ViewMode */}
-        {formOpen && (
-          <section
-            id="crm-form"
-            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-          >
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* CATEGORY HEADER */}
+          <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                  {editing
-                    ? "Edit Record"
-                    : "New Record"}
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                  Horizon Jobs CRM
                 </p>
 
-                <h2 className="mt-1 text-2xl font-extrabold text-slate-950 dark:text-white">
-                  {selectedModule}
-                </h2>
+                <h1 className="mt-1 text-2xl font-extrabold text-slate-950 dark:text-white">
+                  {
+                    getModuleLabel(
+                      module
+                    )
+                  }
+                </h1>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {
+                    getDescription(
+                      module
+                    )
+                  }
+                </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => {
-                  resetForm();
-                  setView(
-                    "sheet"
-                  );
-                }}
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                onClick={
+                  openCreate
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500"
               >
-                Cancel
+                <Plus className="h-4 w-4" />
+                {
+                  getAddLabel(
+                    module
+                  )
+                }
               </button>
             </div>
+          </div>
 
-            <CRMForm
-              module={module}
-              form={form}
-              companyRecords={
-                companyRecords
-              }
-              onChange={(
-                key,
-                value
-              ) =>
-                setForm(
-                  (
-                    current
-                  ) => ({
-                    ...current,
-                    [key]:
-                      value,
-                  })
-                )
-              }
-              onSave={
-                saveRecord
-              }
-              saving={
-                saving
-              }
-            />
-          </section>
-        )}
-
-        {/* DASHBOARD */}
-        {!formOpen &&
-          view ===
-            "dashboard" && (
-            <DashboardView
-              module={module}
-              records={records}
-              dashboard={
-                dashboard
-              }
-              onModuleChange={(
-                nextModule
-              ) => {
-                setModule(
-                  nextModule
-                );
-                setView(
-                  "sheet"
-                );
-              }}
-              onOpenSheet={() =>
-                setView("sheet")
-              }
-              onOpenCreate={
-                openCreateForm
-              }
-              onEdit={
-                openEditForm
-              }
-            />
+          {message && (
+            <div className="px-5 pt-4">
+              <Alert
+                type="success"
+                message={
+                  message
+                }
+                onClose={() =>
+                  setMessage(
+                    ""
+                  )
+                }
+              />
+            </div>
           )}
 
-        {/* SHEET */}
-        {!formOpen &&
-          view === "sheet" && (
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
-                <div>
-                  <h2 className="font-bold text-slate-950 dark:text-white">
-                    {selectedModule}
-                  </h2>
+          {error && (
+            <div className="px-5 pt-4">
+              <Alert
+                type="error"
+                message={error}
+                onClose={() =>
+                  setError(
+                    ""
+                  )
+                }
+              />
+            </div>
+          )}
 
-                  <p className="text-xs text-slate-500">
-                    {
-                      filteredRecords.length
-                    }{" "}
-                    records
-                  </p>
-                </div>
-
-                <input
-                  value={
-                    search
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setSearch(
-                      event
-                        .target
-                        .value
-                    )
-                  }
-                  placeholder={`Search ${selectedModule.toLowerCase()}...`}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500 sm:max-w-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+          <div className="p-5">
+            {formOpen ? (
+              <CRMForm
+                module={module}
+                form={form}
+                companies={
+                  companies
+                }
+                saving={
+                  saving
+                }
+                editing={
+                  Boolean(
+                    editing
+                  )
+                }
+                onChange={(
+                  key,
+                  value
+                ) =>
+                  setForm(
+                    (
+                      current
+                    ) => ({
+                      ...current,
+                      [key]:
+                        value,
+                    })
+                  )
+                }
+                onSave={
+                  saveRecord
+                }
+                onCancel={
+                  closeForm
+                }
+              />
+            ) : (
+              <>
+                {/* REAL CATEGORY DASHBOARD */}
+                <StatsGrid
+                  stats={stats}
                 />
-              </div>
 
-              {loading ? (
-                <div className="p-12 text-center text-sm text-slate-500">
-                  Loading...
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <CRMTable
-                    module={
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="font-bold text-slate-950 dark:text-white">
+                      {
+                        getListTitle(
+                          module
+                        )
+                      }
+                    </h2>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      {
+                        filteredRecords.length
+                      }{" "}
+                      records
+                    </p>
+                  </div>
+
+                  <input
+                    value={
+                      search
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setSearch(
+                        event
+                          .target
+                          .value
+                      )
+                    }
+                    placeholder={`Search ${getModuleLabel(
                       module
-                    }
-                    records={
-                      filteredRecords
-                    }
-                    onEdit={
-                      openEditForm
-                    }
-                    onDelete={
-                      deleteRecord
-                    }
+                    ).toLowerCase()}...`}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500 sm:max-w-xs dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                   />
                 </div>
-              )}
-            </section>
-          )}
 
-        {/* BOARD */}
-        {!formOpen &&
-          view === "board" && (
-            <>
-              {!showBoard ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
-                  <p className="text-sm text-slate-500">
-                    Board view is not
-                    available for this
-                    module.
-                  </p>
+                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+                  {loading ? (
+                    <div className="py-12 text-center text-sm text-slate-500">
+                      Loading...
+                    </div>
+                  ) : (
+                    <CRMTable
+                      module={
+                        module
+                      }
+                      records={
+                        filteredRecords
+                      }
+                      onEdit={
+                        openEdit
+                      }
+                      onDelete={
+                        deleteRecord
+                      }
+                    />
+                  )}
                 </div>
-              ) : (
-                <CRMBoard
-                  module={
-                    module
-                  }
-                  records={
-                    filteredRecords
-                  }
-                  onEdit={
-                    openEditForm
-                  }
-                />
-              )}
-            </>
-          )}
+              </>
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );
 }
 
-function ViewButton({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-  disabled = false,
+function getListTitle(
+  module: ModuleName
+): string {
+  switch (module) {
+    case "leads":
+      return "Business Opportunities";
+
+    case "companies":
+      return "Business Accounts";
+
+    case "contacts":
+      return "Business Contacts";
+
+    case "deals":
+      return "Revenue Pipeline";
+
+    case "tasks":
+      return "Work Queue";
+
+    case "content":
+      return "Content Production";
+
+    case "targets":
+      return "Job Supply Targets";
+
+    case "social":
+      return "Social Campaigns";
+
+    case "activities":
+      return "Activity Log";
+  }
+}
+
+function StatsGrid({
+  stats,
 }: {
-  active: boolean;
-  onClick: () => void;
-  icon: ComponentType<{
-    className?: string;
-  }>;
-  label: string;
-  disabled?: boolean;
+  stats: StatItem[];
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-        active
-          ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
-          : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-      } ${
-        disabled
-          ? "cursor-not-allowed opacity-40"
-          : ""
-      }`}
-    >
-      <Icon className="h-4 w-4" />
-      {label}
-    </button>
+    <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 sm:grid-cols-4 dark:border-slate-800">
+      {stats.map(
+        (item) => (
+          <div
+            key={
+              item.label
+            }
+            className="border-r border-b border-slate-200 bg-slate-50 px-5 py-4 last:border-r-0 sm:border-b-0 dark:border-slate-800 dark:bg-slate-950/40"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              {item.label}
+            </p>
+
+            <p className="mt-1 text-xl font-extrabold text-slate-950 dark:text-white">
+              {
+                item.value
+              }
+            </p>
+          </div>
+        )
+      )}
+    </div>
   );
 }
 
@@ -1227,16 +1400,19 @@ function Alert({
   message,
   onClose,
 }: {
-  type: "success" | "error";
+  type:
+    | "success"
+    | "error";
   message: string;
   onClose: () => void;
 }) {
   return (
     <div
-      className={`mb-5 flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium ${
-        type === "success"
-          ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border border-red-200 bg-red-50 text-red-700"
+      className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm ${
+        type ===
+        "success"
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-red-200 bg-red-50 text-red-700"
       }`}
     >
       <span>
@@ -1249,350 +1425,6 @@ function Alert({
       >
         <X className="h-4 w-4" />
       </button>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  icon: ComponentType<{
-    className?: string;
-  }>;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-        <Icon className="h-4 w-4" />
-      </div>
-
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-        {label}
-      </p>
-
-      <p className="mt-1 text-xl font-extrabold text-slate-950 dark:text-white">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function DashboardView({
-  module,
-  records,
-  dashboard,
-  onModuleChange,
-  onOpenSheet,
-  onOpenCreate,
-  onEdit,
-}: {
-  module: ModuleName;
-  records: CRMRecord[];
-  dashboard: {
-    leads: number;
-    hotLeads: number;
-    openDeals: number;
-    wonRevenue: number;
-    openTasks: number;
-    publishedContent: number;
-    targetJobs: number;
-    actualJobs: number;
-  };
-  onModuleChange: (
-    module: ModuleName
-  ) => void;
-  onOpenSheet: () => void;
-  onOpenCreate: () => void;
-  onEdit: (
-    record: CRMRecord
-  ) => void;
-}) {
-  const recent =
-    records.slice(0, 6);
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
-        <Metric
-          label="Leads"
-          value={
-            dashboard.leads
-          }
-          icon={Users}
-        />
-
-        <Metric
-          label="Hot Leads"
-          value={
-            dashboard.hotLeads
-          }
-          icon={BarChart3}
-        />
-
-        <Metric
-          label="Open Deals"
-          value={
-            dashboard.openDeals
-          }
-          icon={
-            BriefcaseBusiness
-          }
-        />
-
-        <Metric
-          label="Revenue"
-          value={`$${dashboard.wonRevenue.toLocaleString()}`}
-          icon={
-            CircleDollarSign
-          }
-        />
-
-        <Metric
-          label="Open Tasks"
-          value={
-            dashboard.openTasks
-          }
-          icon={
-            CheckCircle2
-          }
-        />
-
-        <Metric
-          label="Published"
-          value={
-            dashboard.publishedContent
-          }
-          icon={FileText}
-        />
-
-        <Metric
-          label="Jobs"
-          value={`${dashboard.actualJobs}/${dashboard.targetJobs}`}
-          icon={Target}
-        />
-      </div>
-
-      <section>
-        <div className="mb-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            Workspace
-          </p>
-
-          <h2 className="mt-1 text-xl font-extrabold text-slate-950 dark:text-white">
-            CRM Modules
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {MODULES.map(
-            (item) => {
-              const Icon =
-                item.icon;
-
-              return (
-                <button
-                  key={
-                    item.key
-                  }
-                  type="button"
-                  onClick={() => {
-                    onModuleChange(
-                      item.key
-                    );
-                    onOpenSheet();
-                  }}
-                  className={`rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-                    module ===
-                    item.key
-                      ? "border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30"
-                      : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                  }`}
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-                    <Icon className="h-5 w-5" />
-                  </div>
-
-                  <h3 className="mt-4 font-bold text-slate-950 dark:text-white">
-                    {
-                      item.label
-                    }
-                  </h3>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    Manage{" "}
-                    {item.label.toLowerCase()}
-                  </p>
-                </button>
-              );
-            }
-          )}
-        </div>
-      </section>
-
-      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Recent
-              </p>
-
-              <h2 className="mt-1 text-lg font-bold text-slate-950 dark:text-white">
-                Latest{" "}
-                {getModuleLabel(
-                  module
-                )}
-              </h2>
-            </div>
-
-            <button
-              type="button"
-              onClick={
-                onOpenSheet
-              }
-              className="text-sm font-semibold text-indigo-600 dark:text-indigo-400"
-            >
-              View all →
-            </button>
-          </div>
-
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {recent.length ===
-            0 ? (
-              <div className="p-8 text-center text-sm text-slate-500">
-                No records yet.
-              </div>
-            ) : (
-              recent.map(
-                (record) => (
-                  <button
-                    key={
-                      record.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      onEdit(
-                        record
-                      )
-                    }
-                    className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/30"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-950 dark:text-white">
-                        {String(
-                          record.lead_name ??
-                            record.deal_name ??
-                            record.title ??
-                            record.name ??
-                            "Untitled"
-                        )}
-                      </p>
-
-                      <p className="mt-1 truncate text-xs text-slate-500">
-                        {String(
-                          record.company ??
-                            record.job_title ??
-                            record.content_type ??
-                            record.source ??
-                            ""
-                        )}
-                      </p>
-                    </div>
-
-                    <span className="shrink-0 text-xs text-slate-400">
-                      {formatDate(
-                        record.created_at
-                      )}
-                    </span>
-                  </button>
-                )
-              )
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            Operations
-          </p>
-
-          <h2 className="mt-1 text-lg font-bold text-slate-950 dark:text-white">
-            Quick Actions
-          </h2>
-
-          <div className="mt-5 space-y-3">
-            <button
-              type="button"
-              onClick={
-                onOpenCreate
-              }
-              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-4 text-left hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/30"
-            >
-              <Plus className="h-5 w-5 text-indigo-600" />
-
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-white">
-                  Add Record
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Create a new CRM entry.
-                </p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onModuleChange(
-                  "targets"
-                );
-                onOpenSheet();
-              }}
-              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-4 text-left hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/30"
-            >
-              <Target className="h-5 w-5 text-indigo-600" />
-
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-white">
-                  Job Targets
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Track target versus actual jobs.
-                </p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onModuleChange(
-                  "content"
-                );
-                onOpenSheet();
-              }}
-              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-4 text-left hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/30"
-            >
-              <FileText className="h-5 w-5 text-indigo-600" />
-
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-white">
-                  Content Tracking
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Track article targets and publishing.
-                </p>
-              </div>
-            </button>
-          </div>
-        </section>
-      </div>
     </div>
   );
 }
@@ -1616,114 +1448,116 @@ function CRMTable({
     getColumns(module);
 
   return (
-    <table className="w-full min-w-[900px] text-left">
-      <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/60">
-        <tr>
-          {columns.map(
-            (column) => (
-              <th
-                key={
-                  column.key
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[850px] text-left">
+        <thead className="bg-slate-50 dark:bg-slate-950/50">
+          <tr>
+            {columns.map(
+              (column) => (
+                <th
+                  key={
+                    column.key
+                  }
+                  className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800"
+                >
+                  {
+                    column.label
+                  }
+                </th>
+              )
+            )}
+
+            <th className="border-b border-slate-200 px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {records.length ===
+          0 ? (
+            <tr>
+              <td
+                colSpan={
+                  columns.length +
+                  1
                 }
-                className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-slate-500"
+                className="px-5 py-14 text-center text-sm text-slate-500"
               >
-                {
-                  column.label
-                }
-              </th>
+                No records yet.
+              </td>
+            </tr>
+          ) : (
+            records.map(
+              (record) => (
+                <tr
+                  key={
+                    record.id
+                  }
+                  className="border-b border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/30"
+                >
+                  {columns.map(
+                    (
+                      column
+                    ) => (
+                      <td
+                        key={
+                          column.key
+                        }
+                        className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300"
+                      >
+                        {renderCell(
+                          record[
+                            column.key
+                          ],
+                          column.key
+                        )}
+                      </td>
+                    )
+                  )}
+
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onEdit(
+                            record
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onDelete(
+                            record
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
             )
           )}
-
-          <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
-            Actions
-          </th>
-        </tr>
-      </thead>
-
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-        {records.length ===
-        0 ? (
-          <tr>
-            <td
-              colSpan={
-                columns.length +
-                1
-              }
-              className="px-6 py-16 text-center text-sm text-slate-500"
-            >
-              No records found.
-            </td>
-          </tr>
-        ) : (
-          records.map(
-            (record) => (
-              <tr
-                key={
-                  record.id
-                }
-                className="transition hover:bg-slate-50 dark:hover:bg-slate-800/30"
-              >
-                {columns.map(
-                  (
-                    column
-                  ) => (
-                    <td
-                      key={
-                        column.key
-                      }
-                      className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300"
-                    >
-                      {renderCell(
-                        column.key,
-                        record[
-                          column.key
-                        ]
-                      )}
-                    </td>
-                  )
-                )}
-
-                <td className="px-5 py-4">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onEdit(
-                          record
-                        )
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onDelete(
-                          record
-                        )
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            )
-          )
-        )}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   );
 }
 
 function getColumns(
   module: ModuleName
-): ColumnDefinition[] {
+) {
   switch (module) {
     case "leads":
       return [
@@ -1876,6 +1710,10 @@ function getColumns(
           label: "Country",
         },
         {
+          key: "city",
+          label: "City",
+        },
+        {
           key: "category",
           label: "Category",
         },
@@ -1894,6 +1732,38 @@ function getColumns(
         {
           key: "actual_jobs",
           label: "Actual",
+        },
+      ];
+
+    case "social":
+      return [
+        {
+          key: "platform",
+          label: "Platform",
+        },
+        {
+          key: "post_type",
+          label: "Post",
+        },
+        {
+          key: "title",
+          label: "Title",
+        },
+        {
+          key: "status",
+          label: "Status",
+        },
+        {
+          key: "impressions",
+          label: "Reach",
+        },
+        {
+          key: "clicks",
+          label: "Clicks",
+        },
+        {
+          key: "leads_generated",
+          label: "Leads",
         },
       ];
 
@@ -1916,8 +1786,8 @@ function getColumns(
 }
 
 function renderCell(
-  key: string,
-  value: unknown
+  value: unknown,
+  key: string
 ) {
   if (
     value === null ||
@@ -1941,190 +1811,38 @@ function renderCell(
   return String(value);
 }
 
-function CRMBoard({
-  module,
-  records,
-  onEdit,
-}: {
-  module: ModuleName;
-  records: CRMRecord[];
-  onEdit: (
-    record: CRMRecord
-  ) => void;
-}) {
-  let groups: string[] = [];
-
-  if (module === "leads") {
-    groups = [
-      "New",
-      "Researching",
-      "Contacted",
-      "Follow-up",
-      "Replied",
-      "Interested",
-      "Qualified",
-      "Won",
-      "Lost",
-      "Unresponsive",
-    ];
-  }
-
-  if (module === "deals") {
-    groups = [
-      "New",
-      "Contacted",
-      "Interested",
-      "Proposal",
-      "Negotiation",
-      "Won",
-      "Lost",
-    ];
-  }
-
-  if (module === "tasks") {
-    groups = [
-      "Pending",
-      "In Progress",
-      "Completed",
-      "Cancelled",
-    ];
-  }
-
-  if (module === "content") {
-    groups = [
-      "Planned",
-      "Writing",
-      "Published",
-      "Updated",
-      "Archived",
-    ];
-  }
-
-  if (groups.length === 0) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
-        <p className="text-sm text-slate-500">
-          Board view is not
-          available for this module.
-        </p>
-      </div>
-    );
-  }
-
-  const statusKey =
-    module === "deals"
-      ? "stage"
-      : "status";
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-      {groups.map(
-        (group) => {
-          const items =
-            records.filter(
-              (record) =>
-                String(
-                  record[
-                    statusKey
-                  ] ?? ""
-                ) === group
-            );
-
-          return (
-            <section
-              key={group}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/60"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200">
-                  {group}
-                </h3>
-
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-500 shadow-sm dark:bg-slate-800">
-                  {items.length}
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {items.length ===
-                0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400 dark:border-slate-700">
-                    Empty
-                  </div>
-                ) : (
-                  items.map(
-                    (item) => (
-                      <button
-                        key={
-                          item.id
-                        }
-                        type="button"
-                        onClick={() =>
-                          onEdit(
-                            item
-                          )
-                        }
-                        className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900"
-                      >
-                        <p className="font-bold text-slate-900 dark:text-white">
-                          {String(
-                            item.lead_name ??
-                              item.deal_name ??
-                              item.title ??
-                              "Untitled"
-                          )}
-                        </p>
-
-                        <p className="mt-1 text-xs text-slate-500">
-                          {String(
-                            item.job_title ??
-                              item.company ??
-                              item.content_type ??
-                              item.source ??
-                              ""
-                          )}
-                        </p>
-                      </button>
-                    )
-                  )
-                )}
-              </div>
-            </section>
-          );
-        }
-      )}
-    </div>
-  );
-}
-
 function CRMForm({
   module,
   form,
-  companyRecords,
+  companies,
+  saving,
+  editing,
   onChange,
   onSave,
-  saving,
+  onCancel,
 }: {
   module: ModuleName;
   form: CRMRecord;
-  companyRecords: CRMRecord[];
+  companies: CRMRecord[];
+  saving: boolean;
+  editing: boolean;
   onChange: (
     key: string,
     value: unknown
   ) => void;
   onSave: () => void;
-  saving: boolean;
+  onCancel: () => void;
 }) {
   const field = (
     key: string,
     label: string,
     type = "text"
-  ): ReactNode => (
+  ) => (
     <label
       key={key}
       className="block"
     >
-      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+      <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
         {label}
       </span>
 
@@ -2139,20 +1857,59 @@ function CRMForm({
             event.target.value
           )
         }
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
       />
+    </label>
+  );
+
+  const select = (
+    key: string,
+    label: string,
+    options: string[]
+  ) => (
+    <label
+      key={key}
+      className="block"
+    >
+      <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+
+      <select
+        value={String(
+          form[key] ?? ""
+        )}
+        onChange={(event) =>
+          onChange(
+            key,
+            event.target.value
+          )
+        }
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+      >
+        {options.map(
+          (option) => (
+            <option
+              key={option}
+              value={option}
+            >
+              {option}
+            </option>
+          )
+        )}
+      </select>
     </label>
   );
 
   const area = (
     key: string,
     label: string
-  ): ReactNode => (
+  ) => (
     <label
       key={key}
       className="block md:col-span-2"
     >
-      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+      <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
         {label}
       </span>
 
@@ -2167,47 +1924,8 @@ function CRMForm({
             event.target.value
           )
         }
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
       />
-    </label>
-  );
-
-  const select = (
-    key: string,
-    label: string,
-    options: string[]
-  ): ReactNode => (
-    <label
-      key={key}
-      className="block"
-    >
-      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-        {label}
-      </span>
-
-      <select
-        value={String(
-          form[key] ?? ""
-        )}
-        onChange={(event) =>
-          onChange(
-            key,
-            event.target.value
-          )
-        }
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-      >
-        {options.map(
-          (option) => (
-            <option
-              key={option}
-              value={option}
-            >
-              {option}
-            </option>
-          )
-        )}
-      </select>
     </label>
   );
 
@@ -2308,7 +2026,8 @@ function CRMForm({
   }
 
   if (
-    module === "companies"
+    module ===
+    "companies"
   ) {
     fields.push(
       field(
@@ -2362,7 +2081,8 @@ function CRMForm({
   }
 
   if (
-    module === "contacts"
+    module ===
+    "contacts"
   ) {
     fields.push(
       field(
@@ -2406,7 +2126,9 @@ function CRMForm({
     );
   }
 
-  if (module === "deals") {
+  if (
+    module === "deals"
+  ) {
     fields.push(
       field(
         "deal_name",
@@ -2417,15 +2139,15 @@ function CRMForm({
         "Company",
         [
           "",
-          ...companyRecords.map(
-            (
-              company
-            ) =>
-              String(
-                company.id ??
-                  ""
-              )
-          ),
+          ...companies
+            .map(
+              (company) =>
+                String(
+                  company.id ??
+                    ""
+                )
+            )
+            .filter(Boolean),
         ]
       ),
       select(
@@ -2462,7 +2184,9 @@ function CRMForm({
     );
   }
 
-  if (module === "tasks") {
+  if (
+    module === "tasks"
+  ) {
     fields.push(
       field(
         "title",
@@ -2499,7 +2223,9 @@ function CRMForm({
     );
   }
 
-  if (module === "content") {
+  if (
+    module === "content"
+  ) {
     fields.push(
       field(
         "title",
@@ -2551,7 +2277,9 @@ function CRMForm({
     );
   }
 
-  if (module === "targets") {
+  if (
+    module === "targets"
+  ) {
     fields.push(
       field(
         "target_month",
@@ -2586,6 +2314,101 @@ function CRMForm({
       field(
         "actual_jobs",
         "Actual Jobs",
+        "number"
+      ),
+      area(
+        "notes",
+        "Notes"
+      )
+    );
+  }
+
+  if (
+    module ===
+    "social"
+  ) {
+    fields.push(
+      select(
+        "platform",
+        "Platform",
+        [
+          "Facebook",
+          "Instagram",
+          "LinkedIn",
+          "X",
+          "Google Business",
+        ]
+      ),
+      field(
+        "account_name",
+        "Account"
+      ),
+      select(
+        "post_type",
+        "Post Type",
+        [
+          "Job Post",
+          "Country Jobs",
+          "City Jobs",
+          "Category Jobs",
+          "Article",
+          "Career Tip",
+          "Salary Guide",
+          "Recruiter Post",
+          "Company Post",
+          "Other",
+        ]
+      ),
+      field(
+        "title",
+        "Post Title"
+      ),
+      field(
+        "target_country",
+        "Target Country"
+      ),
+      field(
+        "target_category",
+        "Target Category"
+      ),
+      field(
+        "target_url",
+        "Target URL",
+        "url"
+      ),
+      select(
+        "status",
+        "Status",
+        [
+          "Draft",
+          "Ready",
+          "Published",
+          "Paused",
+        ]
+      ),
+      field(
+        "scheduled_at",
+        "Scheduled At",
+        "datetime-local"
+      ),
+      field(
+        "published_at",
+        "Published At",
+        "datetime-local"
+      ),
+      field(
+        "impressions",
+        "Impressions",
+        "number"
+      ),
+      field(
+        "clicks",
+        "Clicks",
+        "number"
+      ),
+      field(
+        "leads_generated",
+        "Leads Generated",
         "number"
       ),
       area(
@@ -2634,21 +2457,37 @@ function CRMForm({
   }
 
   return (
-    <div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/40">
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {fields}
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-6 flex justify-end gap-2">
         <button
           type="button"
-          onClick={onSave}
-          disabled={saving}
-          className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={
+            onCancel
+          }
+          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-300"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          onClick={
+            onSave
+          }
+          disabled={
+            saving
+          }
+          className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving
             ? "Saving..."
-            : "Save Record"}
+            : editing
+            ? "Update"
+            : "Save"}
         </button>
       </div>
     </div>
