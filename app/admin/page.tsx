@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 
+
 import {
   BriefcaseBusiness,
   FileText,
@@ -58,6 +59,13 @@ const cards = [
     href: "/admin/users",
     icon: Users,
   },
+  {
+  title: "Business CRM",
+  description:
+    "Manage leads, recruiters, companies, deals, tasks, content targets, job targets, and business activity.",
+  href: "/admin/crm",
+  icon: Users,
+},
 ];
 
 export default async function AdminDashboardPage() {

@@ -15,10 +15,16 @@ const TABLES = {
   targets: "crm_job_targets",
 } as const;
 
-type ModuleName = keyof typeof TABLES;
+type ModuleName =
+  keyof typeof TABLES;
 
-function isModule(value: string): value is ModuleName {
-  return value in TABLES;
+function isModule(
+  value: string
+): value is ModuleName {
+  return Object.prototype.hasOwnProperty.call(
+    TABLES,
+    value
+  );
 }
 
 interface Context {
@@ -32,87 +38,231 @@ export async function PUT(
   request: Request,
   context: Context
 ) {
-  const session = await getServerSession(authOptions);
+  const session =
+    await getServerSession(
+      authOptions
+    );
 
   if (!session?.user) {
     return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
+      {
+        success: false,
+        error:
+          "Unauthorized. Please log in again.",
+      },
+      {
+        status: 401,
+      }
     );
   }
 
-  const { module, id } = await context.params;
+  try {
+    const {
+      module,
+      id,
+    } =
+      await context.params;
 
-  if (!isModule(module) || !id) {
-    return NextResponse.json(
-      { error: "Invalid CRM record." },
-      { status: 400 }
-    );
-  }
+    if (
+      !isModule(module) ||
+      !id
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid CRM record.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
-  const payload = await request.json();
+    const payload =
+      await request.json();
 
-  const { data, error } = await supabaseAdmin
-    .from(TABLES[module])
-    .update(payload)
-    .eq("id", id)
-    .select()
-    .single();
+    if (
+      !payload ||
+      typeof payload !==
+        "object" ||
+      Array.isArray(payload)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid CRM data.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
-  if (error) {
+    delete payload.id;
+    delete payload.created_at;
+
+    payload.updated_at =
+      new Date().toISOString();
+
+    const {
+      data,
+      error,
+    } = await supabaseAdmin
+      .from(
+        TABLES[module]
+      )
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error(
+        "CRM PUT error:",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Failed to update CRM record.",
+          details:
+            error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
     return NextResponse.json(
       {
-        error: "Failed to update CRM record.",
-        details: error.message,
+        success: true,
+        data,
       },
-      { status: 500 }
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "CRM PUT unexpected error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Unexpected server error.",
+      },
+      {
+        status: 500,
+      }
     );
   }
-
-  return NextResponse.json({
-    success: true,
-    data,
-  });
 }
 
 export async function DELETE(
   _request: Request,
   context: Context
 ) {
-  const session = await getServerSession(authOptions);
+  const session =
+    await getServerSession(
+      authOptions
+    );
 
   if (!session?.user) {
     return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
+      {
+        success: false,
+        error:
+          "Unauthorized. Please log in again.",
+      },
+      {
+        status: 401,
+      }
     );
   }
 
-  const { module, id } = await context.params;
+  try {
+    const {
+      module,
+      id,
+    } =
+      await context.params;
 
-  if (!isModule(module) || !id) {
-    return NextResponse.json(
-      { error: "Invalid CRM record." },
-      { status: 400 }
-    );
-  }
+    if (
+      !isModule(module) ||
+      !id
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid CRM record.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
-  const { error } = await supabaseAdmin
-    .from(TABLES[module])
-    .delete()
-    .eq("id", id);
+    const {
+      error,
+    } = await supabaseAdmin
+      .from(
+        TABLES[module]
+      )
+      .delete()
+      .eq("id", id);
 
-  if (error) {
+    if (error) {
+      console.error(
+        "CRM DELETE error:",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Failed to delete CRM record.",
+          details:
+            error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
     return NextResponse.json(
       {
-        error: "Failed to delete CRM record.",
-        details: error.message,
+        success: true,
       },
-      { status: 500 }
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "CRM DELETE unexpected error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Unexpected server error.",
+      },
+      {
+        status: 500,
+      }
     );
   }
-
-  return NextResponse.json({
-    success: true,
-  });
 }
