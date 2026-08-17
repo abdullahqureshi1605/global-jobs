@@ -6,7 +6,10 @@ import {
   useState,
 } from "react";
 
-import { useParams, useRouter } from "next/navigation";
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
 
 interface ResourceForm {
   title: string;
@@ -52,7 +55,7 @@ const initialForm: ResourceForm = {
   seoDescription: "",
 };
 
-function dateValue(value: unknown) {
+function formatDate(value: unknown) {
   if (!value) {
     return "";
   }
@@ -60,14 +63,42 @@ function dateValue(value: unknown) {
   return String(value).slice(0, 10);
 }
 
+async function readJsonResponse(
+  response: Response
+) {
+  const text =
+    await response.text();
+
+  if (!text.trim()) {
+    throw new Error(
+      `Server returned an empty response (${response.status}).`
+    );
+  }
+
+  let data: any;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Server returned invalid JSON (${response.status}).`
+    );
+  }
+
+  return data;
+}
+
 export default function EditResourcePage() {
-  const router = useRouter();
+  const router =
+    useRouter();
 
-  const params = useParams<{
-    id: string;
-  }>();
+  const params =
+    useParams<{
+      id: string;
+    }>();
 
-  const id = params?.id;
+  const id =
+    params?.id;
 
   const [form, setForm] =
     useState<ResourceForm>(
@@ -88,64 +119,59 @@ export default function EditResourcePage() {
 
   useEffect(() => {
     if (!id) {
+      setError(
+        "Resource ID is missing."
+      );
+      setLoading(false);
       return;
     }
 
     let cancelled = false;
 
     async function loadResource() {
-      setLoading(true);
-      setError("");
-
       try {
+        setLoading(true);
+        setError("");
+
         const response =
           await fetch(
-            `/api/admin/resources/${id}`,
+            `/api/admin/resources/${encodeURIComponent(
+              id
+            )}`,
             {
               method: "GET",
               cache: "no-store",
+              headers: {
+                Accept:
+                  "application/json",
+              },
             }
           );
 
-        const contentType =
-          response.headers.get(
-            "content-type"
-          ) || "";
-
-        const raw =
-          await response.text();
-
-        let result: any = null;
-
-        if (raw.trim()) {
-          if (
-            contentType.includes(
-              "application/json"
-            )
-          ) {
-            result = JSON.parse(raw);
-          } else {
-            throw new Error(
-              `Server returned ${response.status} with a non-JSON response.`
-            );
-          }
-        }
+        const data =
+          await readJsonResponse(
+            response
+          );
 
         if (!response.ok) {
           throw new Error(
-            result?.error ||
-              "Failed to load resource."
+            data?.error ||
+              "Failed to load career resource."
+          );
+        }
+
+        if (
+          !data?.success ||
+          !data?.resource
+        ) {
+          throw new Error(
+            data?.error ||
+              "Career resource data was not returned."
           );
         }
 
         const resource =
-          result?.resource;
-
-        if (!resource) {
-          throw new Error(
-            "Resource data was not returned by the server."
-          );
-        }
+          data.resource;
 
         if (cancelled) {
           return;
@@ -166,7 +192,8 @@ export default function EditResourcePage() {
             "",
 
           content:
-            resource.content ?? "",
+            resource.content ??
+            "",
 
           author:
             resource.author ?? "",
@@ -177,13 +204,13 @@ export default function EditResourcePage() {
             "",
 
           publishedDate:
-            dateValue(
+            formatDate(
               resource.published_date ??
                 resource.publishedDate
             ),
 
           updatedDate:
-            dateValue(
+            formatDate(
               resource.updated_date ??
                 resource.updatedDate
             ),
@@ -220,7 +247,7 @@ export default function EditResourcePage() {
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "Failed to load resource."
+            : "Failed to load career resource."
         );
       } finally {
         if (!cancelled) {
@@ -252,21 +279,28 @@ export default function EditResourcePage() {
     event.preventDefault();
 
     if (!id) {
+      setError(
+        "Resource ID is missing."
+      );
       return;
     }
 
-    setSaving(true);
-    setError("");
-    setMessage("");
-
     try {
+      setSaving(true);
+      setError("");
+      setMessage("");
+
       const response =
         await fetch(
-          `/api/admin/resources/${id}`,
+          `/api/admin/resources/${encodeURIComponent(
+            id
+          )}`,
           {
             method: "PUT",
             headers: {
               "Content-Type":
+                "application/json",
+              Accept:
                 "application/json",
             },
             body: JSON.stringify(
@@ -275,26 +309,22 @@ export default function EditResourcePage() {
           }
         );
 
-      const raw =
-        await response.text();
-
-      let result: any = null;
-
-      if (raw.trim()) {
-        try {
-          result =
-            JSON.parse(raw);
-        } catch {
-          throw new Error(
-            `Server returned ${response.status} with invalid JSON.`
-          );
-        }
-      }
+      const data =
+        await readJsonResponse(
+          response
+        );
 
       if (!response.ok) {
         throw new Error(
-          result?.error ||
-            "Failed to update resource."
+          data?.error ||
+            "Failed to update career resource."
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            "Career resource update failed."
         );
       }
 
@@ -302,19 +332,20 @@ export default function EditResourcePage() {
         "Career resource updated successfully."
       );
 
-      setTimeout(
+      window.setTimeout(
         () => {
           router.push(
             "/admin/resources"
           );
+          router.refresh();
         },
-        700
+        600
       );
     } catch (saveError) {
       setError(
         saveError instanceof Error
           ? saveError.message
-          : "Failed to update resource."
+          : "Failed to update career resource."
       );
     } finally {
       setSaving(false);
@@ -328,30 +359,6 @@ export default function EditResourcePage() {
           <p className="text-sm text-slate-500">
             Loading career resource...
           </p>
-        </div>
-      </main>
-    );
-  }
-
-  if (error && !form.title) {
-    return (
-      <main className="min-h-screen bg-slate-100 px-4 py-16 dark:bg-slate-950">
-        <div className="mx-auto max-w-3xl">
-          <button
-            type="button"
-            onClick={() =>
-              router.push(
-                "/admin/resources"
-              )
-            }
-            className="mb-6 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-          >
-            ← Back to Resources
-          </button>
-
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-            {error}
-          </div>
         </div>
       </main>
     );
@@ -412,9 +419,7 @@ export default function EditResourcePage() {
               <Field
                 label="Title"
                 required
-                value={
-                  form.title
-                }
+                value={form.title}
                 onChange={(value) =>
                   updateField(
                     "title",
@@ -439,9 +444,7 @@ export default function EditResourcePage() {
 
               <Field
                 label="Slug"
-                value={
-                  form.slug
-                }
+                value={form.slug}
                 onChange={(value) =>
                   updateField(
                     "slug",
@@ -453,9 +456,7 @@ export default function EditResourcePage() {
               <Field
                 label="Author"
                 required
-                value={
-                  form.author
-                }
+                value={form.author}
                 onChange={(value) =>
                   updateField(
                     "author",
@@ -529,7 +530,7 @@ export default function EditResourcePage() {
             </h2>
 
             <div className="space-y-5">
-              <TextAreaField
+              <TextArea
                 label="Description"
                 required
                 value={
@@ -544,12 +545,10 @@ export default function EditResourcePage() {
                 rows={5}
               />
 
-              <TextAreaField
+              <TextArea
                 label="Content"
                 required
-                value={
-                  form.content
-                }
+                value={form.content}
                 onChange={(value) =>
                   updateField(
                     "content",
@@ -557,7 +556,7 @@ export default function EditResourcePage() {
                   )
                 }
                 rows={18}
-                help="Use Markdown headings such as ## and ### inside the article body for SEO structure."
+                help="Use Markdown headings such as ## and ### for article structure."
               />
             </div>
           </section>
@@ -581,7 +580,7 @@ export default function EditResourcePage() {
                 }
               />
 
-              <TextAreaField
+              <TextArea
                 label="SEO Description"
                 value={
                   form.seoDescription
@@ -602,25 +601,21 @@ export default function EditResourcePage() {
               Publishing
             </h2>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <SelectField
-                label="Status"
-                value={
-                  form.status
-                }
-                onChange={(value) =>
-                  updateField(
-                    "status",
-                    value
-                  )
-                }
-                options={[
-                  "published",
-                  "draft",
-                  "archived",
-                ]}
-              />
-            </div>
+            <SelectField
+              label="Status"
+              value={form.status}
+              onChange={(value) =>
+                updateField(
+                  "status",
+                  value
+                )
+              }
+              options={[
+                "published",
+                "draft",
+                "archived",
+              ]}
+            />
 
             <label className="mt-5 flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300">
               <input
@@ -631,7 +626,8 @@ export default function EditResourcePage() {
                 onChange={(event) =>
                   updateField(
                     "featured",
-                    event.target.checked
+                    event.target
+                      .checked
                   )
                 }
                 className="h-4 w-4 rounded border-slate-300 text-indigo-600"
@@ -691,6 +687,7 @@ function Field({
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label}
+
         {required && (
           <span className="ml-1 text-red-500">
             *
@@ -708,7 +705,7 @@ function Field({
             event.target.value
           )
         }
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-indigo-950"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
       />
     </label>
   );
@@ -757,7 +754,7 @@ function SelectField({
   );
 }
 
-function TextAreaField({
+function TextArea({
   label,
   value,
   onChange,
@@ -778,6 +775,7 @@ function TextAreaField({
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label}
+
         {required && (
           <span className="ml-1 text-red-500">
             *
