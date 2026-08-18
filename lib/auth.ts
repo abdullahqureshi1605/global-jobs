@@ -2,23 +2,14 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
 
-// Get the base URL
-const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || "https://horizonjobs.online";
-
 export const authOptions: NextAuthOptions = {
   providers: [
-    // Email/Password login
+    // Admin login
     CredentialsProvider({
       name: "Admin Login",
       credentials: {
-        email: {
-          label: "Email",
-          type: "email",
-        },
-        password: {
-          label: "Password",
-          type: "password",
-        },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         const email = credentials?.email;
@@ -28,16 +19,10 @@ export const authOptions: NextAuthOptions = {
         const adminPassword = process.env.ADMIN_PASSWORD;
 
         if (!adminEmail || !adminPassword) {
-          console.error(
-            "ADMIN_EMAIL or ADMIN_PASSWORD is missing from .env.local"
-          );
           return null;
         }
 
-        if (
-          email === adminEmail &&
-          password === adminPassword
-        ) {
+        if (email === adminEmail && password === adminPassword) {
           return {
             id: "admin",
             name: "Horizon Jobs Admin",
@@ -49,7 +34,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
 
-    // Google OAuth Provider
+    // Google OAuth
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -65,25 +50,34 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
-      // If Google sign-in, check if user exists in database
       if (account?.provider === "google") {
         try {
           const { supabaseAdmin } = await import("@/lib/supabase/admin");
-          const { UserAuth } = await import("@/lib/auth/user-auth");
 
           // Check if user exists
-          const existingUser = await UserAuth.getUserByEmail(user.email!);
+          const { data: existing } = await supabaseAdmin
+            .from("users")
+            .select("id")
+            .eq("email", user.email!)
+            .single();
 
-          if (!existingUser) {
-            // Create new user from Google profile
-            await supabaseAdmin.from("users").insert({
-              email: user.email,
-              name: user.name,
-              password_hash: "google_oauth",
-              email_verified: true,
-              is_active: true,
-              created_at: new Date().toISOString(),
-            });
+          if (!existing) {
+            // Create new user
+            const { error: insertError } = await supabaseAdmin
+              .from("users")
+              .insert({
+                email: user.email,
+                name: user.name || "Google User",
+                password_hash: "google_oauth",
+                email_verified: true,
+                is_active: true,
+                created_at: new Date().toISOString(),
+              });
+
+            if (insertError) {
+              console.error("Error creating user:", insertError);
+              return false;
+            }
           }
         } catch (error) {
           console.error("Google sign-in error:", error);
