@@ -41,7 +41,6 @@ export default function AccountPage() {
         const data = await response.json();
         setUser(data.user);
 
-        // Get saved jobs count
         const savedResponse = await fetch("/api/user/saved-jobs");
         if (savedResponse.ok) {
           const savedData = await savedResponse.json();
