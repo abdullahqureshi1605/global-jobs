@@ -40,7 +40,6 @@ export default function Header() {
     } catch {
       setUser(null);
     }
-
     try {
       const res = await fetch("/api/recruiter/me", { cache: "no-store" });
       if (res.ok) {
@@ -64,25 +63,15 @@ export default function Header() {
   }
 
   async function handleLogout() {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-    
-    // HARD REFRESH - forces everything to reload
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    setRecruiter(null);
     window.location.href = "/";
   }
 
   async function handleRecruiterLogout() {
-    try {
-      await fetch("/api/recruiter/logout", { method: "POST" });
-    } catch (error) {
-      console.error("Recruiter logout error:", error);
-    }
+    await fetch("/api/recruiter/logout", { method: "POST" });
+    setRecruiter(null);
     window.location.href = "/";
   }
 
