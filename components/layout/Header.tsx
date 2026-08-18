@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Bookmark,
   Building2,
@@ -22,7 +22,6 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [recruiter, setRecruiter] = useState<any>(null);
@@ -74,14 +73,8 @@ export default function Header() {
       console.error("Logout error:", error);
     }
     
-    // Force state clear
-    setUser(null);
-    setRecruiter(null);
-    closeMenu();
-    
-    // Navigate to home and force refresh
-    router.push("/");
-    router.refresh();
+    // HARD REFRESH - forces everything to reload
+    window.location.href = "/";
   }
 
   async function handleRecruiterLogout() {
@@ -90,10 +83,7 @@ export default function Header() {
     } catch (error) {
       console.error("Recruiter logout error:", error);
     }
-    setRecruiter(null);
-    closeMenu();
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   if (loading) {
