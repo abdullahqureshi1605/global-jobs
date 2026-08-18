@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
 
   reactStrictMode: true,
 
+  // Skip OpenAI during build
+  serverExternalPackages: ["openai"],
+
   async headers() {
     return [
       {

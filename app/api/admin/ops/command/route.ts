@@ -1,255 +1,137 @@
-import {
-  NextResponse,
-} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
-import {
-  getServerSession,
-} from "next-auth";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-import {
-  authOptions,
-} from "@/lib/auth";
-
-import {
-  supabaseAdmin,
-} from "@/lib/supabase/admin";
-
-import OpenAI from "openai";
-
-const client =
-  new OpenAI({
-    apiKey:
-      process.env.OPENAI_API_KEY,
-  });
-
-export async function POST(
-  request: Request
-) {
-  const session =
-    await getServerSession(
-      authOptions
-    );
-
-  if (!session?.user) {
-    return NextResponse.json(
-      {
-        error:
-          "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
-  }
-
-  if (
-    !process.env.OPENAI_API_KEY
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "OPENAI_API_KEY is not configured.",
-      },
-      {
-        status: 503,
-      }
-    );
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const body =
-      await request.json();
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const command =
-      String(
-        body?.command ??
-          ""
-      ).trim();
+    const body = await request.json();
+    const { query } = body;
 
-    if (!command) {
+    if (!query) {
       return NextResponse.json(
-        {
-          error:
-            "command is required.",
-        },
-        {
-          status: 400,
-        }
+        { error: "Query is required" },
+        { status: 400 }
       );
     }
 
-    const [
-      eventsResult,
-      approvalsResult,
-      emailResult,
-    ] = await Promise.all([
-      supabaseAdmin
-        .from(
-          "ops_events"
-        )
-        .select(
-          "id,event_type,entity_type,entity_id,status,occurred_at,payload"
-        )
-        .order(
-          "occurred_at",
-          {
-            ascending: false,
-          }
-        )
-        .limit(50),
+    // FREE AI: Rule-based responses without OpenAI
+    const response = generateResponse(query);
 
-      supabaseAdmin
-        .from(
-          "ops_approvals"
-        )
-        .select(
-          "id,status,requested_at,action_id"
-        )
-        .eq(
-          "status",
-          "pending"
-        )
-        .order(
-          "requested_at",
-          {
-            ascending: false,
-          }
-        )
-        .limit(30),
+    return NextResponse.json({
+      success: true,
+      openai: false,
+      result: response,
+    });
 
-      supabaseAdmin
-        .from(
-          "ops_email_outbox"
-        )
-        .select(
-          "id,status,email_type,scheduled_for,created_at"
-        )
-        .in(
-          "status",
-          [
-            "queued",
-            "processing",
-          ]
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        )
-        .limit(30),
-    ]);
-
-    const context = {
-      currentTime:
-        new Date().toISOString(),
-
-      pendingApprovals:
-        approvalsResult.data ??
-        [],
-
-      pendingEmails:
-        emailResult.data ??
-        [],
-
-      recentEvents:
-        eventsResult.data ??
-        [],
-    };
-
-    const response =
-      await client.responses.create(
-        {
-          model:
-            process.env.OPENAI_MODEL ??
-            "gpt-5.6",
-
-          store: false,
-
-          input: `
-You are the CEO operating assistant for Horizon Jobs.
-
-The CEO gave this command:
-
-${command}
-
-Current company operating context:
-
-${JSON.stringify(
-  context,
-  null,
-  2
-)}
-
-Give a practical response based only on available data.
-
-You may:
-- identify problems
-- prioritize work
-- recommend actions
-- explain KPI issues
-- identify pending approvals
-- identify operational bottlenecks
-- propose automation
-
-Do NOT claim that you actually sent emails,
-published jobs, changed money, or executed external
-actions. Those require a separate approved automation.
-
-Keep the answer practical and management-focused.
-`,
-        }
-      );
-
-    await supabaseAdmin
-      .from(
-        "ops_audit_log"
-      )
-      .insert({
-        actor_type:
-          "admin",
-
-        actor_id:
-          session.user.email ??
-          null,
-
-        action:
-          "ai_command",
-
-        entity_type:
-          "ops",
-
-        entity_id:
-          null,
-
-        metadata: {
-          command,
-        },
-      });
-
-    return NextResponse.json(
-      {
-        success: true,
-
-        command,
-
-        response:
-          response.output_text ??
-          "",
-      }
-    );
   } catch (error) {
+    console.error("Ops command error:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof
-          Error
-            ? error.message
-            : "AI command failed.",
-      },
-      {
-        status: 500,
-      }
+      { error: error instanceof Error ? error.message : "Command failed" },
+      { status: 500 }
     );
   }
+}
+
+function generateResponse(query: string): any {
+  const lowerQuery = query.toLowerCase();
+
+  // Check for specific keywords
+  if (lowerQuery.includes("jobs") || lowerQuery.includes("job")) {
+    return {
+      analysis: "You asked about jobs. Here's a quick summary.",
+      recommendation: "Check the admin dashboard for job management.",
+      confidence: 75,
+      requiresApproval: false,
+      data: {
+        action: "view_jobs",
+        message: "Recent job activity can be found in the Manage Jobs section.",
+      },
+    };
+  }
+
+  if (lowerQuery.includes("recruiter") || lowerQuery.includes("recruiters")) {
+    return {
+      analysis: "You asked about recruiters.",
+      recommendation: "Check the Recruiter Management section for details.",
+      confidence: 75,
+      requiresApproval: false,
+      data: {
+        action: "view_recruiters",
+        message: "Recruiter activity can be found in the CRM section.",
+      },
+    };
+  }
+
+  if (lowerQuery.includes("analytics") || lowerQuery.includes("traffic")) {
+    return {
+      analysis: "You asked about analytics and traffic.",
+      recommendation: "Check the Analytics dashboard for detailed metrics.",
+      confidence: 80,
+      requiresApproval: false,
+      data: {
+        action: "view_analytics",
+        message: "Analytics data is available in the Analytics section.",
+      },
+    };
+  }
+
+  if (lowerQuery.includes("report") || lowerQuery.includes("reported")) {
+    return {
+      analysis: "You asked about reports.",
+      recommendation: "Check the Reported Jobs section for pending reports.",
+      confidence: 85,
+      requiresApproval: false,
+      data: {
+        action: "view_reports",
+        message: "Reported jobs are available in the Reported Jobs section.",
+      },
+    };
+  }
+
+  if (lowerQuery.includes("crm") || lowerQuery.includes("lead") || lowerQuery.includes("deal")) {
+    return {
+      analysis: "You asked about CRM and business operations.",
+      recommendation: "Check the CRM section for leads, companies, and deals.",
+      confidence: 80,
+      requiresApproval: false,
+      data: {
+        action: "view_crm",
+        message: "CRM data is available in the Business CRM section.",
+      },
+    };
+  }
+
+  if (lowerQuery.includes("help") || lowerQuery.includes("what can")) {
+    return {
+      analysis: "You asked for help.",
+      recommendation: "Here are the main sections you can explore:",
+      confidence: 90,
+      requiresApproval: false,
+      data: {
+        action: "help",
+        message: "Available sections: Control Center, Manage Jobs, Career Resources, Analytics, Reported Jobs, Business CRM, AI Agents, Automation Center, Email Center, Recruiter Management.",
+      },
+    };
+  }
+
+  // Default response
+  return {
+    analysis: `You asked: "${query}"`,
+    recommendation: "I'm operating in offline mode. Check the admin dashboard for detailed information.",
+    confidence: 60,
+    requiresApproval: false,
+    data: {
+      action: "view_dashboard",
+      message: "All available sections are accessible from the admin dashboard.",
+    },
+  };
 }
