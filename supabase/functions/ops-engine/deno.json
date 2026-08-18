@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+  },
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2"
+  }
+}

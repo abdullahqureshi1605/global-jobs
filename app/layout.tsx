@@ -10,6 +10,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AutoBreadcrumbs from "@/components/navigation/AutoBreadcrumbs";
 import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
+import JobAlertBanner from "@/components/jobs/JobAlertBanner";
 
 export const metadata: Metadata = {
   title: {
@@ -40,16 +41,13 @@ export default function RootLayout({
       <body className="min-h-screen bg-slate-100 text-slate-900 antialiased dark:bg-slate-950 dark:text-white">
         <div className="flex min-h-screen flex-col">
           <Header />
-
+          <JobAlertBanner />
           <AutoBreadcrumbs />
-
           <main className="flex-1">
             {children}
           </main>
-
           <Footer />
         </div>
-
         <Suspense fallback={null}>
           <AnalyticsTracker />
         </Suspense>

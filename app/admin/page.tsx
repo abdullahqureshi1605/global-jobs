@@ -8,6 +8,10 @@ import {
   BarChart3,
   Flag,
   Users,
+  LayoutDashboard,
+  Bot,
+  Zap,
+  Mail,
 } from "lucide-react";
 
 import {
@@ -24,6 +28,34 @@ export const dynamic =
   "force-dynamic";
 
 const cards = [
+  {
+    title: "Control Center",
+    description:
+      "Real-time business health, KPIs, and operational metrics.",
+    href: "/admin/control-center",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "AI Agents",
+    description:
+      "AI-powered recommendations for marketing, finance, administration, and production.",
+    href: "/admin/ai-agent-dashboard",
+    icon: Bot,
+  },
+  {
+    title: "Automation Center",
+    description:
+      "Run full automation cycles: extract recruiters, research keywords, fetch jobs, create social posts.",
+    href: "/admin/automation-dashboard",
+    icon: Zap,
+  },
+  {
+    title: "Email Center",
+    description:
+      "Send recruiter outreach, job alerts, newsletters, and custom emails.",
+    href: "/admin/email-dashboard",
+    icon: Mail,
+  },
   {
     title: "Manage Jobs",
     description:
@@ -53,19 +85,12 @@ const cards = [
     icon: Flag,
   },
   {
-    title: "Users",
+    title: "Business CRM",
     description:
-      "User and recruiter management will be available here.",
-    href: "/admin/users",
+      "Manage leads, recruiters, companies, deals, tasks, content targets, job targets, and business activity.",
+    href: "/admin/crm",
     icon: Users,
   },
-  {
-  title: "Business CRM",
-  description:
-    "Manage leads, recruiters, companies, deals, tasks, content targets, job targets, and business activity.",
-  href: "/admin/crm",
-  icon: Users,
-},
 ];
 
 export default async function AdminDashboardPage() {
@@ -99,7 +124,7 @@ export default async function AdminDashboardPage() {
               </h1>
 
               <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                Manage jobs, career resources, visitor reports, and platform analytics from one place.
+                Manage jobs, career resources, visitor reports, platform analytics, and business operations from one place.
               </p>
             </div>
 

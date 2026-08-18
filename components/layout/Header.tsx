@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bookmark,
+  Building2,
   ChevronRight,
   Globe,
   Menu,
@@ -30,11 +32,59 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const [mobileOpen, setMobileOpen] =
-    useState(false);
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [recruiter, setRecruiter] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        // Check regular user
+        const userResponse = await fetch("/api/auth/me", { cache: "no-store" });
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUser(userData.user);
+        }
+
+        // Check recruiter
+        const recruiterResponse = await fetch("/api/recruiter/me", { cache: "no-store" });
+        if (recruiterResponse.ok) {
+          const recruiterData = await recruiterResponse.json();
+          setRecruiter(recruiterData.recruiter);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadUser();
+  }, [pathname]);
 
   function closeMenu() {
     setMobileOpen(false);
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      closeMenu();
+      window.location.href = "/";
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleRecruiterLogout() {
+    try {
+      await fetch("/api/recruiter/logout", { method: "POST" });
+      closeMenu();
+      window.location.href = "/";
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -48,11 +98,9 @@ export default function Header() {
           onClick={closeMenu}
           className="flex items-center gap-2.5 sm:gap-3 shrink-0 group"
         >
-
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
             <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950" />
           </div>
-
           <div>
             <div className="text-base sm:text-xl font-bold tracking-tight">
               HORIZON{" "}
@@ -60,29 +108,23 @@ export default function Header() {
                 JOBS
               </span>
             </div>
-
             <div className="hidden sm:block text-[9px] tracking-widest uppercase text-slate-400 font-mono">
               Global Employment Intelligence
             </div>
           </div>
-
         </Link>
 
         {/* Desktop navigation */}
         <nav className="hidden lg:flex items-center gap-1 ml-auto">
-
-          {navLinks.map(
-            (link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition-colors whitespace-nowrap"
-              >
-                {link.name}
-              </Link>
-            )
-          )}
-
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition-colors whitespace-nowrap"
+            >
+              {link.name}
+            </Link>
+          ))}
           <Link
             href="/saved"
             aria-label="Saved Jobs"
@@ -91,39 +133,58 @@ export default function Header() {
           >
             <Bookmark className="w-4 h-4" />
           </Link>
+          {!isLoading && (
+            <>
+              {/* Recruiter Link */}
+              {recruiter ? (
+                <Link
+                  href="/recruiter/dashboard"
+                  className="ml-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition flex items-center gap-2"
+                >
+                  <Building2 className="w-4 h-4" />
+                  Recruiter Dashboard
+                </Link>
+              ) : (
+                <Link
+                  href="/recruiter/signup"
+                  className="ml-2 px-4 py-2.5 rounded-xl border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-sm font-semibold transition flex items-center gap-2"
+                >
+                  <Building2 className="w-4 h-4" />
+                  Post a Job
+                </Link>
+              )}
 
+              {/* User Link */}
+              {user ? (
+                <Link
+                  href="/account"
+                  className="ml-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition"
+                >
+                  My Account
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  className="ml-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition"
+                >
+                  Sign In
+                </Link>
+              )}
+            </>
+          )}
         </nav>
 
         {/* Mobile button */}
         <div className="lg:hidden ml-auto">
-
           <button
             type="button"
-            onClick={() =>
-              setMobileOpen(
-                (current) =>
-                  !current
-              )
-            }
+            onClick={() => setMobileOpen((current) => !current)}
             className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
-            aria-label={
-              mobileOpen
-                ? "Close menu"
-                : "Open menu"
-            }
-            aria-expanded={
-              mobileOpen
-            }
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
           >
-
-            {mobileOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-
         </div>
 
       </div>
@@ -131,40 +192,93 @@ export default function Header() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="lg:hidden border-t border-slate-800 bg-slate-900 px-4 py-3">
-
           <nav className="space-y-1">
-
-            {navLinks.map(
-              (link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={closeMenu}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"
-                >
-                  <span>
-                    {link.name}
-                  </span>
-
-                  <ChevronRight className="w-4 h-4 text-slate-500" />
-                </Link>
-              )
-            )}
-
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={closeMenu}
+                className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"
+              >
+                <span>{link.name}</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+            ))}
             <Link
               href="/saved"
               onClick={closeMenu}
               className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"
             >
-              <span>
-                Saved Jobs
-              </span>
-
+              <span>Saved Jobs</span>
               <Bookmark className="w-4 h-4 text-slate-500" />
             </Link>
 
-          </nav>
+            {!isLoading && (
+              <>
+                {/* Mobile Recruiter */}
+                {recruiter ? (
+                  <Link
+                    href="/recruiter/dashboard"
+                    onClick={closeMenu}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:bg-slate-800"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      Recruiter Dashboard
+                    </span>
+                  </Link>
+                ) : (
+                  <Link
+                    href="/recruiter/signup"
+                    onClick={closeMenu}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:bg-slate-800"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      Post a Job
+                    </span>
+                  </Link>
+                )}
 
+                {/* Mobile User */}
+                {user ? (
+                  <>
+                    <Link
+                      href="/account"
+                      onClick={closeMenu}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"
+                    >
+                      <span>My Account</span>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-slate-800 w-full"
+                    >
+                      <span>Logout</span>
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={closeMenu}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800"
+                  >
+                    <span>Sign In</span>
+                  </Link>
+                )}
+
+                {/* Recruiter Logout (if recruiter is logged in) */}
+                {recruiter && (
+                  <button
+                    onClick={handleRecruiterLogout}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-slate-800 w-full"
+                  >
+                    <span>Recruiter Logout</span>
+                  </button>
+                )}
+              </>
+            )}
+          </nav>
         </div>
       )}
 
