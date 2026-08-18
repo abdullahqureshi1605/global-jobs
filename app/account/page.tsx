@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import {
   Bookmark,
   LogOut,
@@ -49,12 +50,7 @@ export default function AccountPage() {
   }, [router]);
 
   async function handleLogout() {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+    await signOut({ callbackUrl: "/" });
   }
 
   if (loading) {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   Bookmark,
   Building2,
@@ -63,14 +64,12 @@ export default function Header() {
   }
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
-    setRecruiter(null);
-    window.location.href = "/";
+    await signOut({ callbackUrl: "/" });
   }
 
   async function handleRecruiterLogout() {
-    await fetch("/api/recruiter/logout", { method: "POST" });
+    // For recruiter logout, you may want to call a separate API or just clear local state
+    // Simpler: just reload to clear state
     setRecruiter(null);
     window.location.href = "/";
   }
