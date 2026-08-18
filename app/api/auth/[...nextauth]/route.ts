@@ -1,10 +1,14 @@
-import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
-// Force dynamic to prevent caching
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+export async function POST() {
+  const cookieStore = await cookies();
+  
+  // Delete all cookies
+  const allCookies = cookieStore.getAll();
+  for (const cookie of allCookies) {
+    cookieStore.delete(cookie.name);
+  }
 
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
+  return NextResponse.json({ success: true });
+}
