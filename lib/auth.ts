@@ -50,16 +50,23 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
+      console.log("🔵 signIn called:", { email: user.email, provider: account?.provider });
+
       if (account?.provider === "google") {
         try {
           const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
           // Check if user exists
-          const { data: existing } = await supabaseAdmin
+          const { data: existing, error: findError } = await supabaseAdmin
             .from("users")
             .select("id")
             .eq("email", user.email!)
             .single();
+
+          if (findError && findError.code !== "PGRST116") {
+            console.error("❌ Error finding user:", findError);
+            return false;
+          }
 
           if (!existing) {
             // Create new user
@@ -75,19 +82,27 @@ export const authOptions: NextAuthOptions = {
               });
 
             if (insertError) {
-              console.error("Error creating user:", insertError);
+              console.error("❌ Error creating user:", insertError);
               return false;
             }
+            console.log("✅ User created:", user.email);
+          } else {
+            console.log("✅ User exists:", user.email);
           }
+
+          return true;
         } catch (error) {
-          console.error("Google sign-in error:", error);
+          console.error("❌ Google sign-in error:", error);
           return false;
         }
       }
+
       return true;
     },
 
     async session({ session, token }) {
+      console.log("🔵 session called:", { email: session.user?.email, tokenId: token.sub });
+
       if (session.user) {
         session.user.id = token.sub as string;
       }
@@ -95,6 +110,8 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, account }) {
+      console.log("🔵 jwt called:", { tokenSub: token.sub, hasAccount: !!account });
+
       if (account) {
         token.accessToken = account.access_token;
       }
@@ -104,12 +121,32 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 
   pages: {
     signIn: "/login",
+    error: "/login",
+  },
+
+  // Use secure cookies in production
+  useSecureCookies: process.env.NODE_ENV === "production",
+
+  // Cookie settings
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
   },
 };
 
