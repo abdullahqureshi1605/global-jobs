@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     
@@ -23,9 +23,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
-
-// Also handle GET requests (just in case)
-export async function GET() {
-  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }
