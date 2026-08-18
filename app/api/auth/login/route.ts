@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sign } from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { UserAuth } from "@/lib/auth/user-auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import bcrypt from "bcryptjs";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 const COOKIE_NAME = "auth_token";
@@ -18,7 +19,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await UserAuth.login(email, password);
+    // Check if user exists
+    const { data: user, error } = await supabaseAdmin
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (error || !user) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
+
+    // Check password
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
 
     // Create JWT token
     const token = sign(
@@ -37,7 +59,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 
@@ -47,14 +69,13 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        created_at: user.created_at,
       },
     });
 
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Login failed" },
+      { error: "Login failed" },
       { status: 500 }
     );
   }
