@@ -2,6 +2,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
 
+// Get the base URL
+const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || "https://horizonjobs.online";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     // Email/Password login
@@ -61,7 +64,7 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       // If Google sign-in, check if user exists in database
       if (account?.provider === "google") {
         try {
@@ -109,7 +112,7 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
 
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 
   pages: {
     signIn: "/login",
