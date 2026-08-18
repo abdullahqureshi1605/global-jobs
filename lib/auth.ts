@@ -2,6 +2,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
 
+const baseUrl = process.env.NEXTAUTH_URL || "https://horizonjobs.online";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     // Admin login
@@ -57,16 +59,11 @@ export const authOptions: NextAuthOptions = {
           const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
           // Check if user exists
-          const { data: existing, error: findError } = await supabaseAdmin
+          const { data: existing } = await supabaseAdmin
             .from("users")
             .select("id")
             .eq("email", user.email!)
             .single();
-
-          if (findError && findError.code !== "PGRST116") {
-            console.error("❌ Error finding user:", findError);
-            return false;
-          }
 
           if (!existing) {
             // Create new user
@@ -89,20 +86,16 @@ export const authOptions: NextAuthOptions = {
           } else {
             console.log("✅ User exists:", user.email);
           }
-
-          return true;
         } catch (error) {
           console.error("❌ Google sign-in error:", error);
           return false;
         }
       }
-
       return true;
     },
 
     async session({ session, token }) {
-      console.log("🔵 session called:", { email: session.user?.email, tokenId: token.sub });
-
+      console.log("🔵 session called:", { email: session.user?.email });
       if (session.user) {
         session.user.id = token.sub as string;
       }
@@ -110,8 +103,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, account }) {
-      console.log("🔵 jwt called:", { tokenSub: token.sub, hasAccount: !!account });
-
       if (account) {
         token.accessToken = account.access_token;
       }
@@ -131,26 +122,28 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
 
-  // Use secure cookies in production
+  // CRITICAL FIX: Cookie configuration for Netlify
   useSecureCookies: process.env.NODE_ENV === "production",
 
-  // Cookie settings
+  // Manually configure cookies to work on Netlify
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === "production"
-        ? "__Secure-next-auth.session-token"
+      name: process.env.NODE_ENV === "production" 
+        ? "__Secure-next-auth.session-token" 
         : "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        domain: process.env.NODE_ENV === "production" 
+          ? ".horizonjobs.online" 
+          : undefined,
       },
     },
   },
 };
 
-// Extend NextAuth types
 declare module "next-auth" {
   interface Session {
     user: {
