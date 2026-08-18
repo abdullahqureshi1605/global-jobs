@@ -59,11 +59,30 @@ export default function AccountPage() {
 
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/");
-      router.refresh();
-    } catch {
-      // ignore
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        // Force full page reload to clear all state and cookies
+        window.location.href = "/";
+      } else {
+        console.error("Logout failed");
+        // Fallback: try clearing cookies manually
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+        window.location.href = "/";
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Fallback
+      window.location.href = "/";
     }
   }
 

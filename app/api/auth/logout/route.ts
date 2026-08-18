@@ -4,9 +4,20 @@ import { cookies } from "next/headers";
 export async function POST() {
   try {
     const cookieStore = await cookies();
-    cookieStore.delete("next-auth.session-token");
-    cookieStore.delete("__Secure-next-auth.session-token");
-    cookieStore.delete("auth_token");
+    
+    // Delete ALL possible session cookies
+    const cookieNames = [
+      "next-auth.session-token",
+      "__Secure-next-auth.session-token",
+      "auth_token",
+      "next-auth.csrf-token",
+      "__Secure-next-auth.csrf-token",
+      "next-auth.callback-url",
+    ];
+
+    for (const name of cookieNames) {
+      cookieStore.delete(name);
+    }
 
     return NextResponse.json({
       success: true,
