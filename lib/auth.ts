@@ -76,7 +76,7 @@ export const authOptions: NextAuthOptions = {
             await supabaseAdmin.from("users").insert({
               email: user.email,
               name: user.name,
-              password_hash: "google_oauth", // No password needed
+              password_hash: "google_oauth",
               email_verified: true,
               is_active: true,
               created_at: new Date().toISOString(),
@@ -91,7 +91,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      // Add user ID to session
       if (session.user) {
         session.user.id = token.sub as string;
       }
@@ -99,7 +98,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, account }) {
-      // Persist the OAuth access_token and user ID
       if (account) {
         token.accessToken = account.access_token;
       }
