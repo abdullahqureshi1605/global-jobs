@@ -1,163 +1,213 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { email, name, countries, cities, categories, frequency, userId } = body;
+async function currentUser() {
+  const session = await getServerSession(authOptions);
 
-    if (!email) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
-    }
-
-    // Check if already subscribed
-    const { data: existing } = await supabaseAdmin
-      .from("job_alert_subscriptions")
-      .select("id")
-      .eq("email", email)
-      .single();
-
-    if (existing) {
-      return NextResponse.json(
-        { error: "This email is already subscribed" },
-        { status: 400 }
-      );
-    }
-
-    // Create subscription
-    const { data, error } = await supabaseAdmin
-      .from("job_alert_subscriptions")
-      .insert({
-        email,
-        name: name || null,
-        countries: countries || [],
-        cities: cities || [],
-        categories: categories || [],
-        frequency: frequency || "daily",
-        remote_only: false,
-        active: true,
-        user_id: userId || null,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to subscribe: ${error.message}`);
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Successfully subscribed to job alerts!",
-      subscription: data,
-    });
-
-  } catch (error) {
-    console.error("Job alert subscription error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to subscribe" },
-      { status: 500 }
-    );
+  if (!session?.user) {
+    return null;
   }
+
+  return {
+    id: String(session.user.id || ""),
+    email: String(session.user.email || "").trim().toLowerCase(),
+    name: String(session.user.name || ""),
+  };
 }
 
-export async function DELETE(request: NextRequest) {
-  try {
-    const url = new URL(request.url);
-    const email = url.searchParams.get("email");
-    const token = url.searchParams.get("token");
+function splitList(value: unknown) {
+  if (!Array.isArray(value)) return [];
 
-    if (!email && !token) {
-      return NextResponse.json(
-        { error: "Email or token is required" },
-        { status: 400 }
-      );
-    }
-
-    let query = supabaseAdmin.from("job_alert_subscriptions");
-
-    if (token) {
-      const { data, error } = await query
-        .update({ active: false })
-        .eq("unsubscribe_token", token)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to unsubscribe: ${error.message}`);
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Successfully unsubscribed from job alerts",
-      });
-    }
-
-    if (email) {
-      const { data, error } = await query
-        .update({ active: false })
-        .eq("email", email)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to unsubscribe: ${error.message}`);
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Successfully unsubscribed from job alerts",
-      });
-    }
-
-    return NextResponse.json(
-      { error: "Email or token is required" },
-      { status: 400 }
-    );
-
-  } catch (error) {
-    console.error("Job alert unsubscribe error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to unsubscribe" },
-      { status: 500 }
-    );
-  }
+  return value
+    .map((item) => String(item).trim())
+    .filter(Boolean);
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const url = new URL(request.url);
-    const userId = url.searchParams.get("userId");
+    const user = await currentUser();
 
-    if (!userId) {
+    if (!user?.id) {
       return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
+        { error: "You must be signed in." },
+        { status: 401 }
       );
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("job_alert_subscriptions")
       .select("*")
-      .eq("user_id", userId)
-      .eq("active", true);
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .order("created_at", { ascending: false });
 
     if (error) {
-      throw new Error(`Failed to get subscriptions: ${error.message}`);
+      throw new Error(error.message);
     }
 
     return NextResponse.json({
       success: true,
       subscriptions: data || [],
     });
-
   } catch (error) {
-    console.error("Get job alerts error:", error);
+    console.error(
+      "Job alert GET:",
+      error
+    );
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to get subscriptions" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to load job alerts.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+export async function POST(
+  request: NextRequest
+) {
+  try {
+    const user = await currentUser();
+    const body = await request.json();
+
+    const email =
+      String(body.email || user?.email || "")
+        .trim()
+        .toLowerCase();
+
+    if (!user?.id || !email) {
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        { status: 401 }
+      );
+    }
+
+    const countries = splitList(body.countries);
+    const cities = splitList(body.cities);
+    const categories = splitList(body.categories);
+
+    const frequency =
+      body.frequency === "weekly"
+        ? "weekly"
+        : "daily";
+
+    const admin = getSupabaseAdmin();
+
+    const { data: existing } = await admin
+      .from("job_alert_subscriptions")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("email", email)
+      .eq("active", true)
+      .limit(1);
+
+    if (existing?.length) {
+      return NextResponse.json(
+        {
+          error:
+            "You already have an active job alert for this email.",
+        },
+        { status: 409 }
+      );
+    }
+
+    const { data, error } = await admin
+      .from("job_alert_subscriptions")
+      .insert({
+        email,
+        name:
+          String(body.name || user.name || "").trim() ||
+          null,
+        countries,
+        cities,
+        categories,
+        frequency,
+        remote_only: false,
+        active: true,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        subscription: data,
+        message: "Job alert created successfully.",
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error(
+      "Job alert POST:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to create job alert.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+export async function DELETE() {
+  try {
+    const user = await currentUser();
+
+    if (!user?.id) {
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        { status: 401 }
+      );
+    }
+
+    const { error } = await getSupabaseAdmin()
+      .from("job_alert_subscriptions")
+      .update({
+        active: false,
+      })
+      .eq("user_id", user.id)
+      .eq("active", true);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Job alerts removed.",
+    });
+  } catch (error) {
+    console.error(
+      "Job alert DELETE:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to remove job alerts.",
+      },
       { status: 500 }
     );
   }

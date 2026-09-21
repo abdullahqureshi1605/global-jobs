@@ -1,237 +1,292 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { FcGoogle } from "react-icons/fc";
-import { AlertCircle, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  Lock,
+  Mail,
+  User,
+} from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+  const [name, setName] =
+    useState("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+  const [email, setEmail] =
+    useState("");
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+  const [password, setPassword] =
+    useState("");
+
+  const [confirm, setConfirm] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  async function submit(
+    event: React.FormEvent
+  ) {
+    event.preventDefault();
+
+    if (password !== confirm) {
+      setError(
+        "Passwords do not match."
+      );
+
       return;
     }
 
     setLoading(true);
+    setError("");
 
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
-      });
+      const response =
+        await fetch(
+          "/api/auth/signup",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              name,
+              email,
+              password,
+            }),
+          }
+        );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Signup failed");
+        throw new Error(
+          data?.error ||
+            "Unable to create account."
+        );
       }
 
-      // Auto-login after signup
-      const loginResponse = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const login =
+        await signIn(
+          "credentials",
+          {
+            email,
+            password,
+            redirect: false,
+          }
+        );
 
-      if (loginResponse.ok) {
-        router.push("/");
-        router.refresh();
-      } else {
-        router.push("/login");
+      if (login?.error) {
+        router.push(
+          "/login?created=1"
+        );
+
+        return;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Signup failed");
+
+      window.location.href =
+        "/account/dashboard";
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Signup failed."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    setError("");
-    try {
-      await signIn("google", {
-        callbackUrl: "/",
-        redirect: true,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Google sign-in failed");
-      setGoogleLoading(false);
-    }
-  }
-
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-lg">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center mx-auto">
-              <User className="w-7 h-7 text-white" />
-            </div>
-            <h1 className="mt-4 text-2xl font-extrabold text-slate-900 dark:text-white">
-              Create Account
-            </h1>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Join Horizon Jobs for free
-            </p>
+    <main className="flex min-h-screen items-center justify-center bg-[#f5f7fa] px-5 py-12">
+
+      <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+
+        <div className="bg-[#071a35] px-8 py-8 text-white">
+
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#e4ad2f] text-[#071a35]">
+            <BriefcaseBusiness />
           </div>
 
+          <p className="mt-6 text-[10px] font-black uppercase tracking-[0.25em] text-[#e4ad2f]">
+            Candidate Account
+          </p>
+
+          <h1 className="mt-2 text-3xl font-black">
+            Create account
+          </h1>
+
+          <p className="mt-2 text-sm text-white/60">
+            Build your professional profile and start applying.
+          </p>
+
+        </div>
+
+
+        <form
+          onSubmit={submit}
+          className="space-y-5 p-8"
+        >
+
+          <Field
+            label="Full name"
+            icon={<User size={17} />}
+          >
+            <input
+              required
+              value={name}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
+              className="workspace-input pl-11"
+              placeholder="Your full name"
+            />
+          </Field>
+
+
+          <Field
+            label="Email"
+            icon={<Mail size={17} />}
+          >
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              className="workspace-input pl-11"
+              placeholder="you@example.com"
+            />
+          </Field>
+
+
+          <Field
+            label="Password"
+            icon={<Lock size={17} />}
+          >
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) =>
+                setPassword(
+                  e.target.value
+                )
+              }
+              className="workspace-input pl-11"
+              placeholder="At least 6 characters"
+            />
+          </Field>
+
+
+          <Field
+            label="Confirm password"
+            icon={<Lock size={17} />}
+          >
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={confirm}
+              onChange={(e) =>
+                setConfirm(
+                  e.target.value
+                )
+              }
+              className="workspace-input pl-11"
+              placeholder="Repeat password"
+            />
+          </Field>
+
+
           {error && (
-            <div className="mb-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+              {error}
             </div>
           )}
 
-          {/* Google Sign Up Button */}
+
           <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={googleLoading}
-            className="w-full py-3 rounded-xl bg-white border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm flex items-center justify-center gap-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            type="submit"
+            disabled={loading}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#f2b51d] font-black text-[#071a35] disabled:opacity-60"
           >
-            <FcGoogle className="w-5 h-5" />
-            {googleLoading ? "Connecting..." : "Continue with Google"}
+            {loading
+              ? "Creating account..."
+              : "Create account"}
+
+            {!loading && (
+              <ArrowRight size={17} />
+            )}
           </button>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400">
-                or sign up with email
-              </span>
-            </div>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="John Doe"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="••••••••"
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="••••••••"
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm transition"
-            >
-              {loading ? "Creating account..." : "Create Account"}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-center text-sm text-slate-500">
             Already have an account?{" "}
-            <Link href="/login" className="text-indigo-600 hover:underline font-semibold">
+
+            <Link
+              href="/login"
+              className="font-black text-[#b88410]"
+            >
               Sign in
             </Link>
           </p>
 
-          <p className="mt-3 text-center text-xs text-slate-400">
-            By continuing, you agree to our Terms of Service and Privacy Policy
+
+          <p className="text-center text-xs text-slate-400">
+            Hiring people?{" "}
+
+            <Link
+              href="/recruiter/signup"
+              className="font-bold text-slate-600"
+            >
+              Create recruiter account
+            </Link>
           </p>
-        </div>
+
+        </form>
+
       </div>
+
     </main>
+  );
+}
+
+function Field({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-bold text-[#071a35]">
+        {label}
+      </span>
+
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+          {icon}
+        </span>
+
+        {children}
+      </div>
+    </label>
   );
 }

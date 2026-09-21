@@ -1,123 +1,133 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { AlertCircle, Lock } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setError("");
     setLoading(true);
+    setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
 
-    setLoading(false);
+      const data = await response.json();
 
-    if (!result || result.error) {
-      setError("Invalid administrator email or password.");
-      return;
+      if (!response.ok) {
+        setError(data.error || "Invalid administrator email or password.");
+        return;
+      }
+
+      window.location.assign("/admin");
+    } catch {
+      setError("Unable to connect to administrator login.");
+    } finally {
+      setLoading(false);
     }
-
-    window.location.href = "/admin";
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen bg-slate-50 px-4 py-12">
+      <div className="mx-auto w-full max-w-3xl rounded-[32px] border border-slate-200 bg-white p-10 shadow-xl sm:p-14">
 
-        <div className="bg-white rounded-3xl p-8 shadow-2xl">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e4ad2f] text-3xl font-black text-[#071a35]">
+          H
+        </div>
 
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-11 h-11 rounded-xl bg-indigo-600 flex items-center justify-center">
-              <Lock className="w-5 h-5 text-white" />
+        <p className="mt-12 text-sm font-black uppercase tracking-[0.25em] text-[#b88410]">
+          Horizon Jobs
+        </p>
+
+        <h1 className="mt-3 text-5xl font-black text-[#071a35]">
+          Administrator sign in
+        </h1>
+
+        <p className="mt-4 text-lg text-slate-500">
+          Secure access to the Horizon Jobs control center.
+        </p>
+
+        <form onSubmit={submit} className="mt-10 space-y-7">
+
+          <div>
+            <label className="mb-2 block text-sm font-black text-[#071a35]">
+              Administrator email
+            </label>
+
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={21} />
+
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
+                required
+                className="h-16 w-full rounded-2xl border border-slate-200 pl-12 pr-4 text-lg text-[#071a35] outline-none focus:border-[#e4ad2f]"
+              />
             </div>
+          </div>
 
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                Admin Login
-              </h1>
+          <div>
+            <label className="mb-2 block text-sm font-black text-[#071a35]">
+              Password
+            </label>
 
-              <p className="text-xs text-slate-500">
-                Authorized administrators only
-              </p>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={21} />
+
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+                className="h-16 w-full rounded-2xl border border-slate-200 pl-12 pr-14 text-lg text-[#071a35] outline-none focus:border-[#e4ad2f]"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+              >
+                {showPassword ? <EyeOff size={21} /> : <Eye size={21} />}
+              </button>
             </div>
           </div>
 
           {error && (
-            <div className="mb-5 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">
+              {error}
             </div>
           )}
 
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-4"
+          <button
+            type="submit"
+            disabled={loading}
+            className="h-16 w-full rounded-2xl bg-[#e4ad2f] text-lg font-black text-[#071a35] disabled:opacity-60"
           >
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-semibold text-slate-700 mb-2"
-              >
-                Admin Email
-              </label>
+            {loading ? "Signing in..." : "Sign in to Admin"}
+          </button>
 
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="username"
-                value={email}
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-semibold text-slate-700 mb-2"
-              >
-                Password
-              </label>
-
-              <input
-                id="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed py-3.5 text-white font-semibold transition-colors"
-            >
-              {loading ? "Signing In..." : "Sign In"}
-            </button>
-          </form>
-        </div>
+        </form>
       </div>
     </main>
   );

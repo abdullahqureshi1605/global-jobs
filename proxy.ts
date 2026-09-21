@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 
@@ -7,52 +7,86 @@ export async function proxy(request: NextRequest) {
 
   const isAdminPage = pathname.startsWith("/admin");
   const isAdminApi = pathname.startsWith("/api/admin");
-  const isLogin = pathname === "/admin/login";
-  const isNextAuth = pathname.startsWith("/api/auth");
 
-  // Allow login and auth pages to load without checking
-  if (isNextAuth || isLogin) {
+  const isAdminLoginPage = pathname === "/admin/login";
+  const isAdminLoginApi = pathname === "/api/admin/login";
+
+  const isNextAuthApi = pathname.startsWith("/api/auth");
+
+  // Public authentication endpoints.
+  if (
+    isNextAuthApi ||
+    isAdminLoginPage ||
+    isAdminLoginApi
+  ) {
     return NextResponse.next();
   }
 
-  // If not admin page or admin API, let it through
+  // Non-admin website pages remain public.
   if (!isAdminPage && !isAdminApi) {
     return NextResponse.next();
   }
 
-  // Check if user is logged in
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-  });
+  // OUR ADMIN LOGIN USES A CUSTOM COOKIE.
+  // Do not require a NextAuth token for admin pages.
+  const adminCookie =
+    request.cookies.get("horizon_admin_session")?.value;
 
-  // If NOT logged in
-  if (!token) {
+  if (adminCookie === "authenticated") {
+    return NextResponse.next();
+  }
+
+  // Fall back to NextAuth only if an admin NextAuth token exists.
+  const secret =
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET;
+
+  if (!secret) {
     if (isAdminPage) {
-      // Send to login page
-      const loginUrl = new URL(
-        "/admin/login",
-        request.url
+      return NextResponse.redirect(
+        new URL("/admin/login", request.url)
       );
-      loginUrl.searchParams.set(
-        "callbackUrl",
-        `${pathname}${request.nextUrl.search}`
-      );
-      return NextResponse.redirect(loginUrl);
     }
 
-    // For API, return 401 Unauthorized
     return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
+      {
+        error: "Authentication secret is not configured.",
+      },
+      { status: 500 }
     );
   }
 
-  // User is logged in, allow access
-  return NextResponse.next();
+  const token = await getToken({
+    req: request,
+    secret,
+  });
+
+  if (token?.role === "admin") {
+    return NextResponse.next();
+  }
+
+  if (isAdminPage) {
+    const loginUrl = new URL(
+      "/admin/login",
+      request.url
+    );
+
+    loginUrl.searchParams.set(
+      "callbackUrl",
+      `${pathname}${request.nextUrl.search}`
+    );
+
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.json(
+    {
+      error: "Unauthorized",
+    },
+    { status: 401 }
+  );
 }
 
-// Tell Next.js which routes to check
 export const config = {
   matcher: [
     "/admin/:path*",

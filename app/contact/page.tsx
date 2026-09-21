@@ -1,91 +1,64 @@
-import type { Metadata } from "next";
-
-import BackButton from "@/components/navigation/BackButton";
-
-export const metadata: Metadata = {
-  title: "Contact Horizon Jobs",
-  description:
-    "Contact Horizon Jobs for questions, partnerships, corrections, and general platform enquiries.",
-};
-
-export default function ContactPage() {
+﻿export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <BackButton
-            label="Back"
-            fallbackHref="/"
-          />
-        </div>
+    <section className="horizon-container py-12">
+      <div className="grid gap-8 md:grid-cols-2">
+        <div>
+          <p className="font-bold text-[#d9a62e]">Get in touch</p>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            Horizon Jobs
-          </p>
-
-          <h1 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
+          <h1 className="mt-2 text-4xl font-bold text-[#07152d]">
             Contact Horizon Jobs
           </h1>
 
-          <p className="mt-4 leading-7 text-slate-600 dark:text-slate-400">
-            For general questions, listing corrections, partnership
-            enquiries, or issues with information displayed on the platform,
-            contact the Horizon Jobs team.
+          <p className="mt-5 max-w-lg leading-7 text-gray-500">
+            Questions about a listing, partnership, employer account, or the
+            Horizon Jobs platform? Send us a message.
           </p>
 
-          <div className="mt-8 grid gap-5 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50">
-              <h2 className="font-bold text-slate-900 dark:text-white">
-                General Enquiries
-              </h2>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                Questions about the platform, jobs, resources, or website
-                functionality.
-              </p>
-
-              <a
-                href="mailto:globaljobs@gmail.com"
-                className="mt-4 inline-flex font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-              >
-                globaljobs@gmail.com
-              </a>
+          <div className="mt-8 space-y-5">
+            <div>
+              <p className="font-bold">Email</p>
+              <p className="text-gray-500">support@horizonjobs.online</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50">
-              <h2 className="font-bold text-slate-900 dark:text-white">
-                Job Corrections
-              </h2>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                Let us know when a listing appears outdated, incorrect,
-                duplicated, or no longer available.
-              </p>
-
-              <a
-                href="/jobs"
-                className="mt-4 inline-flex font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-              >
-                Browse Job Listings
-              </a>
+            <div>
+              <p className="font-bold">Platform</p>
+              <p className="text-gray-500">Horizon Jobs</p>
             </div>
           </div>
+        </div>
 
-          <div className="mt-8 rounded-2xl border border-indigo-100 bg-indigo-50 p-6 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-            <h2 className="font-bold text-slate-900 dark:text-white">
-              Important
-            </h2>
-
-            <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
-              Horizon Jobs is an independent job discovery platform. We do
-              not act as a recruitment agency and do not accept applications
-              on behalf of employers. Applications are completed through the
-              original employer or listing source.
-            </p>
+        <form className="horizon-card p-7">
+          <div className="grid gap-4 md:grid-cols-2">
+            <input className="horizon-input" placeholder="First name" />
+            <input className="horizon-input" placeholder="Last name" />
           </div>
-        </section>
+
+          <input
+            className="horizon-input mt-4"
+            type="email"
+            placeholder="Email"
+          />
+
+          <select className="horizon-input mt-4">
+            <option>General question</option>
+            <option>Job report</option>
+            <option>Employer support</option>
+            <option>Partnership</option>
+          </select>
+
+          <textarea
+            className="mt-4 min-h-36 w-full rounded border border-[#cfd7e3] p-3 outline-none"
+            placeholder="How can we help?"
+          />
+
+          <button
+            type="button"
+            className="horizon-button horizon-button-gold mt-4"
+          >
+            Send message
+          </button>
+        </form>
       </div>
-    </main>
+    </section>
   );
 }

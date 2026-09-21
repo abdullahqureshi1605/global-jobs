@@ -2,26 +2,193 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --navy: #071a35;
+  --navy-2: #0b2447;
+  --gold: #e4ad2f;
+  --gold-soft: #fff7df;
+  --ink: #10213d;
+  --muted: #667085;
+  --line: #e4e8ef;
+  --surface: #ffffff;
+  --surface-2: #f6f8fb;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; background: var(--surface-2); }
+body {
+  margin: 0;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+
+.horizon-container { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+.horizon-page { min-height: calc(100vh - 72px); }
+.horizon-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 8px 28px rgba(16, 33, 61, .06);
+}
+.horizon-card-hover { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.horizon-card-hover:hover { transform: translateY(-3px); border-color: rgba(228,173,47,.7); box-shadow: 0 16px 38px rgba(16,33,61,.11); }
+.horizon-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; border-radius: 11px; padding: 0 17px; font-weight: 800;
+  border: 1px solid transparent; transition: .18s ease; cursor: pointer;
+}
+.horizon-button-gold { background: var(--gold); color: var(--navy); }
+.horizon-button-gold:hover { background: #f0bf45; transform: translateY(-1px); }
+.horizon-button-dark { background: var(--navy); color: white; }
+.horizon-button-dark:hover { background: var(--navy-2); }
+.horizon-button-outline { background: white; color: var(--navy); border-color: #ccd4df; }
+.horizon-button-outline:hover { border-color: var(--gold); background: #fffdf7; }
+.horizon-input {
+  width: 100%; height: 48px; border: 1px solid #ccd4df; border-radius: 11px;
+  background: white; padding: 0 14px; color: var(--ink); outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.horizon-input:focus { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(228,173,47,.14); }
+.horizon-label { display:block; margin-bottom:7px; font-size:13px; font-weight:800; color:#344054; }
+.horizon-section { padding-block: 72px; }
+.horizon-eyebrow { color: var(--gold); font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .18em; }
+.horizon-muted { color: var(--muted); }
+.horizon-divider { border-top: 1px solid var(--line); }
+
+@media (max-width: 640px) {
+  .horizon-container { width: min(100% - 28px, 1180px); }
+  .horizon-section { padding-block: 48px; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Horizon workspace width repair */
+.candidate-shell-content > div {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.recruiter-shell-content > main,
+.recruiter-shell-content > div {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.recruiter-shell-content .horizon-container {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+@media (max-width: 1023px) {
+  .candidate-shell-content > div,
+  .recruiter-shell-content > main,
+  .recruiter-shell-content > div {
+    max-width: 100% !important;
+  }
+}
+.workspace-input {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid #dbe2ea;
+  background: #ffffff;
+  padding: 0 14px;
+  color: #071a35;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.workspace-input:focus {
+  border-color: #e4ad2f;
+  box-shadow: 0 0 0 4px rgba(228,173,47,.12);
+}
+
+.workspace-input::placeholder {
+  color: #9aa8ba;
+}
+
+.candidate-shell-content,
+.recruiter-shell-content {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.candidate-shell-content .horizon-container,
+.recruiter-shell-content .horizon-container {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 1023px) {
+  .candidate-shell-content,
+  .recruiter-shell-content {
+    width: 100% !important;
   }
 }
 
+/* Horizon workspace/public layout */
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+/* Prevent public footer from floating above short page content */
+body > div {
+  min-height: 100vh;
+}
+
+/* Workspace pages use the full viewport without public header/footer */
+.horizon-workspace {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Mobile-safe workspace content */
+@media (max-width: 900px) {
+  .horizon-workspace main,
+  .horizon-workspace section {
+    min-width: 0;
+  }
+}
+
+.admin-input,
+.admin-select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 12px;
+  background: rgba(255,255,255,.07);
+  color: white;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+}
+
+.admin-input::placeholder {
+  color: rgba(255,255,255,.38);
+}
+
+.admin-input:focus,
+.admin-select:focus {
+  border-color: #e4ad2f;
+  box-shadow: 0 0 0 3px rgba(228,173,47,.12);
+}
+
+.admin-select option {
+  color: #071a35;
+  background: white;
 }

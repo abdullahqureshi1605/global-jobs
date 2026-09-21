@@ -1,136 +1,87 @@
-import BackButton from "@/components/layout/BackButton";
-import Breadcrumbs from "@/components/layout/Breadcrumbs";
+﻿import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Terms of Service | Horizon Jobs",
-  description:
-    "Read the terms governing your use of the Horizon Jobs website.",
+  description: "Terms governing use of the Horizon Jobs platform.",
 };
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        <div className="space-y-4 mb-8">
-          <BackButton label="Back" />
-
-          <Breadcrumbs
-            items={[
-              {
-                label: "Home",
-                href: "/",
-              },
-              {
-                label: "Terms of Service",
-              },
-            ]}
-          />
-        </div>
-
-        <article className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-7 sm:p-10">
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
-            Terms of Service
-          </h1>
-
-          <p className="text-sm text-slate-500 mt-3">
-            Last updated: August 14, 2026
+    <main className="horizon-page bg-slate-50">
+      <section className="bg-[#071a35] py-14 text-white">
+        <div className="horizon-container">
+          <p className="horizon-eyebrow text-[#e4ad2f]">LEGAL</p>
+          <h1 className="mt-3 text-4xl font-black md:text-5xl">Terms of Service</h1>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/70">
+            Terms governing access to and use of Horizon Jobs.
           </p>
+        </div>
+      </section>
 
-          <div className="prose prose-slate dark:prose-invert max-w-none mt-8">
+      <section className="horizon-container py-10 md:py-14">
+        <article className="horizon-card p-7 md:p-10">
+          <div className="space-y-8 text-sm leading-8 text-slate-700 md:text-base">
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">1. Acceptable use</h2>
+              <p className="mt-3">
+                Use Horizon Jobs lawfully and responsibly. Do not misuse the
+                platform, attempt unauthorized access, interfere with its
+                operation, submit malicious material, or use another person's
+                information without authorization.
+              </p>
+            </section>
 
-            <h2>1. Acceptance of These Terms</h2>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">2. Accounts</h2>
+              <p className="mt-3">
+                Account holders are responsible for information submitted
+                through their accounts and for keeping their credentials
+                secure. Account information should be accurate and kept
+                reasonably current.
+              </p>
+            </section>
 
-            <p>
-              By accessing or using Horizon Jobs, you agree to these Terms
-              of Service and applicable laws.
-            </p>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">3. Job listings</h2>
+              <p className="mt-3">
+                Job information may originate from employers, recruiters, or
+                external employment sources. Job availability, requirements,
+                compensation, location, and application procedures can change.
+                Applicants should verify important details with the relevant
+                employer or application provider.
+              </p>
+            </section>
 
-            <h2>2. Platform Purpose</h2>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">4. Applications and external services</h2>
+              <p className="mt-3">
+                Some applications are completed on external websites. Those
+                websites have their own terms, privacy practices, and
+                responsibilities.
+              </p>
+            </section>
 
-            <p>
-              Horizon Jobs provides job discovery and career information.
-              The platform does not generally act as the employer or hiring
-              authority for jobs displayed on the website.
-            </p>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">5. User content</h2>
+              <p className="mt-3">
+                Content submitted through Horizon Jobs should be lawful,
+                relevant, and truthful to the extent reasonably required by the
+                feature being used. Do not submit fraudulent, abusive,
+                defamatory, malicious, or unauthorized material.
+              </p>
+            </section>
 
-            <h2>3. Job Listings</h2>
-
-            <p>
-              Job information may come from employers, recruitment
-              organizations, public sources, or other third-party sources.
-              Availability and accuracy can change.
-            </p>
-
-            <h2>4. External Websites</h2>
-
-            <p>
-              Job application links may send you to websites operated by
-              employers or third parties. Horizon Jobs is not responsible
-              for the policies, availability, security, or content of those
-              external websites.
-            </p>
-
-            <h2>5. No Employment Guarantee</h2>
-
-            <p>
-              Discovering or applying for a job through Horizon Jobs does
-              not guarantee an interview, offer, employment, visa approval,
-              salary, or any other outcome.
-            </p>
-
-            <h2>6. Acceptable Use</h2>
-
-            <p>
-              You agree not to misuse the platform, attempt unauthorized
-              access, interfere with its operation, submit malicious
-              information, or use the website for unlawful activity.
-            </p>
-
-            <h2>7. Intellectual Property</h2>
-
-            <p>
-              Website branding, original editorial content, interface
-              design, and other original platform material may be protected
-              by applicable intellectual-property laws.
-            </p>
-
-            <h2>8. Availability</h2>
-
-            <p>
-              Horizon Jobs may change, suspend, or discontinue features,
-              pages, listings, or services without guaranteeing continuous
-              availability.
-            </p>
-
-            <h2>9. Limitation of Responsibility</h2>
-
-            <p>
-              Information is provided for general discovery and informational
-              purposes. Users should verify important job information with
-              the original employer or source before taking action.
-            </p>
-
-            <h2>10. Changes</h2>
-
-            <p>
-              These terms may be updated when the platform or its services
-              change.
-            </p>
-
-            <h2>11. Contact</h2>
-
-            <p>
-              Questions about these terms can be submitted through the
-              Contact page.
-            </p>
-
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">6. Service changes</h2>
+              <p className="mt-3">
+                Features, listings, and other parts of the platform may change
+                as Horizon Jobs develops. These Terms may also be updated when
+                appropriate.
+              </p>
+            </section>
           </div>
-
         </article>
-
-      </div>
+      </section>
     </main>
   );
 }

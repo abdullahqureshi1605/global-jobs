@@ -1,347 +1,66 @@
 import Link from "next/link";
+import { ArrowRight, BriefcaseBusiness, Globe2, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { getLatestJobs, type Job } from "@/lib/jobs";
+import { createClient } from "@/lib/supabase-server";
 
-import { JobService } from "@/services/jobService";
-import { TaxonomyService } from "@/services/taxonomyService";
-import { slugify } from "@/lib/utils/slug";
-import {
-  getCategoryIcon,
-} from "@/lib/utils/categoryIcon";
+function one<T>(value: T | T[] | null | undefined): T | null { return Array.isArray(value) ? value[0] ?? null : value ?? null; }
+function salary(job: Job) {
+  if (job.salary_min == null && job.salary_max == null) return "Salary not specified";
+  const c = job.currency ? `${job.currency} ` : "";
+  if (job.salary_min != null && job.salary_max != null) return `${c}${job.salary_min.toLocaleString()} – ${job.salary_max.toLocaleString()}`;
+  return job.salary_min != null ? `${c}${job.salary_min.toLocaleString()}+` : `Up to ${c}${job.salary_max!.toLocaleString()}`;
+}
 
-import CountryFlag from "@/components/countries/CountryFlag";
-
-export const dynamic =
-  "force-dynamic";
-
-export const revalidate = 0;
-
-export const metadata = {
-  title:
-    "Horizon Jobs | Global Job Discovery",
-
-  description:
-    "Discover global job opportunities and practical career resources with Horizon Jobs.",
-};
-
-function formatSalary(
-  min: number | null | undefined,
-  max: number | null | undefined,
-  currency: string
-) {
-  if (
-    min == null ||
-    max == null ||
-    !currency
-  ) {
-    return "";
-  }
-
-  return `${currency} ${Number(
-    min
-  ).toLocaleString()} - ${Number(
-    max
-  ).toLocaleString()}`;
+async function catalog() {
+  const supabase = await createClient();
+  const [categories, countries] = await Promise.all([
+    supabase.from("categories").select("id,name,slug,icon").order("name").limit(8),
+    supabase.from("countries").select("id,name,code").order("name").limit(6),
+  ]);
+  return { categories: categories.data ?? [], countries: countries.data ?? [] };
 }
 
 export default async function HomePage() {
-  const [
-    latestJobs,
-    countries,
-    categories,
-  ] = await Promise.all([
-    JobService.getLatestPublishedJobs(
-      6
-    ),
-    TaxonomyService.getCountryCounts(),
-    TaxonomyService.getCategoryCounts(),
-  ]);
+  let jobs: Job[] = [];
+  let categories: {id:string;name:string;slug:string;icon?:string|null}[] = [];
+  let countries: {id:string;name:string;code:string}[] = [];
+  try { jobs = await getLatestJobs(6); } catch {}
+  try { ({categories, countries} = await catalog()); } catch {}
 
-  const previewCountries =
-    countries.slice(0, 4);
+  return <div>
+    <section className="relative overflow-hidden bg-[#071a35] text-white">
+      <div className="absolute inset-0 opacity-20" style={{backgroundImage:"radial-gradient(circle at 80% 15%, rgba(228,173,47,.55), transparent 28%), radial-gradient(circle at 15% 80%, rgba(58,124,255,.25), transparent 30%)"}} />
+      <div className="horizon-container relative py-20 md:py-28">
+        <div className="max-w-3xl">
+          <div className="horizon-eyebrow">Global employment intelligence</div>
+          <h1 className="mt-5 text-5xl font-black leading-[1.02] tracking-[-.035em] md:text-7xl">Every opportunity.<br/><span className="text-[#e4ad2f]">One clear horizon.</span></h1>
+          <p className="mt-6 max-w-2xl text-base leading-7 text-white/65 md:text-lg">Search real job opportunities by role, location and profession. Horizon Jobs brings the discovery experience into one focused platform.</p>
 
-  const previewCategories =
-    categories.slice(0, 4);
-
-  return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950">
-      <section className="bg-slate-900 px-4 py-10 text-white sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-        <div className="mx-auto flex min-h-[250px] max-w-5xl items-center justify-center text-center sm:min-h-[270px] lg:min-h-[290px]">
-          <div className="w-full">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300 sm:text-sm">
-              Global Employment Intelligence
-            </p>
-
-            <h1 className="mx-auto mt-3 max-w-3xl text-3xl font-extrabold tracking-tight sm:mt-4 sm:text-4xl lg:text-5xl">
-              Find Your Next Opportunity
-            </h1>
-
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:mt-5 sm:text-base">
-              Discover published opportunities across countries,
-              categories, workplace types, and career levels.
-            </p>
-
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link
-                href="/jobs"
-                className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
-              >
-                Find Jobs
-              </Link>
-
-              <Link
-                href="/career-resources"
-                className="rounded-xl border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                Career Resources
-              </Link>
-            </div>
-          </div>
+          <form action="/jobs" className="mt-9 grid gap-2 rounded-2xl border border-white/10 bg-white p-2 shadow-2xl md:grid-cols-[1fr_1fr_auto]">
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-4"><Search size={18} className="text-slate-400"/><input name="search" className="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none" placeholder="Job title, company or keyword" /></label>
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-4"><Globe2 size={18} className="text-slate-400"/><input name="location" className="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none" placeholder="Country or city" /></label>
+            <button className="h-12 rounded-xl bg-[#e4ad2f] px-7 text-sm font-black text-[#071a35] hover:bg-[#f2c85d]">Search jobs</button>
+          </form>
+          <div className="mt-5 flex flex-wrap gap-5 text-xs font-semibold text-white/50"><span className="inline-flex items-center gap-2"><ShieldCheck size={15} className="text-[#e4ad2f]"/> Database-backed listings</span><span className="inline-flex items-center gap-2"><Sparkles size={15} className="text-[#e4ad2f]"/> Fresh opportunities</span></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              Latest Opportunities
-            </p>
+    <section className="horizon-container horizon-section">
+      <SectionHead eyebrow="Recently published" title="Latest opportunities" href="/jobs" action="Browse all jobs" />
+      {jobs.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{jobs.map(job => <JobCard key={job.id} job={job}/>)}</div> : <EmptyState title="No published jobs yet" text="The homepage is connected to the jobs database. Published listings will appear here automatically." href="/jobs"/>}
+    </section>
 
-            <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
-              Recently Published Jobs
-            </h2>
-          </div>
+    <section className="border-y border-slate-200 bg-white">
+      <div className="horizon-container horizon-section"><SectionHead eyebrow="Explore by profession" title="Find work by category" href="/categories" action="All categories"/><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{categories.map(c=><Link key={c.id} href={`/categories/${c.slug}`} className="horizon-card horizon-card-hover group p-5"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#071a35] text-lg font-black text-[#e4ad2f]">{c.icon || c.name.charAt(0)}</div><h3 className="mt-5 font-black text-[#071a35]">{c.name}</h3><p className="mt-1 text-xs text-slate-500">Explore available roles</p><ArrowRight size={17} className="mt-5 text-slate-300 transition group-hover:translate-x-1 group-hover:text-[#e4ad2f]"/></Link>)}</div>{!categories.length && <EmptyState title="Categories are not available yet" text="Connect the Supabase catalog and categories will appear here." href="/categories"/>}</div>
+    </section>
 
-          <Link
-            href="/jobs"
-            className="inline-flex w-fit rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-300"
-          >
-            Browse All Jobs →
-          </Link>
-        </div>
+    <section className="horizon-container horizon-section"><SectionHead eyebrow="Global opportunities" title="Explore by country" href="/countries" action="All countries"/><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{countries.map(c=><Link key={c.id} href={`/countries/${c.code.toLowerCase()}`} className="horizon-card horizon-card-hover flex items-center justify-between p-5"><div><h3 className="font-black text-[#071a35]">{c.name}</h3><p className="mt-1 text-xs text-slate-500">Browse opportunities in {c.name}</p></div><span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-600">{c.code}</span></Link>)}</div>{!countries.length && <EmptyState title="Countries are not available yet" text="The country catalog will appear when records are available in Supabase." href="/countries"/>}</section>
 
-        {latestJobs.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
-            No published jobs are available yet.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {latestJobs.map(
-              (job) => {
-                const CategoryIcon =
-                  getCategoryIcon(
-                    job.category
-                  );
-
-                return (
-                  <article
-                    key={job.id}
-                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          {job.featured && (
-                            <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                              Featured
-                            </span>
-                          )}
-
-                          <h3 className="mt-3 line-clamp-2 text-lg font-bold text-slate-900 dark:text-white">
-                            {job.title}
-                          </h3>
-
-                          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
-                            {job.company}
-                          </p>
-                        </div>
-
-                        <CountryFlag
-                          countryCode={
-                            job.countryCode
-                          }
-                          country={
-                            job.country
-                          }
-                          size="lg"
-                        />
-                      </div>
-
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
-                          <CategoryIcon className="h-3.5 w-3.5" />
-                          {job.category}
-                        </span>
-
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {job.country}
-                        </span>
-
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {job.city}
-                        </span>
-
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {job.workplaceType}
-                        </span>
-                      </div>
-
-                      {job.description && (
-                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                          {job.description}
-                        </p>
-                      )}
-
-                      {formatSalary(
-                        job.salaryMin,
-                        job.salaryMax,
-                        job.salaryCurrency
-                      ) && (
-                        <p className="mt-4 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                          {formatSalary(
-                            job.salaryMin,
-                            job.salaryMax,
-                            job.salaryCurrency
-                          )}
-                        </p>
-                      )}
-                    </div>
-
-                    <Link
-                      href={`/jobs/${job.slug}`}
-                      className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
-                    >
-                      View Job
-                    </Link>
-                  </article>
-                );
-              }
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* COUNTRIES */}
-      <section className="border-y border-slate-200 bg-white py-10 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                Global Markets
-              </p>
-
-              <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
-                Explore Countries
-              </h2>
-            </div>
-
-            <Link
-              href="/countries"
-              className="inline-flex w-fit items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              Browse All Countries →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {previewCountries.map(
-              (country) => (
-                <Link
-                  key={
-                    country.country
-                  }
-                  href={`/countries/${slugify(
-                    country.country
-                  )}`}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800/50"
-                >
-                  <CountryFlag
-                    countryCode={
-                      country.countryCode
-                    }
-                    country={
-                      country.country
-                    }
-                    size="lg"
-                  />
-
-                  <h3 className="mt-4 font-bold text-slate-900 dark:text-white">
-                    {country.country}
-                  </h3>
-
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {country.count} published{" "}
-                    {country.count === 1
-                      ? "job"
-                      : "jobs"}
-                  </p>
-                </Link>
-              )
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* CATEGORIES */}
-      <section className="py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                Career Areas
-              </p>
-
-              <h2 className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
-                Explore Categories
-              </h2>
-            </div>
-
-            <Link
-              href="/categories"
-              className="inline-flex w-fit items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              Browse All Categories →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {previewCategories.map(
-              ({
-                category,
-                count,
-              }) => {
-                const CategoryIcon =
-                  getCategoryIcon(
-                    category
-                  );
-
-                return (
-                  <Link
-                    key={category}
-                    href={`/categories/${slugify(
-                      category
-                    )}`}
-                    className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                  >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                      <CategoryIcon className="h-5 w-5" />
-                    </div>
-
-                    <h3 className="mt-3 font-bold text-slate-900 dark:text-white">
-                      {category}
-                    </h3>
-
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      {count} published{" "}
-                      {count === 1
-                        ? "job"
-                        : "jobs"}
-                    </p>
-                  </Link>
-                );
-              }
-            )}
-          </div>
-        </div>
-      </section>
-    </main>
-  );
+    <section className="bg-[#071a35] py-14 text-white"><div className="horizon-container flex flex-col justify-between gap-7 md:flex-row md:items-center"><div><p className="horizon-eyebrow">For job seekers</p><h2 className="mt-3 text-3xl font-black">Your next move starts here.</h2><p className="mt-2 max-w-xl text-sm leading-6 text-white/55">Create an account to manage applications and build your candidate profile.</p></div><div className="flex flex-wrap gap-3"><Link href="/signup" className="horizon-button horizon-button-gold">Create account <ArrowRight size={17}/></Link><Link href="/recruiters" className="horizon-button border border-white/15 bg-white/5 text-white">I'm hiring</Link></div></div></section>
+  </div>;
 }
+function SectionHead({eyebrow,title,href,action}:{eyebrow:string;title:string;href:string;action:string}) { return <div className="mb-7 flex items-end justify-between gap-4"><div><p className="horizon-eyebrow">{eyebrow}</p><h2 className="mt-2 text-3xl font-black tracking-tight text-[#071a35]">{title}</h2></div><Link href={href} className="hidden items-center gap-1 text-sm font-black text-[#071a35] hover:text-[#b88410] sm:flex">{action}<ArrowRight size={16}/></Link></div> }
+function JobCard({job}:{job:Job}) { const company=one(job.companies); const category=one(job.categories); return <Link href={`/jobs/${job.slug}`} className="horizon-card horizon-card-hover block p-5"><div className="flex gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#071a35] text-lg font-black text-[#e4ad2f]">{company?.name?.charAt(0) || "J"}</div><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><h3 className="font-black leading-5 text-[#071a35]">{job.title}</h3><BriefcaseBusiness size={17} className="shrink-0 text-slate-300"/></div><p className="mt-1 text-sm text-slate-500">{company?.name || "Employer"}</p><div className="mt-4 flex flex-wrap gap-2">{category?.name && <Badge>{category.name}</Badge>}{job.city && <Badge>{job.city}</Badge>}{job.work_mode && <Badge>{job.work_mode}</Badge>}</div><div className="mt-5 border-t border-slate-100 pt-4 text-sm font-black text-[#071a35]">{salary(job)}</div></div></div></Link> }
+function Badge({children}:{children:React.ReactNode}) { return <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600">{children}</span> }
+function EmptyState({title,text,href}:{title:string;text:string;href:string}) { return <div className="horizon-card p-10 text-center"><h3 className="text-lg font-black text-[#071a35]">{title}</h3><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">{text}</p><Link href={href} className="horizon-button horizon-button-outline mt-5">Open page</Link></div> }

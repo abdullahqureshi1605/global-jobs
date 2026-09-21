@@ -1,34 +1,12 @@
-import type { Metadata } from "next";
-
-import {
-  Suspense,
-} from "react";
-
+﻿import type { Metadata } from "next";
 import "./globals.css";
-
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import AutoBreadcrumbs from "@/components/navigation/AutoBreadcrumbs";
-import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
-import JobAlertBanner from "@/components/jobs/JobAlertBanner";
+import SiteChrome from "../components/SiteChrome";
+import Providers from "../components/Providers";
 
 export const metadata: Metadata = {
-  title: {
-    default:
-      "Horizon Jobs | Global Job Discovery",
-    template:
-      "%s | Horizon Jobs",
-  },
-
+  title: "Horizon Jobs",
   description:
-    "Discover global job opportunities and practical career resources with Horizon Jobs.",
-
-  metadataBase:
-    new URL(
-      process.env
-        .NEXT_PUBLIC_SITE_URL ||
-        "https://global-jobz.netlify.app"
-    ),
+    "Find jobs and career opportunities with Horizon Jobs.",
 };
 
 export default function RootLayout({
@@ -38,19 +16,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-100 text-slate-900 antialiased dark:bg-slate-950 dark:text-white">
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <JobAlertBanner />
-          <AutoBreadcrumbs />
-          <main className="flex-1">
+      <body className="min-h-screen bg-[#f5f7fa]">
+        <Providers>
+          <SiteChrome>
             {children}
-          </main>
-          <Footer />
-        </div>
-        <Suspense fallback={null}>
-          <AnalyticsTracker />
-        </Suspense>
+          </SiteChrome>
+        </Providers>
       </body>
     </html>
   );

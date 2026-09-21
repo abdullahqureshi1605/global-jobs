@@ -1,140 +1,85 @@
-import BackButton from "@/components/layout/BackButton";
-import Breadcrumbs from "@/components/layout/Breadcrumbs";
+﻿import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Privacy Policy | Horizon Jobs",
-  description:
-    "Read the Horizon Jobs privacy policy and learn how information is handled when you use the platform.",
+export const metadata: Metadata = {
+  title: "Privacy | Horizon Jobs",
+  description: "Privacy information for Horizon Jobs users and visitors.",
 };
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-slate-950 py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        <div className="space-y-4 mb-8">
-          <BackButton label="Back" />
-
-          <Breadcrumbs
-            items={[
-              {
-                label: "Home",
-                href: "/",
-              },
-              {
-                label: "Privacy Policy",
-              },
-            ]}
-          />
-        </div>
-
-        <article className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-7 sm:p-10">
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
-            Privacy Policy
-          </h1>
-
-          <p className="text-sm text-slate-500 mt-3">
-            Last updated: August 14, 2026
+    <main className="horizon-page bg-slate-50">
+      <section className="bg-[#071a35] py-14 text-white">
+        <div className="horizon-container">
+          <p className="horizon-eyebrow text-[#e4ad2f]">LEGAL</p>
+          <h1 className="mt-3 text-4xl font-black md:text-5xl">Privacy</h1>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/70">
+            Information about privacy and the way Horizon Jobs may handle
+            information when you use the platform.
           </p>
+        </div>
+      </section>
 
-          <div className="prose prose-slate dark:prose-invert max-w-none mt-8">
+      <section className="horizon-container py-10 md:py-14">
+        <article className="horizon-card p-7 md:p-10">
+          <div className="space-y-8 text-sm leading-8 text-slate-700 md:text-base">
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">Information you provide</h2>
+              <p className="mt-3">
+                Horizon Jobs may receive information that you choose to provide
+                when creating an account, maintaining a profile, saving jobs,
+                creating job alerts, submitting applications, contacting us,
+                or using recruiter features.
+              </p>
+            </section>
 
-            <h2>1. Overview</h2>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">How information may be used</h2>
+              <p className="mt-3">
+                Information may be used to provide account functionality,
+                operate job-search and recruitment features, communicate with
+                users, maintain security, improve the platform, and provide
+                requested services.
+              </p>
+            </section>
 
-            <p>
-              Horizon Jobs respects your privacy. This Privacy Policy
-              explains the types of information that may be collected when
-              you use the Horizon Jobs website and how that information may
-              be used.
-            </p>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">Job applications</h2>
+              <p className="mt-3">
+                Some listings may send applicants to an employer or another
+                external application service. Information submitted after
+                leaving Horizon Jobs is subject to the policies and terms of
+                that external service.
+              </p>
+            </section>
 
-            <h2>2. Information You Provide</h2>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">Cookies</h2>
+              <p className="mt-3">
+                Cookies and similar technologies may be used for authentication,
+                security, preferences, analytics, and other website
+                functionality. See the Cookie Policy for more information.
+              </p>
+            </section>
 
-            <p>
-              Information may be provided voluntarily when you contact us,
-              submit a report, or otherwise communicate with the platform.
-            </p>
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">Security</h2>
+              <p className="mt-3">
+                Reasonable measures are used to help protect information and
+                maintain the security of the service. No internet-based system
+                can guarantee absolute security.
+              </p>
+            </section>
 
-            <p>
-              We only request information that is reasonably necessary for
-              the relevant interaction.
-            </p>
-
-            <h2>3. Automatically Collected Information</h2>
-
-            <p>
-              Like many websites, Horizon Jobs may receive technical
-              information such as browser type, device information, pages
-              visited, approximate location, and other standard log
-              information.
-            </p>
-
-            <h2>4. Cookies and Similar Technologies</h2>
-
-            <p>
-              Horizon Jobs may use cookies or similar technologies for
-              functionality, analytics, security, advertising, and
-              preferences.
-            </p>
-
-            <p>
-              Advertising services such as Google AdSense may use cookies
-              and similar technologies according to their own policies and
-              applicable consent requirements.
-            </p>
-
-            <h2>5. Job Applications</h2>
-
-            <p>
-              Horizon Jobs is generally a discovery platform. When you
-              select an external application link, you may be redirected to
-              an employer or third-party website. Their privacy policies
-              govern information collected on those websites.
-            </p>
-
-            <h2>6. Third-Party Services</h2>
-
-            <p>
-              The platform may use third-party services for hosting,
-              analytics, advertising, security, authentication, or database
-              functionality.
-            </p>
-
-            <h2>7. Data Security</h2>
-
-            <p>
-              Reasonable technical and organizational measures are used to
-              protect information under our control. No internet service can
-              guarantee absolute security.
-            </p>
-
-            <h2>8. Your Choices</h2>
-
-            <p>
-              Depending on your location and applicable law, you may have
-              rights regarding access, correction, deletion, restriction,
-              objection, or other handling of personal information.
-            </p>
-
-            <h2>9. Changes to This Policy</h2>
-
-            <p>
-              This Privacy Policy may be updated as the platform,
-              technology, services, or legal requirements change.
-            </p>
-
-            <h2>10. Contact</h2>
-
-            <p>
-              For privacy questions, please use the Contact page.
-            </p>
-
+            <section>
+              <h2 className="text-2xl font-black text-[#071a35]">Questions and requests</h2>
+              <p className="mt-3">
+                For privacy-related questions or requests, contact Horizon Jobs
+                through the contact information published on the website.
+              </p>
+            </section>
           </div>
-
         </article>
-
-      </div>
+      </section>
     </main>
   );
 }

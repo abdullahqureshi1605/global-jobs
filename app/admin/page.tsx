@@ -1,190 +1,275 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAdminAccess } from "@/lib/adminAccess";
 
+export const dynamic = "force-dynamic";
 
-import {
-  BriefcaseBusiness,
-  FileText,
-  BarChart3,
-  Flag,
-  Users,
-  LayoutDashboard,
-  Bot,
-  Zap,
-  Mail,
-} from "lucide-react";
+type Metrics = {
+  totalRaw: number;
+  pending: number;
+  processed: number;
+  needsReview: number;
+  approved: number;
+  readyToPublish: number;
+  published: number;
+  draft: number;
+  unpublished: number;
+};
 
-import {
-  redirect,
-} from "next/navigation";
+async function getMetrics(): Promise<Metrics> {
+  const supabase = supabaseAdmin;
 
-import {
-  authOptions,
-} from "@/lib/auth";
+  const [
+    rawResult,
+    contentResult,
+  ] = await Promise.all([
+    supabase
+      .from("adzuna_raw_jobs")
+      .select("id,processing_status"),
 
-import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
+    supabase
+      .from("job_content")
+      .select(
+        "id,quality_status,publication_status,manual_review_required,ad_eligibility_status"
+      ),
+  ]);
 
-export const dynamic =
-  "force-dynamic";
-
-const cards = [
-  {
-    title: "Control Center",
-    description:
-      "Real-time business health, KPIs, and operational metrics.",
-    href: "/admin/control-center",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "AI Agents",
-    description:
-      "AI-powered recommendations for marketing, finance, administration, and production.",
-    href: "/admin/ai-agent-dashboard",
-    icon: Bot,
-  },
-  {
-    title: "Automation Center",
-    description:
-      "Run full automation cycles: extract recruiters, research keywords, fetch jobs, create social posts.",
-    href: "/admin/automation-dashboard",
-    icon: Zap,
-  },
-  {
-    title: "Email Center",
-    description:
-      "Send recruiter outreach, job alerts, newsletters, and custom emails.",
-    href: "/admin/email-dashboard",
-    icon: Mail,
-  },
-  {
-    title: "Manage Jobs",
-    description:
-      "Add, edit, publish, unpublish, feature, or archive job listings.",
-    href: "/admin/jobs",
-    icon: BriefcaseBusiness,
-  },
-  {
-    title: "Career Resources",
-    description:
-      "Create and manage career articles and guides.",
-    href: "/admin/resources",
-    icon: FileText,
-  },
-  {
-    title: "Analytics",
-    description:
-      "Review platform traffic, visitors, page analytics, and live activity.",
-    href: "/admin/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "Reported Jobs",
-    description:
-      "Review job listings reported by visitors.",
-    href: "/admin/reports",
-    icon: Flag,
-  },
-  {
-    title: "Business CRM",
-    description:
-      "Manage leads, recruiters, companies, deals, tasks, content targets, job targets, and business activity.",
-    href: "/admin/crm",
-    icon: Users,
-  },
-];
-
-export default async function AdminDashboardPage() {
-  const session =
-    await getServerSession(
-      authOptions
+  if (rawResult.error) {
+    throw new Error(
+      `Raw jobs query failed: ${rawResult.error.message}`
     );
-
-  if (!session?.user) {
-    redirect("/admin/login");
   }
 
-  const email =
-    session.user.email ||
-    "Admin account";
+  if (contentResult.error) {
+    throw new Error(
+      `Job content query failed: ${contentResult.error.message}`
+    );
+  }
+
+  const raw = rawResult.data ?? [];
+  const content = contentResult.data ?? [];
+
+  const pending = raw.filter(
+    (row) => row.processing_status === "pending"
+  ).length;
+
+  const processed = raw.filter(
+    (row) => row.processing_status === "processed"
+  ).length;
+
+  const needsReview = content.filter(
+    (row) => row.quality_status === "needs_review"
+  ).length;
+
+  const approved = content.filter(
+    (row) => row.quality_status === "approved"
+  ).length;
+
+  const published = content.filter(
+    (row) => row.publication_status === "published"
+  ).length;
+
+  const draft = content.filter(
+    (row) => row.publication_status === "draft"
+  ).length;
+
+  const unpublished = content.filter(
+    (row) => row.publication_status === "unpublished"
+  ).length;
+
+  const readyToPublish = content.filter(
+    (row) =>
+      row.quality_status === "approved" &&
+      row.publication_status === "draft" &&
+      row.ad_eligibility_status === "eligible" &&
+      row.manual_review_required === false
+  ).length;
+
+  return {
+    totalRaw: raw.length,
+    pending,
+    processed,
+    needsReview,
+    approved,
+    readyToPublish,
+    published,
+    draft,
+    unpublished,
+  };
+}
+
+export default async function AdminDashboard() {
+  await requireAdminAccess();
+
+  let metrics: Metrics | null = null;
+  let error = "";
+
+  try {
+    metrics = await getMetrics();
+  } catch (err) {
+    error =
+      err instanceof Error
+        ? err.message
+        : "Unable to load live dashboard data.";
+  }
+
+  const cards = [
+    {
+      title: "Ready for AI",
+      value: metrics?.pending ?? "—",
+      href: "/admin/processing",
+      description: "Real jobs waiting for AI processing",
+    },
+    {
+      title: "Needs Review",
+      value: metrics?.needsReview ?? "—",
+      href: "/admin/jobs?status=needs_review",
+      description: "Jobs requiring editorial attention",
+    },
+    {
+      title: "Ready to Publish",
+      value: metrics?.readyToPublish ?? "—",
+      href: "/admin/jobs?status=ready",
+      description: "Human-approved publication candidates",
+    },
+    {
+      title: "Published",
+      value: metrics?.published ?? "—",
+      href: "/admin/jobs/published",
+      description: "Jobs currently public",
+    },
+  ];
 
   return (
-    <main className="min-h-screen bg-slate-100 py-10 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="space-y-8">
+      <div>
+        <div className="text-sm font-semibold tracking-[0.2em] text-cyan-400">
+          CONTROL CENTER
+        </div>
 
-        <section className="rounded-[2rem] bg-slate-950 p-8 text-white shadow-xl sm:p-10">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <h1 className="mt-2 text-4xl font-black tracking-tight text-white">
+          Dashboard
+        </h1>
 
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.22em] text-indigo-300">
-                Horizon Jobs Administration
-              </p>
+        <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-400">
+          Live operational view of the Horizon Jobs ingestion,
+          processing, quality and publication pipeline.
+        </p>
+      </div>
 
-              <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-                Admin Dashboard
-              </h1>
+      {error ? (
+        <div className="rounded-2xl border border-red-400/30 bg-red-500/10 p-5 text-sm text-red-200">
+          <div className="font-black">Dashboard database error</div>
+          <div className="mt-1">{error}</div>
+        </div>
+      ) : null}
 
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                Manage jobs, career resources, visitor reports, platform analytics, and business operations from one place.
-              </p>
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => (
+          <Link
+            key={card.title}
+            href={card.href}
+            className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-cyan-400/30 hover:bg-white/[0.05]"
+          >
+            <div className="text-sm font-medium text-slate-400">
+              {card.title}
             </div>
 
-            <div className="w-full max-w-xs rounded-2xl border border-slate-700 bg-slate-900/80 p-6 lg:mr-8">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Signed in as
-              </p>
-
-              <p className="mt-2 text-lg font-bold text-white">
-                Horizon Jobs Admin
-              </p>
-
-              <p className="mt-1 break-all text-sm text-slate-400">
-                {email}
-              </p>
-
-              <AdminLogoutButton />
+            <div className="mt-4 text-4xl font-black text-white">
+              {card.value}
             </div>
+
+            <div className="mt-3 text-xs leading-5 text-slate-500">
+              {card.description}
+            </div>
+
+            <div className="mt-5 text-sm font-bold text-cyan-400">
+              Open queue →
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-7">
+          <div className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">
+            INGESTION & PROCESSING
+          </div>
+
+          <h2 className="mt-3 text-2xl font-black text-white">
+            Pipeline status
+          </h2>
+
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <Metric label="Raw jobs" value={metrics?.totalRaw} />
+            <Metric label="Pending" value={metrics?.pending} />
+            <Metric label="Processed" value={metrics?.processed} />
+            <Metric label="Needs review" value={metrics?.needsReview} />
           </div>
         </section>
 
-        <section className="mt-10">
-          <h2 className="text-2xl font-extrabold text-slate-950 dark:text-white">
-            Administration
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-7">
+          <div className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">
+            QUALITY & PUBLICATION
+          </div>
+
+          <h2 className="mt-3 text-2xl font-black text-white">
+            Editorial lifecycle
           </h2>
 
-          <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {cards.map(
-              ({
-                title,
-                description,
-                href,
-                icon: Icon,
-              }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                    <Icon className="h-6 w-6" />
-                  </div>
-
-                  <h3 className="mt-5 text-xl font-bold text-slate-950 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
-                    {title}
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    {description}
-                  </p>
-
-                  <span className="mt-5 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                    Open →
-                  </span>
-                </Link>
-              )
-            )}
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <Metric label="Approved" value={metrics?.approved} />
+            <Metric label="Ready to publish" value={metrics?.readyToPublish} />
+            <Metric label="Published" value={metrics?.published} />
+            <Metric label="Draft" value={metrics?.draft} />
           </div>
         </section>
       </div>
-    </main>
+
+      <section className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-7">
+        <div className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">
+          CONTENT MANAGEMENT
+        </div>
+
+        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-white">
+              Career Resources
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-400">
+              Create, edit, review and publish real career articles.
+            </p>
+          </div>
+
+          <Link
+            href="/admin/resources"
+            className="inline-flex items-center justify-center rounded-xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
+          >
+            Open Article Engine →
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Metric({
+  label,
+  value,
+}: {
+  label: string;
+  value?: number;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/10 p-4">
+      <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        {label}
+      </div>
+
+      <div className="mt-2 text-2xl font-black text-white">
+        {value ?? "—"}
+      </div>
+    </div>
   );
 }
