@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -186,27 +186,27 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="w-full px-5 py-7 lg:px-8 lg:py-9">
+    <div className="w-full px-5 py-5 lg:px-8 lg:py-6">
 
       <div className="mb-8">
-        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#b88410]">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b88410]">
           Candidate Profile
         </p>
 
         <div className="mt-2 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
 
           <div>
-            <h2 className="text-3xl font-black text-[#071a35] lg:text-4xl">
+            <h2 className="text-[13px] font-black text-[#071a35] lg:text-[13px]">
               Profile & Resume
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-[13px] text-slate-500">
               Keep your career information simple and up to date.
             </p>
           </div>
 
           <div className="min-w-[220px]">
-            <div className="flex items-center justify-between text-sm font-bold text-slate-500">
+            <div className="flex items-center justify-between text-[13px] font-bold text-slate-500">
               <span>Profile complete</span>
               <span className="text-[#071a35]">
                 {profile.profile_strength}%
@@ -228,13 +228,13 @@ export default function ProfilePage() {
 
 
       {error && (
-        <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+        <div className="mb-5 rounded-[2px] border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] font-semibold text-rose-700">
           {error}
         </div>
       )}
 
       {message && (
-        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="mb-5 rounded-[2px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-semibold text-emerald-700">
           {message}
         </div>
       )}
@@ -245,14 +245,14 @@ export default function ProfilePage() {
         className="space-y-6"
       >
 
-        <section className="rounded-2xl border border-slate-200 bg-white">
+        <section className="rounded-[2px] border border-slate-200 bg-white">
 
-          <div className="border-b border-slate-100 px-6 py-5">
-            <h3 className="text-xl font-black text-[#071a35]">
+          <div className="border-b border-slate-100 px-4 py-4">
+            <h3 className="text-[13px] font-black text-[#071a35]">
               Personal information
             </h3>
 
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-[13px] text-slate-400">
               Basic information recruiters need to know.
             </p>
           </div>
@@ -356,14 +356,14 @@ export default function ProfilePage() {
         </section>
 
 
-        <section className="rounded-2xl border border-slate-200 bg-white">
+        <section className="rounded-[2px] border border-slate-200 bg-white">
 
-          <div className="border-b border-slate-100 px-6 py-5">
-            <h3 className="text-xl font-black text-[#071a35]">
+          <div className="border-b border-slate-100 px-4 py-4">
+            <h3 className="text-[13px] font-black text-[#071a35]">
               Skills
             </h3>
 
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-[13px] text-slate-400">
               Add skills recruiters can search for.
             </p>
           </div>
@@ -390,7 +390,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={addSkill}
-                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#071a35] px-5 text-sm font-black text-white"
+                className="flex h-12 items-center justify-center gap-2 rounded-[2px] bg-[#071a35] px-5 text-[13px] font-black text-white"
               >
                 <Plus size={17} />
                 Add
@@ -404,7 +404,7 @@ export default function ProfilePage() {
                 (item) => (
                   <span
                     key={item}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#071a35] px-3 py-2 text-xs font-bold text-white"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#071a35] px-3 py-2 text-[11px] font-bold text-white"
                   >
                     {item}
 
@@ -426,14 +426,14 @@ export default function ProfilePage() {
         </section>
 
 
-        <section className="rounded-2xl border border-slate-200 bg-white">
+        <section className="rounded-[2px] border border-slate-200 bg-white">
 
-          <div className="border-b border-slate-100 px-6 py-5">
-            <h3 className="text-xl font-black text-[#071a35]">
+          <div className="border-b border-slate-100 px-4 py-4">
+            <h3 className="text-[13px] font-black text-[#071a35]">
               Professional bio
             </h3>
 
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-[13px] text-slate-400">
               Tell recruiters about your experience and goals.
             </p>
           </div>
@@ -461,7 +461,7 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex h-12 items-center gap-2 rounded-xl bg-[#f2b51d] px-6 text-sm font-black text-[#071a35] disabled:opacity-60"
+            className="flex h-12 items-center gap-2 rounded-[2px] bg-[#3E7BFA] px-6 text-[13px] font-black text-white disabled:opacity-60"
           >
             {saving ? (
               <>
@@ -496,7 +496,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold text-[#071a35]">
+      <span className="mb-2 block text-[13px] font-bold text-[#071a35]">
         {label}
       </span>
 
@@ -504,3 +504,7 @@ function Field({
     </label>
   );
 }
+
+
+
+

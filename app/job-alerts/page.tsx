@@ -1,5 +1,13 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-export default function JobAlertsPage() {
-    redirect("/account/job-alerts");
+export default async function JobAlertsPage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    redirect("/login?callbackUrl=/account/job-alerts");
+  }
+
+  redirect("/account/job-alerts");
 }

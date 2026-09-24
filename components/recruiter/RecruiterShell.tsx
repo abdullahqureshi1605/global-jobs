@@ -265,7 +265,7 @@ export default function RecruiterShell({
   );
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa]">
+    <div className="account-portal min-h-screen bg-[#f5f7fa]">
 
       <aside
         className={[
@@ -358,3 +358,4 @@ export default function RecruiterShell({
     </div>
   );
 }
+

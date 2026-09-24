@@ -97,9 +97,7 @@ export default function Header() {
               Horizon Jobs
             </strong>
 
-            <small className="text-[10px] uppercase tracking-[.18em] text-white/45">
-              Global opportunities
-            </small>
+
           </span>
         </Link>
 
@@ -126,20 +124,10 @@ export default function Header() {
                 onClick={() =>
                   setAccountOpen((value) => !value)
                 }
-                className="flex min-h-[54px] items-center gap-3 rounded-2xl border border-white/15 bg-white/[.04] px-3.5 transition hover:border-white/25 hover:bg-white/[.08]"
+                className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/[.04] px-2 transition hover:border-white/25 hover:bg-white/[.08]"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e4ad2f] text-sm font-black text-[#071a35]">
-                  {firstLetter}
-                </span>
-
-                <span className="max-w-[150px] text-left">
-                  <strong className="block truncate text-sm font-black text-white">
-                    {displayName}
-                  </strong>
-
-                  <small className="block text-xs capitalize text-white/45">
-                    {role}
-                  </small>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e4ad2f] text-[#071a35]">
+                  <UserRound size={17} strokeWidth={2.2} />
                 </span>
 
                 <ChevronDown
@@ -252,7 +240,7 @@ export default function Header() {
 
               <Link
                 href="/recruiters"
-                className="rounded-xl bg-[#e4ad2f] px-5 py-3 text-sm font-black text-[#071a35] hover:bg-[#f2c85d]"
+                className="rounded-xl bg-[#3E7BFA] px-5 py-3 text-sm font-black text-white hover:bg-[#f2c85d]"
               >
                 Post a Job
               </Link>
@@ -330,7 +318,7 @@ export default function Header() {
                   <Link
                     href="/recruiters"
                     onClick={() => setOpen(false)}
-                    className="rounded-xl bg-[#e4ad2f] px-4 py-3 text-center text-sm font-black text-[#071a35]"
+                    className="rounded-xl bg-[#3E7BFA] px-4 py-3 text-center text-sm font-black text-white"
                   >
                     Post a Job
                   </Link>
@@ -369,3 +357,6 @@ function MenuLink({
     </Link>
   );
 }
+
+
+

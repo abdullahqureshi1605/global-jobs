@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
@@ -122,7 +122,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="h-16 w-full rounded-2xl bg-[#e4ad2f] text-lg font-black text-[#071a35] disabled:opacity-60"
+            className="h-16 w-full rounded-2xl bg-[#3E7BFA] text-lg font-black text-white disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in to Admin"}
           </button>
@@ -132,3 +132,5 @@ export default function AdminLoginPage() {
     </main>
   );
 }
+
+

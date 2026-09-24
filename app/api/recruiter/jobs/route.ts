@@ -1,1 +1,411 @@
-import { NextRequest, NextResponse } from "next/server";import { getServerSession } from "next-auth";import { authOptions } from "@/lib/auth";import { getSupabaseAdmin } from "@/lib/supabase/admin";async function getContext() {  const session =    await getServerSession(authOptions);  if (!session?.user?.id) {    return null;  }  const role =    typeof session.user.role ===    "string"      ? session.user.role      : "candidate";  if (    role !== "recruiter" &&    role !== "admin"  ) {    return null;  }  const companyMembers =    await getSupabaseAdmin()      .from("company_members")      .select(        "company_id,role"      )      .eq(        "user_id",        session.user.id      );  return {    userId: session.user.id,    role,    memberships:      companyMembers.data || [],  };}export async function GET(  request: NextRequest) {  try {    const context =      await getContext();    if (!context) {      return NextResponse.json(        {          error:            "Recruiter authentication required.",        },        { status: 401 }      );    }    const jobId =      request.nextUrl.searchParams.get(        "jobId"      );    let query =      getSupabaseAdmin()        .from("jobs")        .select("*")        .order("created_at", {          ascending: false,        });    if (context.role !== "admin") {      const ids =        context.memberships          .map(            (item) =>              item.company_id          )          .filter(Boolean);      if (!ids.length) {        return NextResponse.json({          jobs: [],          count: 0,        });      }      query =        query.in(          "company_id",          ids        );    }    if (jobId) {      query =        query          .eq("id", jobId)          .limit(1);    }    const { data, error } =      await query;    if (error) {      throw new Error(error.message);    }    if (jobId) {      if (!data?.length) {        return NextResponse.json(          {            error:              "Job not found.",          },          { status: 404 }        );      }      return NextResponse.json({        job: data[0],      });    }    return NextResponse.json({      jobs: data || [],      count: data?.length || 0,    });  } catch (error) {    return NextResponse.json(      {        error:          error instanceof Error            ? error.message            : "Unable to load recruiter jobs.",      },      { status: 500 }    );  }}export async function POST(  request: NextRequest) {  try {    const context =      await getContext();    if (!context) {      return NextResponse.json(        {          error:            "Recruiter authentication required.",        },        { status: 401 }      );    }    const body =      await request.json();    const title =      String(        body.title || ""      ).trim();    const description =      String(        body.description || ""      ).trim();    if (      title.length < 2 ||      description.length < 10    ) {      return NextResponse.json(        {          error:            "Job title and a meaningful description are required.",        },        { status: 400 }      );    }    let companyId =      typeof body.company_id ===      "string"        ? body.company_id        : "";    const allowedCompanyIds =      context.memberships.map(        (item) =>          item.company_id      );    if (      context.role !== "admin" &&      (!companyId ||        !allowedCompanyIds.includes(          companyId        ))    ) {      const companyName =        String(          body.company_name ||            ""        ).trim();      if (!companyName) {        return NextResponse.json(          {            error:              "Enter a company name.",          },          { status: 400 }        );      }      const {        data: company,        error: companyError,      } = await getSupabaseAdmin()        .from("companies")        .insert({          owner_user_id:            context.userId,          name: companyName,          slug:            `${companyName              .toLowerCase()              .replace(                /[^a-z0-9]+/g,                "-"              )              .replace(                /^-+|-+$/g,                ""              )}-${Date.now().toString(36)}`,          verification_status:            "pending",        })        .select("id")        .single();      if (        companyError ||        !company      ) {        throw new Error(          companyError?.message ||            "Company could not be created."        );      }      const {        error: memberError,      } = await getSupabaseAdmin()        .from("company_members")        .insert({          company_id:            company.id,          user_id:            context.userId,          role: "recruiter",        });      if (memberError) {        await getSupabaseAdmin()          .from("companies")          .delete()          .eq(            "id",            company.id          );        throw new Error(          memberError.message        );      }      companyId = company.id;    }    const job: Record<      string,      unknown    > = {      status:        "draft",      source: "manual",      title,      description,      slug:        `${title          .toLowerCase()          .replace(            /[^a-z0-9]+/g,            "-"          )          .replace(            /^-+|-+$/g,            ""          )}-${Date.now().toString(36)}`,    };    if (companyId) {      job.company_id =        companyId;    }    const allowed = [      "category_id",      "country_id",      "city",      "work_mode",      "employment_type",      "salary_min",      "salary_max",      "currency",      "apply_url",    ];    for (const key of allowed) {      if (        body[key] !== undefined &&        body[key] !== ""      ) {        job[key] =          body[key];      }    }    const {      data,      error,    } = await getSupabaseAdmin()      .from("jobs")      .insert(job)      .select("*")      .single();    if (error) {      throw new Error(        error.message      );    }    const backend =      process.env.NEXT_PUBLIC_BACKEND_URL?.trim();    if (!backend) {      return NextResponse.json(        {          job: data,          processing: "pending",        },        { status: 201 }      );    }    const processingResponse =      await fetch(        `${backend}/api/processing/manual-job/${data.id}`,        {          method: "POST",          headers: {            "Content-Type": "application/json",          },          cache: "no-store",        }      );    const processingData =      await processingResponse.json();    if (!processingResponse.ok) {      return NextResponse.json(        {          error:            processingData?.detail ||            processingData?.error ||            "Job was saved but AI processing could not be completed.",          job: data,        },        { status: 502 }      );    }    return NextResponse.json(      {        job:          processingData?.job_content ||          data,      },      { status: 201 }    );  } catch (error) {    return NextResponse.json(      {        error:          error instanceof Error            ? error.message            : "Unable to create recruiter job.",      },      { status: 500 }    );  }}
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+
+async function getContext() {
+  const session =
+    await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const role =
+    typeof session.user.role ===
+    "string"
+      ? session.user.role
+      : "candidate";
+
+  if (
+    role !== "recruiter" &&
+    role !== "admin"
+  ) {
+    return null;
+  }
+
+  const companyMembers =
+    await getSupabaseAdmin()
+      .from("company_members")
+      .select(
+        "company_id,role"
+      )
+      .eq(
+        "user_id",
+        session.user.id
+      );
+
+  return {
+    userId: session.user.id,
+    role,
+    memberships:
+      companyMembers.data || [],
+  };
+}
+
+export async function GET(
+  request: NextRequest
+) {
+  try {
+    const context =
+      await getContext();
+
+    if (!context) {
+      return NextResponse.json(
+        {
+          error:
+            "Recruiter authentication required.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const jobId =
+      request.nextUrl.searchParams.get(
+        "jobId"
+      );
+
+    let query =
+      getSupabaseAdmin()
+        .from("jobs")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        });
+
+    if (context.role !== "admin") {
+      const ids =
+        context.memberships
+          .map(
+            (item) =>
+              item.company_id
+          )
+          .filter(Boolean);
+
+      if (!ids.length) {
+        return NextResponse.json({
+          jobs: [],
+          count: 0,
+        });
+      }
+
+      query =
+        query.in(
+          "company_id",
+          ids
+        );
+    }
+
+    if (jobId) {
+      query =
+        query
+          .eq("id", jobId)
+          .limit(1);
+    }
+
+    const { data, error } =
+      await query;
+
+    if (error) {
+      throw new Error(
+        error.message
+      );
+    }
+
+    if (jobId) {
+      if (!data?.length) {
+        return NextResponse.json(
+          {
+            error:
+              "Job not found.",
+          },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        job: data[0],
+      });
+    }
+
+    return NextResponse.json({
+      jobs: data || [],
+      count: data?.length || 0,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to load recruiter jobs.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest
+) {
+  try {
+    const context =
+      await getContext();
+
+    if (!context) {
+      return NextResponse.json(
+        {
+          error:
+            "Recruiter authentication required.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const body =
+      await request.json();
+
+    const title =
+      String(
+        body.title || ""
+      ).trim();
+
+    const description =
+      String(
+        body.description || ""
+      ).trim();
+
+    if (
+      title.length < 2 ||
+      description.length < 10
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Job title and a meaningful description are required.",
+        },
+        { status: 400 }
+      );
+    }
+
+    let companyId =
+      typeof body.company_id ===
+      "string"
+        ? body.company_id
+        : "";
+
+    const allowedCompanyIds =
+      context.memberships.map(
+        (item) =>
+          item.company_id
+      );
+
+    if (
+      context.role !== "admin" &&
+      (!companyId ||
+        !allowedCompanyIds.includes(
+          companyId
+        ))
+    ) {
+      const companyName =
+        String(
+          body.company_name ||
+            ""
+        ).trim();
+
+      if (!companyName) {
+        return NextResponse.json(
+          {
+            error:
+              "Enter a company name.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const {
+        data: company,
+        error: companyError,
+      } = await getSupabaseAdmin()
+        .from("companies")
+        .insert({
+          owner_user_id:
+            context.userId,
+          name: companyName,
+          slug:
+            `${companyName
+              .toLowerCase()
+              .replace(
+                /[^a-z0-9]+/g,
+                "-"
+              )
+              .replace(
+                /^-+|-+$/g,
+                ""
+              )}-${Date.now().toString(36)}`,
+          verification_status:
+            "pending",
+        })
+        .select("id")
+        .single();
+
+      if (
+        companyError ||
+        !company
+      ) {
+        throw new Error(
+          companyError?.message ||
+            "Company could not be created."
+        );
+      }
+
+      const {
+        error: memberError,
+      } = await getSupabaseAdmin()
+        .from("company_members")
+        .insert({
+          company_id:
+            company.id,
+          user_id:
+            context.userId,
+          role: "recruiter",
+        });
+
+      if (memberError) {
+        await getSupabaseAdmin()
+          .from("companies")
+          .delete()
+          .eq(
+            "id",
+            company.id
+          );
+
+        throw new Error(
+          memberError.message
+        );
+      }
+
+      companyId = company.id;
+    }
+
+    const job: Record<
+      string,
+      unknown
+    > = {
+      status:
+        "draft",
+      source: "manual",
+      title,
+      description,
+      slug:
+        `${title
+          .toLowerCase()
+          .replace(
+            /[^a-z0-9]+/g,
+            "-"
+          )
+          .replace(
+            /^-+|-+$/g,
+            ""
+          )}-${Date.now().toString(36)}`,
+    };
+
+    if (companyId) {
+      job.company_id =
+        companyId;
+    }
+
+    const allowed = [
+      "category_id",
+      "country_id",
+      "city",
+      "work_mode",
+      "employment_type",
+      "salary_min",
+      "salary_max",
+      "currency",
+      "apply_url",
+    ];
+
+    for (const key of allowed) {
+      if (
+        body[key] !== undefined &&
+        body[key] !== ""
+      ) {
+        job[key] =
+          body[key];
+      }
+    }
+
+    const {
+      data,
+      error,
+    } = await getSupabaseAdmin()
+      .from("jobs")
+      .insert(job)
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(
+        error.message
+      );
+    }
+
+    const backend =
+      process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+
+    if (!backend) {
+      throw new Error(
+        "Backend URL is not configured for job processing."
+      );
+    }
+
+    const processingResponse =
+      await fetch(
+        `${backend}/api/processing/manual-job/${data.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        }
+      );
+
+    const processingData =
+      await processingResponse.json();
+
+    if (!processingResponse.ok) {
+      return NextResponse.json(
+        {
+          error:
+            processingData?.detail ||
+            processingData?.error ||
+            "Job was saved but AI processing could not be completed.",
+          job: data,
+        },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        job:
+          processingData?.job_content ||
+          data,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to create recruiter job.",
+      },
+      { status: 500 }
+    );
+  }
+}

@@ -319,7 +319,7 @@ export default function RecruiterProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#e4ad2f] px-6 text-sm font-black text-[#071a35] hover:bg-[#f2c85d] disabled:opacity-60"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#3E7BFA] px-6 text-sm font-black text-white hover:bg-[#f2c85d] disabled:opacity-60"
               >
                 <Save size={17} />
                 {saving ? "Saving..." : "Save company profile"}
@@ -350,3 +350,4 @@ function Field({
     </div>
   );
 }
+

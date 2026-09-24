@@ -5,23 +5,33 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BriefcaseBusiness,
   Eye,
   EyeOff,
   Lock,
   Mail,
+  ShieldCheck,
 } from "lucide-react";
+
+function getSafeCallbackUrl() {
+  const value =
+    new URLSearchParams(window.location.search).get("callbackUrl") ||
+    "/recruiter/dashboard";
+
+  return value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : "/recruiter/dashboard";
+}
 
 export default function RecruiterLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [show, setShow] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-
     setLoading(true);
     setError("");
 
@@ -49,134 +59,237 @@ export default function RecruiterLogin() {
         return;
       }
 
-      window.location.href =
-        "/recruiter/dashboard";
+      window.location.href = "/recruiter/dashboard";
     } catch {
-      setError(
-        "Unable to sign in as recruiter right now."
-      );
+      setError("Unable to sign in as recruiter right now.");
     } finally {
       setLoading(false);
     }
   }
 
-  return (
-    <main className="min-h-[calc(100vh-72px)] bg-[#f4f7fb] px-4 py-10 sm:py-14">
-      <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_25px_70px_rgba(7,26,53,.12)] lg:grid-cols-[.9fr_1.1fr]">
+  async function continueWithGoogle() {
+    setGoogleLoading(true);
+    setError("");
 
-        <section className="hidden bg-[#071a35] p-10 text-white lg:block xl:p-14">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e4ad2f] text-[#071a35]">
-            <BriefcaseBusiness size={26} />
+    try {
+      await signIn("google", {
+        callbackUrl: getSafeCallbackUrl(),
+      });
+    } catch {
+      setError(
+        "Google sign in could not be completed. Please try again."
+      );
+      setGoogleLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-white lg:h-screen lg:overflow-hidden">
+      <div className="grid min-h-screen w-full lg:h-screen lg:grid-cols-2">
+
+        {/* LEFT PANEL */}
+        <section className="relative flex min-h-[260px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-14 lg:py-10">
+
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+            aria-label="Horizon Jobs logo placeholder"
+          >
+            <span className="h-3 w-3 rounded-sm bg-white/90" aria-hidden="true" />
           </div>
 
-          <p className="mt-24 text-xs font-black uppercase tracking-[.24em] text-[#e4ad2f]">
-            Recruiter Workspace
+          <div className="absolute left-14 top-[46%] max-w-[400px] -translate-y-1/2">
+
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+              For employers
+            </p>
+
+            <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+              Your hiring,
+              <br />
+              organized.
+            </h2>
+
+            <p className="mt-3 max-w-[450px] text-[13px] leading-5 text-white/65">
+              Publish opportunities, manage candidates and keep your
+              employer workspace organized from one secure account.
+            </p>
+
+            <div className="mt-5 flex items-center gap-2 text-[12px] font-semibold text-white/75">
+              <ShieldCheck
+                size={16}
+                className="text-[#e4ad2f]"
+              />
+              Secure recruiter account access
+            </div>
+
+          </div>
+
+          <p className="absolute bottom-10 left-14 text-[10px] text-white/40">
+            © 2026 Horizon Jobs
           </p>
 
-          <h2 className="mt-5 max-w-md text-5xl font-black leading-[1.02]">
-            Hire better.
-            <br />
-            Reach further.
-          </h2>
-
-          <p className="mt-7 max-w-md text-base leading-8 text-white/65">
-            Publish jobs, manage candidates and operate your employer workspace.
-          </p>
         </section>
 
-        <section className="p-7 sm:p-10 lg:p-14">
-          <p className="text-xs font-black uppercase tracking-[.22em] text-[#c38b12]">
-            Employer Access
-          </p>
+        {/* RIGHT PANEL */}
+        <section className="flex min-h-0 overflow-y-auto bg-white px-7 py-6 sm:px-10 lg:px-10 lg:py-[102px] xl:px-12">
 
-          <h1 className="mt-3 text-4xl font-black text-[#071a35]">
-            Recruiter sign in
-          </h1>
+          <div className="mx-auto w-full max-w-[490px]">
 
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Access your employer workspace.
-          </p>
+            {/* TABS */}
+            <div className="flex border-b border-[#E3E8EF]">
 
-          <form
-            onSubmit={submit}
-            className="mt-9 space-y-5"
-          >
-            <Field label="Work email" icon={<Mail size={18} />}>
-              <input
-                className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 pl-12 text-base outline-none transition focus:border-[#e4ad2f] focus:ring-4 focus:ring-[#e4ad2f]/10"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                autoComplete="email"
-                required
-              />
-            </Field>
+              <Link
+                href="/recruiter/login"
+                className="border-b-2 border-[#e4ad2f] px-1 pb-2.5 text-[13px] font-bold text-[#0b1526]"
+              >
+                Sign in
+              </Link>
 
-            <Field label="Password" icon={<Lock size={18} />}>
-              <div className="relative">
-                <input
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 pl-12 pr-12 text-base outline-none transition focus:border-[#e4ad2f] focus:ring-4 focus:ring-[#e4ad2f]/10"
-                  type={show ? "text" : "password"}
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  placeholder="Your password"
-                  autoComplete="current-password"
-                  required
-                />
+              <Link
+                href="/recruiter/signup"
+                className="ml-8 px-1 pb-2.5 text-[13px] font-semibold text-[#7890aa] hover:text-[#0b1526]"
+              >
+                Create account
+              </Link>
+
+            </div>
+
+            <div className="pt-6">
+
+              <h1 className="mt-1.5 font-serif text-[24px] font-semibold leading-tight text-[#0b1526]">
+                Welcome back
+              </h1>
+
+              <p className="mt-1 text-[11px] leading-4 text-[#45617f]">
+                Sign in to manage jobs, candidates and your employer profile.
+              </p>
+
+              {/* GOOGLE */}
+              <button
+                type="button"
+                onClick={continueWithGoogle}
+                disabled={googleLoading}
+                className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#D5DDE8] bg-white text-[13px] font-semibold text-[#0b1526] transition hover:border-[#b8c4d5] hover:bg-[#f8fafc] disabled:opacity-60"
+              >
+                <span
+                  className="text-[16px] font-bold"
+                  aria-hidden="true"
+                >
+                  G
+                </span>
+
+                {googleLoading
+                  ? "Opening Google..."
+                  : "Continue with Google"}
+              </button>
+
+              {/* DIVIDER */}
+              <div className="my-3.5 flex items-center gap-3">
+                <span className="h-px flex-1 bg-[#E3E8EF]" />
+                <span className="text-[10px] font-medium text-[#7890aa]">
+                  OR
+                </span>
+                <span className="h-px flex-1 bg-[#E3E8EF]" />
+              </div>
+
+              <form onSubmit={submit} className="space-y-3">
+
+                <Field
+                  label="Work email"
+                  icon={<Mail size={15} />}
+                >
+                  <input
+                    className="h-10 w-full rounded-lg border border-[#D5DDE8] bg-white px-3 pl-9 text-[13px] text-[#0b1526] outline-none placeholder:text-[#9aaabd] focus:border-[#3e7bfa] focus:ring-2 focus:ring-[#3e7bfa]/10"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    autoComplete="email"
+                    required
+                  />
+                </Field>
+
+                <Field
+                  label="Password"
+                  icon={<Lock size={15} />}
+                >
+                  <div className="relative">
+
+                    <input
+                      className="h-10 w-full rounded-lg border border-[#D5DDE8] bg-white px-3 pl-9 pr-9 text-[13px] text-[#0b1526] outline-none placeholder:text-[#9aaabd] focus:border-[#3e7bfa] focus:ring-2 focus:ring-[#3e7bfa]/10"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Your password"
+                      autoComplete="current-password"
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8ca0b8]"
+                      aria-label={
+                        showPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff size={15} />
+                      ) : (
+                        <Eye size={15} />
+                      )}
+                    </button>
+
+                  </div>
+                </Field>
+
+                {error && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-semibold leading-4 text-red-700">
+                    {error}
+                  </div>
+                )}
 
                 <button
-                  type="button"
-                  onClick={() => setShow((value) => !value)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  type="submit"
+                  disabled={loading}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#3e7bfa] text-[13px] font-bold text-white transition hover:bg-[#2f6eea] disabled:opacity-60"
                 >
-                  {show ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
+                  {loading ? "Signing in..." : "Sign in"}
+
+                  {!loading && (
+                    <ArrowRight size={15} />
                   )}
                 </button>
-              </div>
-            </Field>
 
-            {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold leading-6 text-red-700">
-                {error}
-              </div>
-            )}
+              </form>
 
-            <button
-              disabled={loading}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#e4ad2f] text-base font-black text-[#071a35] transition hover:bg-[#f2c85d] disabled:opacity-60"
-            >
-              {loading
-                ? "Signing in..."
-                : "Sign in as recruiter"}
-              {!loading && <ArrowRight size={18} />}
-            </button>
-          </form>
+              <div className="my-3 border-t border-[#E3E8EF]" />
 
-          <p className="mt-7 text-center text-sm text-slate-500">
-            New employer?{" "}
-            <Link
-              href="/recruiter/signup"
-              className="font-black text-[#a9770d]"
-            >
-              Create recruiter account
-            </Link>
-          </p>
+              <p className="text-center text-[11px] text-[#7890aa]">
+                New employer?{" "}
+                <Link
+                  href="/recruiter/signup"
+                  className="font-bold text-[#2563eb]"
+                >
+                  Create recruiter account
+                </Link>
+              </p>
 
-          <p className="mt-3 text-center text-sm text-slate-400">
-            Job seeker?{" "}
-            <Link
-              href="/login"
-              className="font-black text-[#a9770d]"
-            >
-              Candidate sign in
-            </Link>
-          </p>
+              <p className="mt-3 text-center text-[11px] text-[#7890aa]">
+                Job seeker?{" "}
+                <Link
+                  href="/login"
+                  className="font-bold text-[#2563eb]"
+                >
+                  Candidate Sign In
+                </Link>
+              </p>
+
+            </div>
+          </div>
+
         </section>
       </div>
     </main>
@@ -194,12 +307,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-black text-[#071a35]">
+      <label className="mb-1 block text-[11px] font-bold text-[#0b1526]">
         {label}
       </label>
 
       <div className="relative">
-        <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+        <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-[#8ca0b8]">
           {icon}
         </span>
 

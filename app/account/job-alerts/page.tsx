@@ -190,55 +190,55 @@ export default function JobAlertsPage() {
   }
 
   return (
-    <div className="w-full px-5 py-7 lg:px-8 lg:py-9">
+    <div className="w-full px-5 py-5 lg:px-8 lg:py-6">
 
       <div className="mb-7">
-        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#b88410]">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b88410]">
           Candidate Portal
         </p>
 
-        <h2 className="mt-2 text-3xl font-black text-[#071a35] lg:text-4xl">
+        <h2 className="mt-2 text-[13px] font-black text-[#071a35] lg:text-[13px]">
           Job Alerts
         </h2>
 
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-[13px] text-slate-500">
           Choose the opportunities you want to receive automatically.
         </p>
       </div>
 
 
       {error && (
-        <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+        <div className="mb-5 rounded-[2px] border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] font-semibold text-rose-700">
           {error}
         </div>
       )}
 
       {message && (
-        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="mb-5 rounded-[2px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-semibold text-emerald-700">
           {message}
         </div>
       )}
 
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
 
         <form
           onSubmit={submit}
-          className="rounded-2xl border border-slate-200 bg-white"
+          className="rounded-[2px] border border-slate-200 bg-white"
         >
 
-          <div className="flex items-start gap-4 border-b border-slate-100 px-6 py-5">
+          <div className="flex items-start gap-4 border-b border-slate-100 px-4 py-4">
 
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071a35] text-[#f2b51d]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-[#071a35] text-[#f2b51d]">
               <Bell size={20} />
             </span>
 
             <div>
-              <h3 className="text-xl font-black text-[#071a35]">
+              <h3 className="text-[13px] font-black text-[#071a35]">
                 Create a job alert
               </h3>
 
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-[13px] text-slate-400">
                 You can change these preferences whenever you want.
               </p>
             </div>
@@ -332,12 +332,12 @@ export default function JobAlertsPage() {
           </div>
 
 
-          <div className="flex justify-end border-t border-slate-100 px-6 py-5">
+          <div className="flex justify-end border-t border-slate-100 px-4 py-4">
 
             <button
               type="submit"
               disabled={saving}
-              className="flex h-12 items-center gap-2 rounded-xl bg-[#f2b51d] px-6 text-sm font-black text-[#071a35] disabled:opacity-60"
+              className="flex h-12 items-center gap-2 rounded-[2px] bg-[#3E7BFA] px-6 text-[13px] font-black text-white disabled:opacity-60"
             >
               {saving ? (
                 <>
@@ -360,14 +360,14 @@ export default function JobAlertsPage() {
         </form>
 
 
-        <aside className="rounded-2xl border border-slate-200 bg-white p-6">
+        <aside className="rounded-[2px] border border-slate-200 bg-white p-4">
 
-          <h3 className="text-xl font-black text-[#071a35]">
+          <h3 className="text-[13px] font-black text-[#071a35]">
             Active alerts
           </h3>
 
           {loading ? (
-            <div className="mt-8 flex justify-center">
+            <div className="mt-5 flex justify-center">
               <Loader2
                 size={26}
                 className="animate-spin text-[#b88410]"
@@ -379,19 +379,19 @@ export default function JobAlertsPage() {
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="rounded-xl bg-slate-50 p-4"
+                  className="rounded-[2px] bg-slate-50 p-4"
                 >
 
                   <p className="font-black text-[#071a35]">
                     {alert.email}
                   </p>
 
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                  <p className="mt-2 text-[11px] leading-5 text-slate-500">
                     {alert.countries?.join(", ") ||
                       "All countries"}
                   </p>
 
-                  <p className="text-xs leading-5 text-slate-500">
+                  <p className="text-[11px] leading-5 text-slate-500">
                     {alert.categories?.join(", ") ||
                       "All categories"}
                   </p>
@@ -406,7 +406,7 @@ export default function JobAlertsPage() {
               <button
                 type="button"
                 onClick={removeAlerts}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50"
+                className="flex w-full items-center justify-center gap-2 rounded-[2px] border border-rose-200 px-4 py-3 text-[13px] font-bold text-rose-600 hover:bg-rose-50"
               >
                 <Trash2 size={16} />
                 Remove alerts
@@ -414,7 +414,7 @@ export default function JobAlertsPage() {
 
             </div>
           ) : (
-            <div className="mt-8 text-sm text-slate-500">
+            <div className="mt-5 text-[13px] text-slate-500">
               No active job alerts yet.
             </div>
           )}
@@ -436,10 +436,12 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold text-[#071a35]">
+      <span className="mb-2 block text-[13px] font-bold text-[#071a35]">
         {label}
       </span>
       {children}
     </label>
   );
 }
+
+

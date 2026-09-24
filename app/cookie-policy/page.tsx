@@ -2,95 +2,44 @@
 
 export const metadata: Metadata = {
   title: "Cookie Policy | Horizon Jobs",
-  description: "Information about cookies and similar technologies used by Horizon Jobs.",
+  description: "Cookie Policy for Horizon Jobs.",
 };
+
+const sections = [
+  ["What Are Cookies?", "Cookies are small files or pieces of information stored by a website or service in your browser. They may allow a website to remember information between visits or help services understand how a website is being used."],
+  ["Essential Cookies", "These may be required for login, authentication, security, session management, and basic website functionality. These cookies may be necessary for the website to operate."],
+  ["Preference Cookies", "These may remember choices such as language, preferences, and interface settings."],
+  ["Analytics Cookies", "These may help us understand website traffic, page usage, performance, technical problems, and general usage patterns."],
+  ["Advertising Cookies", "If advertising is enabled, third-party advertising providers such as Google may use cookies or similar technologies to serve advertisements. Google states that its advertising services may place cookies when Google ad tags are used, and publishers displaying Google ads must clearly disclose cookie usage and comply with applicable privacy laws."],
+  ["Third-Party Cookies", "Some services used on Horizon Jobs may place their own cookies or similar technologies. These may include providers for analytics, authentication, advertising, embedded services, and external integrations. Third-party providers operate under their own policies."],
+  ["Managing Cookies", "Most browsers allow users to control or delete cookies through browser settings. Disabling certain cookies may affect website functionality. Where legally required, Horizon Jobs may also provide cookie-consent or preference controls."],
+  ["Advertising Preferences", "Users may be able to control personalized advertising preferences through Google's advertising settings and other available controls."],
+  ["Updates", "We may update this Cookie Policy when our use of cookies or relevant technologies changes."],
+  ["Contact", "Questions about cookies can be sent to support@horizonjobs.online."]
+];
 
 export default function CookiePolicyPage() {
   return (
     <main className="horizon-page bg-slate-50">
-      <section className="bg-[#071a35] py-14 text-white">
+      <section className="bg-[#071a35] py-8 text-white">
         <div className="horizon-container">
-          <p className="horizon-eyebrow text-[#e4ad2f]">LEGAL</p>
-          <h1 className="mt-3 text-4xl font-black md:text-5xl">Cookie Policy</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/70">
-            Information about cookies and similar technologies used to operate
-            and improve Horizon Jobs.
-          </p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[#e4ad2f]">LEGAL</p>
+          <h1 className="mt-2 text-[24px] font-bold">Cookie Policy</h1>
+          <p className="mt-2 text-[12px] text-white/70">Effective Date: [DATE]</p>
         </div>
       </section>
-
-      <section className="horizon-container py-10 md:py-14">
-        <article className="horizon-card p-7 md:p-10">
-          <div className="space-y-8 text-sm leading-8 text-slate-700 md:text-base">
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">1. What are cookies?</h2>
-              <p className="mt-3">
-                Cookies are small files or similar technologies that allow a
-                website to remember information about a browser or device and
-                support website functionality.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">2. How Horizon Jobs may use them</h2>
-              <p className="mt-3">
-                Cookies and similar technologies may support sign-in sessions,
-                security, preferences, website functionality, usage measurement,
-                and advertising-related features.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">3. Essential technologies</h2>
-              <p className="mt-3">
-                Some cookies or similar technologies may be necessary for
-                authentication, security, account sessions, and core website
-                functionality. Disabling these technologies may affect parts of
-                the platform.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">4. Measurement and preferences</h2>
-              <p className="mt-3">
-                Technologies may be used to understand website usage, remember
-                preferences, and help improve the user experience.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">5. Advertising technologies</h2>
-              <p className="mt-3">
-                Horizon Jobs may use third-party advertising services. Those
-                providers may use cookies or similar technologies in accordance
-                with their own policies and applicable requirements.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">6. Managing cookies</h2>
-              <p className="mt-3">
-                Most modern browsers provide controls for viewing, blocking, or
-                deleting cookies. Blocking certain cookies may affect login,
-                preferences, or other website features.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">7. Changes</h2>
-              <p className="mt-3">
-                This Cookie Policy may be updated as website features,
-                technologies, or applicable requirements change.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-black text-[#071a35]">8. Contact</h2>
-              <p className="mt-3">
-                Questions about cookies can be directed through the Horizon Jobs
-                Contact page.
-              </p>
-            </section>
+      <section className="horizon-container py-8">
+        <article className="horizon-card p-6 md:p-8">
+          <p className="mb-7 text-[12px] leading-6 text-slate-700">
+            Horizon Jobs uses cookies and similar technologies to provide essential functionality, improve performance, understand website usage, and, where enabled, support advertising.
+          </p>
+          <div className="space-y-6 text-[12px] leading-6 text-slate-700">
+            {sections.map(([title, text]) => (
+              <section key={title}>
+                <h2 className="text-[16px] font-bold text-[#071a35]">{title}</h2>
+                <p className="mt-1.5">{text}</p>
+              </section>
+            ))}
           </div>
         </article>
       </section>
