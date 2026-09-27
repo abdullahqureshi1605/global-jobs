@@ -1,0 +1,139 @@
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+const MAX_NAME_LENGTH = 80;
+const MAX_EMAIL_LENGTH = 160;
+const MAX_COMMENT_LENGTH = 2000;
+
+function cleanText(value: unknown, maxLength: number) {
+  return String(value ?? "")
+    .trim()
+    .slice(0, maxLength);
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const resourceId = cleanText(searchParams.get("resourceId"), 100);
+
+  if (!resourceId) {
+    return NextResponse.json(
+      { error: "Resource ID is required." },
+      { status: 400 }
+    );
+  }
+
+  const supabase = supabaseAdmin;
+
+  const { data, error } = await supabase
+    .from("career_resource_comments")
+    .select("id,name,comment,created_at")
+    .eq("resource_id", resourceId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Career resource comments GET failed:", error);
+
+    return NextResponse.json(
+      { error: "Failed to load comments." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    comments: data ?? [],
+  });
+}
+
+export async function POST(request: Request) {
+  try {
+    const input = await request.json();
+
+    const resourceId = cleanText(input?.resourceId, 100);
+    const name = cleanText(input?.name, MAX_NAME_LENGTH);
+    const email = cleanText(input?.email, MAX_EMAIL_LENGTH);
+    const comment = cleanText(input?.comment, MAX_COMMENT_LENGTH);
+
+    if (!resourceId || !name || !comment) {
+      return NextResponse.json(
+        {
+          error: "Name and comment are required.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        {
+          error: "Please enter a valid email address.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const supabase = supabaseAdmin;
+
+    const { data: resource, error: resourceError } = await supabase
+      .from("career_resources")
+      .select("id")
+      .eq("id", resourceId)
+      .not("published_at", "is", null)
+      .lte("published_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (resourceError) {
+      console.error(
+        "Career resource lookup for comment failed:",
+        resourceError
+      );
+
+      return NextResponse.json(
+        { error: "Unable to verify this article." },
+        { status: 500 }
+      );
+    }
+
+    if (!resource) {
+      return NextResponse.json(
+        { error: "Article not found." },
+        { status: 404 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("career_resource_comments")
+      .insert({
+        resource_id: resource.id,
+        name,
+        email: email || null,
+        comment,
+        status: "approved",
+      });
+
+    if (error) {
+      console.error("Career resource comment POST failed:", error);
+
+      return NextResponse.json(
+        { error: "Failed to submit your comment." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message:
+          "Your comment has been published.",
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Career resource comment POST unexpected error:", error);
+
+    return NextResponse.json(
+      { error: "Invalid comment submission." },
+      { status: 400 }
+    );
+  }
+}

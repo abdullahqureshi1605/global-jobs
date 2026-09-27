@@ -1,7 +1,22 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
+import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import SiteChrome from "../components/SiteChrome";
 import Providers from "../components/Providers";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-fraunces",
+  weight: ["400", "500", "600"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://horizonjobs.online"),
@@ -54,7 +69,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#f5f7fa]">
+      <body className={`${inter.variable} ${fraunces.variable} min-h-screen bg-[#f5f7fa]`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}

@@ -2,7 +2,7 @@
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { createClient } from "@/lib/supabase-server";
-import type { Job } from "@/lib/jobs";
+import { getPublishedJobs, type Job } from "@/lib/jobs";
 import PublicJobCard from "@/components/PublicJobCard";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -73,10 +73,13 @@ function getWorkMode(job: Job) {
 
 export default async function CountryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ country: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { country } = await params;
+  const { page } = await searchParams;
 
   const supabase = await createClient();
 
@@ -95,83 +98,25 @@ export default async function CountryPage({
   let jobs: Job[] = [];
 
   try {
-    const backend =
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      "http://127.0.0.1:8000";
-
-    const response = await fetch(
-      `${backend}/api/public/jobs?country=${encodeURIComponent(
-        c.code.toLowerCase()
-      )}&limit=100`,
-      { cache: "no-store" }
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-
-      jobs = (data.jobs ?? []).map((row: any) => ({
-        id: row.id,
-        raw_job_id: "",
-        title: row.title,
-        slug:
-          row.public_slug ||
-          `${(row.title || "job")
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-+|-+$/g, "")}-${String(row.id)
-            .replace(/-/g, "")
-            .slice(0, 12)}`,
-        description: row.detailed_description || row.summary || "",
-        summary: row.summary || null,
-        skills: Array.isArray(row.skills) ? row.skills : [],
-        city: (row.location_display || "").split(",")[0]?.trim() || null,
-        work_mode: null,
-        employment_type:
-          row.contract_type || row.contract_time || null,
-        salary_min: row.salary_min ?? null,
-        salary_max: row.salary_max ?? null,
-        currency: null,
-        apply_url: row.redirect_url || null,
-        source: row.source || null,
-        status: "published",
-        posted_at: row.published_at || null,
-        created_at: row.published_at || new Date(0).toISOString(),
-        companies: row.company_name
-          ? {
-              id: "company-" + row.id,
-              name: row.company_name,
-              slug: row.company_name
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, ""),
-              logo_url: null,
-              verification_status: "unverified",
-            }
-          : null,
-        countries: {
-          id: c.id,
-          name: c.name,
-          code: c.code,
-        },
-        categories: row.category_label
-          ? {
-              id: "category-" + row.id,
-              name: row.category_label,
-              slug: row.category_tag || row.category_label,
-              icon: null,
-            }
-          : null,
-        meta_title: null,
-        meta_description: null,
-        seo_keywords: [],
-        application_job_id: null,
-        responsibilities: [],
-        requirements: [],
-        additional_information: [],
-      } as Job));
-    }
+    const publishedJobs = await getPublishedJobs("", "", 2000, "");
+    jobs = publishedJobs.filter((job) => {
+      const code = one(job.countries)?.code?.toLowerCase() || "";
+      return code === c.code.toLowerCase();
+    });
   } catch {}
+
+  const pageSize = 20;
+  const requestedPage =
+    typeof page === "string" ? Number.parseInt(page, 10) || 1 : 1;
+  const totalPages = Math.max(1, Math.ceil(jobs.length / pageSize));
+  const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedJobs = jobs.slice(startIndex, startIndex + pageSize);
+
+  const pageHref = (pageNumber: number) =>
+    pageNumber === 1
+      ? `/countries/${c.code.toLowerCase()}`
+      : `/countries/${c.code.toLowerCase()}?page=${pageNumber}`;
 
   return (
     <main className="horizon-page">
@@ -196,8 +141,9 @@ export default async function CountryPage({
 
       <section className="horizon-container py-5 md:py-6">
         {jobs.length ? (
+          <>
           <div className="grid w-full min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {jobs.map((job) => (
+            {pagedJobs.map((job) => (
               <PublicJobCard
                 key={job.id}
                 job={job}
@@ -206,6 +152,70 @@ export default async function CountryPage({
               />
             ))}
           </div>
+
+          {totalPages >= 1 && (
+            <nav
+              className="mt-6 flex flex-wrap items-center justify-center gap-1.5"
+              aria-label="Country jobs pagination"
+            >
+              {currentPage > 1 ? (
+              <Link
+                  href={pageHref(currentPage - 1)}
+                  className="rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                >
+                  Previous
+                </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-lg border border-[#E5EAF1] bg-[#F7F9FC] px-3 py-2 text-[12px] font-bold text-[#A7B3C3]"
+              >
+                Previous
+              </span>
+            )}
+
+              {Array.from(
+                { length: Math.min(5, totalPages) },
+                (_, index) =>
+                  Math.max(
+                    1,
+                    Math.min(currentPage - 4, totalPages - 4)
+                  ) + index
+              ).map((pageNumber) => (
+                <Link
+                  key={pageNumber}
+                  href={pageHref(pageNumber)}
+                  aria-current={
+                    pageNumber === currentPage ? "page" : undefined
+                  }
+                  className={
+                    pageNumber === currentPage
+                      ? "rounded-lg bg-[#3E7BFA] px-3 py-2 text-[12px] font-bold !text-white shadow-sm"
+                      : "rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                  }
+                >
+                  {pageNumber}
+                </Link>
+              ))}
+
+              {currentPage < totalPages ? (
+              <Link
+                  href={pageHref(currentPage + 1)}
+                  className="rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                >
+                  Next
+                </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-lg border border-[#E5EAF1] bg-[#F7F9FC] px-3 py-2 text-[12px] font-bold text-[#A7B3C3]"
+              >
+                Next
+              </span>
+            )}
+            </nav>
+          )}
+          </>
         ) : (
           <div className="horizon-card p-12 text-center">
             <h2 className="font-black text-[#071a35]">

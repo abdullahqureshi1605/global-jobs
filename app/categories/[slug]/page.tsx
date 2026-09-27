@@ -79,10 +79,13 @@ function workMode(job:Job) {
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }:{
   params:Promise<{slug:string}>
+  searchParams:Promise<{page?:string}>
 }) {
   const {slug}=await params;
+  const {page}=await searchParams;
 
   const category=categories.find(c=>c.key===slug.toLowerCase());
 
@@ -94,11 +97,27 @@ export default async function CategoryPage({
     jobs=await getPublishedJobs("", "", 2000, "");
   } catch {}
 
-  const categoryJobs=jobs.filter(job =>
-    category.match.test(
-      `${one(job.categories)?.name || ""} ${one(job.categories)?.slug || ""}`
-    )
+  const categoryJobs = jobs.filter(job => {
+    const categoryName = one(job.categories)?.name || "";
+    const categorySlug = one(job.categories)?.slug || "";
+    return category.match.test(`${categoryName} ${categorySlug}`);
+  });
+
+  const pageSize = 20;
+  const requestedPage =
+    typeof page === "string" ? Number.parseInt(page, 10) || 1 : 1;
+  const totalPages = Math.max(1, Math.ceil(categoryJobs.length / pageSize));
+  const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedCategoryJobs = categoryJobs.slice(
+    startIndex,
+    startIndex + pageSize
   );
+
+  const pageHref = (pageNumber: number) =>
+    pageNumber === 1
+      ? `/categories/${category.key}`
+      : `/categories/${category.key}?page=${pageNumber}`;
 
   return (
     <main className="horizon-page bg-[#F6F8FB]">
@@ -134,9 +153,10 @@ export default async function CategoryPage({
         </div>
 
         {categoryJobs.length ? (
+          <>
           <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
 
-            {categoryJobs.map(job => (
+            {pagedCategoryJobs.map(job => (
               <PublicJobCard
                 key={job.id}
                 job={job}
@@ -145,6 +165,72 @@ export default async function CategoryPage({
             ))}
 
           </div>
+
+          {totalPages >= 1 && (
+            <nav
+              className="mt-6 flex flex-wrap items-center justify-center gap-1.5"
+              aria-label="Category jobs pagination"
+            >
+              {currentPage > 1 ? (
+              <Link
+                  href={pageHref(currentPage - 1)}
+                  className="rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                >
+                  Previous
+                </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-lg border border-[#E5EAF1] bg-[#F7F9FC] px-3 py-2 text-[12px] font-bold text-[#A7B3C3]"
+              >
+                Previous
+              </span>
+            )}
+
+              {Array.from(
+                {
+                  length: Math.min(5, totalPages),
+                },
+                (_, index) =>
+                  Math.max(
+                    1,
+                    Math.min(currentPage - 4, totalPages - 4)
+                  ) + index
+              ).map((pageNumber) => (
+                <Link
+                  key={pageNumber}
+                  href={pageHref(pageNumber)}
+                  aria-current={
+                    pageNumber === currentPage ? "page" : undefined
+                  }
+                  className={
+                    pageNumber === currentPage
+                      ? "rounded-lg bg-[#3E7BFA] px-3 py-2 text-[12px] font-bold !text-white shadow-sm"
+                      : "rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                  }
+                >
+                  {pageNumber}
+                </Link>
+              ))}
+
+              {currentPage < totalPages ? (
+              <Link
+                  href={pageHref(currentPage + 1)}
+                  className="rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                >
+                  Next
+                </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-lg border border-[#E5EAF1] bg-[#F7F9FC] px-3 py-2 text-[12px] font-bold text-[#A7B3C3]"
+              >
+                Next
+              </span>
+            )}
+            </nav>
+          )}
+          </>
         ) : (
           <div className="horizon-card p-12 text-center">
             <BriefcaseBusiness

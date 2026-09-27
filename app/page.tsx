@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Find Jobs Worldwide",
   description:
@@ -34,7 +34,7 @@ function CategoryIcon({icon}:{icon?:string|null}) {
 function salary(job: Job) {
   if (job.salary_min == null && job.salary_max == null) return "Salary not specified";
   const c = job.currency ? `${job.currency} ` : "";
-  if (job.salary_min != null && job.salary_max != null) return `${c}${job.salary_min.toLocaleString()} â€“ ${job.salary_max.toLocaleString()}`;
+  if (job.salary_min != null && job.salary_max != null) return `${c}${job.salary_min.toLocaleString()} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ ${job.salary_max.toLocaleString()}`;
   return job.salary_min != null ? `${c}${job.salary_min.toLocaleString()}+` : `Up to ${c}${job.salary_max!.toLocaleString()}`;
 }
 
@@ -124,6 +124,8 @@ async function catalog() {
     })
   };
 }
+export const revalidate = 300;
+
 export default async function HomePage() {
   let jobs: Job[] = [];
   let categories: {id:string;name:string;slug:string;icon?:string|null;count:number}[] = [];
@@ -219,15 +221,222 @@ export default async function HomePage() {
       <div className="mt-5 flex justify-center"><Link href="/countries" className="inline-flex items-center gap-2 rounded-md bg-[#2563EB] px-6 py-3 text-[13px] font-bold !text-white mb-2 hover:bg-[#1D4ED8]">View All Countries <ArrowRight size={15}/></Link></div>
     </section>
 
-        <section className="horizon-container horizon-section">
-      <div className="rounded-[26px] bg-[#071a35] px-7 py-7 text-white md:px-10 md:py-8">
+        {/* ABOUT US */}
+        <section className="bg-white">
+          <div className="horizon-container horizon-section">
+            <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <div>
+                <p className="horizon-eyebrow text-[12px] font-bold tracking-[0.22em]">
+                  ABOUT HORIZON JOBS
+                </p>
+
+                <h2 className="mt-2 text-[30px] font-black leading-tight tracking-tight text-[#071a35] md:text-[36px]">
+                  A clearer way to discover your next opportunity
+                </h2>
+
+                <p className="mt-5 text-justify text-[13px] leading-6 text-[#5F7188] [hyphens:auto]">
+                  Horizon Jobs is a professional job discovery platform designed to make finding employment opportunities simpler, clearer, and more focused. We bring published opportunities together in one searchable place so job seekers can explore roles by title, company, category, country, and location. Our goal is to reduce the time people spend searching across disconnected sources and help them reach relevant opportunities more efficiently. We aim to give job seekers a practical starting point where opportunities can be explored with less confusion and where useful career information can support better preparation. Whether someone is beginning a job search, exploring a new field, or looking for opportunities in another country, Horizon Jobs is designed to keep the discovery process organized and easy to navigate.
+                </p>
+
+                <p className="mt-4 text-justify text-[13px] leading-6 text-[#5F7188] [hyphens:auto]">
+                  Our platform brings job discovery, organized categories, country-based browsing, and career resources together in one professional experience. We focus on making the search process straightforward so visitors can spend more time evaluating opportunities and planning their next career step.
+                </p>
+
+                <Link
+                  href="/about"
+                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#3E7BFA] px-5 py-2.5 text-[13px] font-bold !text-white transition hover:bg-[#3269DC]"
+                >
+                  Read More About Us
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-[#E3E8EF] bg-[#F8FAFD] p-5">
+                  <h3 className="text-[16px] font-bold text-[#071a35]">
+                    Global Job Discovery
+                  </h3>
+                  <p className="mt-2 text-[12px] leading-5 text-[#5F7188]">
+                    Explore opportunities across countries, locations, and professional fields through a focused search experience.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-[#E3E8EF] bg-[#F8FAFD] p-5">
+                  <h3 className="text-[16px] font-bold text-[#071a35]">
+                    Clear Search Experience
+                  </h3>
+                  <p className="mt-2 text-[12px] leading-5 text-[#5F7188]">
+                    Search and filter published listings by the information that matters most when evaluating a new opportunity.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-[#E3E8EF] bg-[#F8FAFD] p-5">
+                  <h3 className="text-[16px] font-bold text-[#071a35]">
+                    Categories & Countries
+                  </h3>
+                  <p className="mt-2 text-[12px] leading-5 text-[#5F7188]">
+                    Browse jobs through organized professional categories and country-based discovery pages.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-[#E3E8EF] bg-[#F8FAFD] p-5">
+                  <h3 className="text-[16px] font-bold text-[#071a35]">
+                    Career-Focused Resources
+                  </h3>
+                  <p className="mt-2 text-[12px] leading-5 text-[#5F7188]">
+                    Access practical career information designed to support job seekers as they search, prepare, and plan their next step.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CONTACT US */}
+        <section className="border-y border-[#E1E7EF] bg-[#F4F7FB]">
+          <div className="horizon-container horizon-section">
+            <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-stretch">
+              <div className="flex flex-col justify-center">
+                <p className="horizon-eyebrow text-[12px] font-bold tracking-[0.22em]">
+                  CONTACT HORIZON JOBS
+                </p>
+
+                <h2 className="mt-2 text-[30px] font-black leading-tight tracking-tight text-[#071a35] md:text-[36px]">
+                  WeÃ¢â‚¬â„¢re here to help
+                </h2>
+
+                <p className="mt-5 text-justify text-[13px] leading-6 text-[#5F7188] [hyphens:auto]">
+                  Have a question about Horizon Jobs, a published opportunity, recruitment, or our website? Our contact team is available to help direct your request to the appropriate place. Job seekers can contact us about listing information and website-related issues, while recruiters and employers can reach out regarding partnerships and employment opportunities. We also welcome questions about privacy and information requests. Please provide your name, email address, reason for contacting us, and a clear message so we can understand your request and respond appropriately.
+                </p>
+
+                <div className="mt-7 border-l-2 border-[#3E7BFA] pl-4">
+                  <h3 className="text-[16px] font-bold text-[#071a35]">
+                    Questions & Support
+                  </h3>
+                  <p className="mt-2 text-[12px] leading-5 text-[#5F7188]">
+                    For general questions, job listing issues, website assistance, or privacy-related requests, send us a clear message and include the information needed to understand your request.
+                  </p>
+                </div>
+
+                <div className="mt-6 border-l-2 border-[#F2B632] pl-4">
+                  <h3 className="text-[16px] font-bold text-[#071a35]">
+                    Recruiters & Employers
+                  </h3>
+                  <p className="mt-2 text-[12px] leading-5 text-[#5F7188]">
+                    Recruiters and employers can contact Horizon Jobs regarding partnerships, recruitment opportunities, and other professional inquiries.
+                  </p>
+                </div>
+
+                <Link
+                  href="/contact"
+                  className="mt-6 inline-flex items-center gap-2 text-[13px] font-bold text-[#2563EB] hover:text-[#1D4ED8]"
+                >
+                  View Contact Us page
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+
+              <div className="rounded-xl border border-[#DDE5EF] bg-white p-6 shadow-[0_4px_18px_rgba(16,30,54,.06)] lg:p-7">
+                <h3 className="text-[16px] font-bold text-[#071a35]">
+                  Send us a message
+                </h3>
+
+                <form
+                  action="mailto:contact@horizonjobs.online"
+                  method="post"
+                  encType="text/plain"
+                  className="mt-5 space-y-4"
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[12px] font-bold text-[#0B1526]">
+                        First Name
+                      </span>
+                      <input
+                        name="firstName"
+                        required
+                        className="h-10 w-full rounded-lg border border-[#D5DDE8] bg-white px-3 text-[12px] text-[#0B1526] outline-none focus:border-[#3E7BFA]"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-1.5 block text-[12px] font-bold text-[#0B1526]">
+                        Last Name
+                      </span>
+                      <input
+                        name="lastName"
+                        required
+                        className="h-10 w-full rounded-lg border border-[#D5DDE8] bg-white px-3 text-[12px] text-[#0B1526] outline-none focus:border-[#3E7BFA]"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-1.5 block text-[12px] font-bold text-[#0B1526]">
+                      Email
+                    </span>
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      className="h-10 w-full rounded-lg border border-[#D5DDE8] bg-white px-3 text-[12px] text-[#0B1526] outline-none focus:border-[#3E7BFA]"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1.5 block text-[12px] font-bold text-[#0B1526]">
+                      Reason
+                    </span>
+                    <select
+                      name="reason"
+                      defaultValue=""
+                      required
+                      className="h-10 w-full rounded-lg border border-[#D5DDE8] bg-white px-3 text-[12px] text-[#45617F] outline-none focus:border-[#3E7BFA]"
+                    >
+                      <option value="" disabled>
+                        Select a reason
+                      </option>
+                      <option value="General Question">General Question</option>
+                      <option value="Job Listing Issue">Job Listing Issue</option>
+                      <option value="Recruiter or Employer">Recruiter or Employer</option>
+                      <option value="Privacy Request">Privacy Request</option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1.5 block text-[12px] font-bold text-[#0B1526]">
+                      Message
+                    </span>
+                    <textarea
+                      name="message"
+                      required
+                      rows={5}
+                      className="w-full resize-y rounded-lg border border-[#D5DDE8] bg-white px-3 py-2.5 text-[12px] leading-5 text-[#0B1526] outline-none focus:border-[#3E7BFA]"
+                    />
+                  </label>
+
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center rounded-lg bg-[#3E7BFA] px-6 py-2.5 text-[13px] font-bold !text-white transition hover:bg-[#3269DC]"
+                  >
+                    Send Message
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+        {/* JOB ALERTS */}
+        <section className="bg-white">
+          <div className="horizon-container horizon-section">
+            <div className="rounded-[26px] bg-[#071a35] px-7 py-7 text-white md:px-10 md:py-8">
         <div className="grid items-center gap-5 lg:grid-cols-[1fr_auto]">
           <div>
-            <h2 className="font-serif text-xl font-semibold leading-tight tracking-tight md:text-2xl">
+            <h2 className="font-serif text-xl font-semibold leading-tight tracking-tight text-white md:text-2xl">
               Get job alerts delivered to your inbox
             </h2>
             <p className="mt-2 max-w-2xl text-xs leading-5 text-[#AFC0D8] md:text-sm">
-              Choose your countries and categories once — we'll tell you the moment something matching goes live.
+              Choose your countries and categories once Ã¢â‚¬â€ we'll tell you the moment something matching goes live.
             </p>
           </div>
 
@@ -253,8 +462,9 @@ export default async function HomePage() {
             </button>
           </form>
         </div>
-      </div>
-    </section>
+            </div>
+          </div>
+        </section>
   </div>;
 }
 function SectionHead({eyebrow,title}:{eyebrow:string;title:string}) { return <div className="mb-5"><p className="horizon-eyebrow">{eyebrow}</p><h2 className="mt-2 text-3xl font-black tracking-tight text-[#071a35]">{title}</h2></div> }
@@ -263,6 +473,12 @@ function JobCard({job}:{job:Job}) {
 }
 function Badge({children}:{children:React.ReactNode}) { return <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600">{children}</span> }
 function EmptyState({title,text,href}:{title:string;text:string;href:string}) { return <div className="horizon-card p-10 text-center"><h3 className="text-lg font-black text-[#071a35]">{title}</h3><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">{text}</p><Link href={href} className="horizon-button horizon-button-outline mt-5">Open page</Link></div> }
+
+
+
+
+
+
 
 
 

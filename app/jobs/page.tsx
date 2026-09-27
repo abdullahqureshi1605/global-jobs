@@ -398,6 +398,37 @@ export default async function JobsPage({
       workMode
   );
 
+  const pageSize = 20;
+  const requestedPage =
+    typeof p.page === "string"
+      ? Number.parseInt(p.page, 10) || 1
+      : 1;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredJobs.length / pageSize)
+  );
+  const currentPage = Math.min(
+    Math.max(1, requestedPage),
+    totalPages
+  );
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedJobs = filteredJobs.slice(
+    startIndex,
+    startIndex + pageSize
+  );
+
+  const pageHref = (pageNumber: number) => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (location) params.set("location", location);
+    if (category) params.set("category", category);
+    if (country) params.set("country", country);
+    if (workMode) params.set("workMode", workMode);
+    if (pageNumber > 1) params.set("page", String(pageNumber));
+    const query = params.toString();
+    return query ? `/jobs?${query}` : "/jobs";
+  };
+
   return (
     <main className="horizon-page bg-[#F6F8FB]">
 
@@ -651,16 +682,74 @@ export default async function JobsPage({
 
               ) : (
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                  {filteredJobs.map(
-                    (job) => (
-                      <JobCard
-                        key={job.id}
-                        job={job}
-                      />
-                    )
+                <>
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    {pagedJobs.map(
+                      (job) => (
+                        <JobCard
+                          key={job.id}
+                          job={job}
+                        />
+                      )
+                    )}
+                  </div>
+
+                  {totalPages > 1 && (
+                    <nav
+                      className="mt-6 flex flex-wrap items-center justify-center gap-1.5"
+                      aria-label="Jobs pagination"
+                    >
+                      {currentPage > 1 && (
+                        <Link
+                          href={pageHref(currentPage - 1)}
+                          className="rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                        >
+                          Previous
+                        </Link>
+                      )}
+
+                      {Array.from(
+                        {
+                          length: Math.min(5, totalPages),
+                        },
+                        (_, index) =>
+                          Math.max(
+                            1,
+                            Math.min(
+                              currentPage - 4,
+                              totalPages - 4
+                            )
+                          ) + index
+                      ).map((pageNumber) => (
+                        <Link
+                          key={pageNumber}
+                          href={pageHref(pageNumber)}
+                          aria-current={
+                            pageNumber === currentPage
+                              ? "page"
+                              : undefined
+                          }
+                          className={
+                            pageNumber === currentPage
+                              ? "rounded-lg bg-[#3E7BFA] px-3 py-2 text-[12px] font-bold !text-white shadow-sm"
+                              : "rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                          }
+                        >
+                          {pageNumber}
+                        </Link>
+                      ))}
+
+                      {currentPage < totalPages && (
+                        <Link
+                          href={pageHref(currentPage + 1)}
+                          className="rounded-lg border border-[#D5DDE8] bg-white px-3 py-2 text-[12px] font-bold text-[#45617F] transition hover:border-[#3E7BFA] hover:text-[#2563EB]"
+                        >
+                          Next
+                        </Link>
+                      )}
+                    </nav>
                   )}
-                </div>
+                </>
 
               )}
 
@@ -678,4 +767,9 @@ export default async function JobsPage({
 function JobCard({job}:{job:Job}) {
   return <PublicJobCard job={job} />;
 }
+
+
+
+
+
 

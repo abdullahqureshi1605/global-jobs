@@ -1,5 +1,3 @@
-﻿"use client";
-
 import Link from "next/link";
 import { ArrowUpRight, Mail } from "lucide-react";
 
@@ -230,4 +228,5 @@ function FooterCol({
     </div>
   );
 }
+
 

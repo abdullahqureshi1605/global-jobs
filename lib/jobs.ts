@@ -104,7 +104,7 @@ export function detectCountryCode(location: string | null): string | null {
   if (!value) return null;
 
   const countryPatterns: Array<[RegExp, string]> = [
-    [/\b(united states|united states of america|usa|u\.s\.a\.|u\.s\.|liberty lake|spokane county|washington|wa)\b/i, "us"],
+    [/\b(united states|united states of america|usa|u\.s\.a\.|u\.s\.|liberty lake|veradale|jersey city|los angeles|san francisco|san diego|seattle|chicago|austin|boston|denver|phoenix|atlanta|dallas|houston|miami|spokane county|washington|wa)\b/i, "us"],
     [/\b(united kingdom|great britain|uk|u\.k\.)\b/i, "gb"],
     [/\b(australia|aus)\b/i, "au"],
     [/\b(canada|can)\b/i, "ca"],
@@ -195,7 +195,7 @@ export function currencyForCountry(code:string|null): string|null {
 
 function countryName(code:string|null): string|null {
   const names:Record<string,string>={US:"United States",CA:"Canada",GB:"United Kingdom",PK:"Pakistan",AU:"Australia",DE:"Germany",FR:"France",IE:"Ireland",NZ:"New Zealand",IN:"India",PH:"Philippines",SG:"Singapore",JP:"Japan",AE:"United Arab Emirates",SA:"Saudi Arabia"};
-  return code ? names[code] || null : null;
+  return code ? names[code.toUpperCase()] || null : null;
 }
 function toJob(row: JobContentRow): Job {
   const locationParts = (row.location_display || "")
