@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowUpRight, Mail } from "lucide-react";
 
 type SocialName = "facebook" | "instagram" | "linkedin" | "pinterest" | "whatsapp";
@@ -11,12 +11,12 @@ export default function Footer() {
   }[] = [
     {
       label: "Facebook",
-      href: "https://www.facebook.com/horizonrecruitmentagency/",
+      href: process.env.NEXT_PUBLIC_FACEBOOK_URL || "#",
       icon: "facebook",
     },
     {
       label: "Instagram",
-      href: "https://www.instagram.com/horizonjobsonline/",
+      href: process.env.NEXT_PUBLIC_INSTAGRAM_URL || "#",
       icon: "instagram",
     },
     {
@@ -26,7 +26,7 @@ export default function Footer() {
     },
     {
       label: "Pinterest",
-      href: "https://www.pinterest.com/horizonjobsonline/",
+      href: "#",
       icon: "pinterest",
     },
     {
@@ -41,8 +41,8 @@ export default function Footer() {
       <div className="horizon-container grid gap-10 py-12 md:grid-cols-[1.45fr_1fr_1fr_1fr] lg:gap-12 lg:py-14">
         <div>
           <Link href="/" className="inline-flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl font-black text-[#071a35]">
-              <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e4ad2f] font-black text-[#071a35]">
+              H
             </span>
             <span className="text-lg font-black">Horizon Jobs</span>
           </Link>
@@ -62,7 +62,7 @@ export default function Footer() {
 
           <div className="mt-6 flex items-center gap-2">
             {socialLinks.map(({ label, href, icon }) => {
-              const disabled = href === "#" && label !== "Pinterest";
+              const disabled = href === "#";
 
               return disabled ? (
                 <a
@@ -153,6 +153,12 @@ export default function Footer() {
           </span>
         </div>
       </div>
+              <div className="mt-5 flex flex-wrap items-center gap-4 text-xs">
+            <span className="font-semibold text-[#AFC0D8]">Follow Horizon Jobs</span>
+            <a href="https://www.pinterest.com/horizonjobsonline/" target="_blank" rel="noopener noreferrer" className="text-[#DCE7F5] transition hover:text-white">Pinterest</a>
+            <a href="https://www.instagram.com/horizonjobsonline/" target="_blank" rel="noopener noreferrer" className="text-[#DCE7F5] transition hover:text-white">Instagram</a>
+            <a href="https://www.facebook.com/horizonjobonline/" target="_blank" rel="noopener noreferrer" className="text-[#DCE7F5] transition hover:text-white">Facebook</a>
+          </div>
 </footer>
   );
 }
@@ -228,9 +234,6 @@ function FooterCol({
     </div>
   );
 }
-
-
-
 
 
 

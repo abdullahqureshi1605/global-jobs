@@ -1,0 +1,100 @@
+﻿"use client";
+
+import { useEffect, useState } from "react";
+
+const CONSENT_COOKIE = "horizon_cookie_consent";
+
+type ConsentValue = "all" | "essential";
+
+function getConsent(): ConsentValue | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${CONSENT_COOKIE}=([^;]*)`));
+  const value = match?.[1];
+  return value === "all" || value === "essential" ? value : null;
+}
+
+function saveConsent(value: ConsentValue) {
+  document.cookie = `${CONSENT_COOKIE}=${value}; Max-Age=31536000; Path=/; SameSite=Lax; Secure`;
+}
+
+export default function CookieConsent() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    setVisible(getConsent() === null);
+  }, []);
+
+  if (!visible) return null;
+
+  const choose = (value: ConsentValue) => {
+    saveConsent(value);
+    setVisible(false);
+  };
+
+  return (
+    <div
+      className="fixed inset-x-0 bottom-0 z-[100] m-0 p-0"
+      role="dialog"
+      aria-label="Cookie consent"
+      aria-live="polite"
+    >
+      <div className="mx-auto flex min-h-[44px] w-full items-center gap-2 border-t border-[#D9A82F] bg-[#080F22] px-3 py-2 text-white shadow-[0_-4px_20px_rgba(0,0,0,.18)] sm:px-8">
+        <div className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#252B3A] text-[#E4AD2F] sm:flex">
+          🍪
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] leading-4 text-[#9AA7BC]">
+            <strong className="mr-1 text-[11px] font-bold text-white">
+              Your privacy matters
+            </strong>
+            Horizon Jobs uses essential cookies to keep the site working, plus optional analytics and advertising as described in our{" "}
+            <a
+              href="/cookie-policy"
+              className="text-[11px] font-semibold text-[#E4AD2F] underline underline-offset-2 hover:text-white"
+            >
+              Cookie Policy
+            </a>{" "}
+            and{" "}
+            <a
+              href="/privacy-policy"
+              className="text-[11px] font-semibold text-[#E4AD2F] underline underline-offset-2 hover:text-white"
+            >
+              Privacy Policy
+            </a>
+            .
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => choose("essential")}
+            className="h-7 rounded-md border border-[#26385D] px-3 text-[11px] font-bold text-white transition hover:bg-white/10"
+          >
+            Essential only
+          </button>
+
+          <button
+            type="button"
+            onClick={() => choose("all")}
+            className="h-7 rounded-md bg-[#E4AD2F] px-3.5 text-[11px] font-bold text-[#07152D] transition hover:bg-[#F0BA3D]"
+          >
+            Accept all
+          </button>
+
+          <button
+            type="button"
+            onClick={() => choose("essential")}
+            aria-label="Close cookie consent"
+            className="ml-0 flex h-7 w-7 items-center justify-center rounded-full border border-[#26385D] text-base font-light leading-none text-[#8795AA] transition hover:border-white hover:text-white"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+

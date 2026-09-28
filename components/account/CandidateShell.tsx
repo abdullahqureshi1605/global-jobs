@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -87,8 +87,8 @@ export default function CandidateShell({
       <div className="flex h-[68px] shrink-0 items-center border-b border-white/10 px-4">
 
         {collapsed ? (
-          <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-[2px] bg-[#e4ad2f] text-[18px] font-black text-[#071a35]">
-            H
+          <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-[2px] text-[18px] font-black text-[#071a35]">
+            <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
           </div>
         ) : (
           <div className="flex w-full items-center justify-between gap-3">
@@ -97,8 +97,8 @@ export default function CandidateShell({
               className="flex min-w-0 items-center gap-3"
               onClick={closeMobile}
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-[#e4ad2f] text-[18px] font-black text-[#071a35]">
-                H
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] text-[18px] font-black text-[#071a35]">
+                <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
               </div>
 
               <div className="min-w-0">

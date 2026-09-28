@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -84,8 +84,8 @@ export default function RecruiterShell({
       <div className="flex h-[82px] shrink-0 items-center border-b border-white/10 px-4">
 
         {collapsed ? (
-          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#e4ad2f] text-2xl font-black text-[#071a35]">
-            H
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl text-2xl font-black text-[#071a35]">
+            <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
           </div>
         ) : (
           <div className="flex w-full items-center justify-between gap-3">
@@ -95,8 +95,8 @@ export default function RecruiterShell({
               onClick={closeMobile}
               className="flex min-w-0 items-center gap-3"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e4ad2f] text-2xl font-black text-[#071a35]">
-                H
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl font-black text-[#071a35]">
+                <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
               </div>
 
               <div className="min-w-0">

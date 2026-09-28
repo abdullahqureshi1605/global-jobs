@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -122,14 +122,7 @@ export default function SignupPage() {
         <section className="relative flex min-h-[230px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-12 lg:py-8">
 
           {/* Future logo placeholder — no Horizon Jobs text */}
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
-            aria-label="Horizon Jobs logo placeholder"
-          >
-            <span className="text-lg font-black text-white">
-              H
-            </span>
-          </div>
+          <a href="/" aria-label="Horizon Jobs home" className="inline-flex w-fit"><img src="/logo.png" alt="Horizon Jobs logo" width="44" height="44" className="h-11 w-11 rounded-xl object-contain" /></a>
 
           <div className="absolute inset-x-8 top-1/2 max-w-[470px] -translate-y-1/2 sm:inset-x-10 lg:inset-x-12">
 

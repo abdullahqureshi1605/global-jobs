@@ -1,0 +1,891 @@
+﻿HORIZON JOBS FRONTEND AUDIT - 09/28/2026 23:53:52
+
+========================================================================
+1. PROJECT BASICS
+========================================================================
+Folder: D:\horizon-jobs\frontend
+Node: v22.17.1
+Name: frontend
+Scripts:
+  dev = next dev --webpack
+  build = next build --webpack
+  start = next start
+  lint = eslint
+Dependencies:
+  @supabase/ssr ^0.12.6
+  @supabase/supabase-js ^2.115.0
+  bcryptjs ^3.0.3
+  clsx ^2.1.1
+  flag-icons ^7.5.0
+  jsonwebtoken ^9.0.3
+  lucide-react ^1.42.0
+  next 16.3.4
+  next-auth ^4.24.15
+  react 19.2.8
+  react-dom 19.2.8
+  tailwind-merge ^3.6.0
+  zod ^4.5.4
+  @tailwindcss/postcss ^4
+  @types/bcryptjs ^2.4.6
+  @types/jsonwebtoken ^9.0.10
+  @types/node ^20
+  @types/react ^19
+  @types/react-dom ^19
+  eslint ^9
+  eslint-config-next 16.3.4
+  tailwindcss ^4
+  typescript ^5
+Top-level items:
+  app
+  backups
+  components
+  hooks
+  lib
+  public
+  services
+  types
+  _backup_before_account_fixes
+  _horizon-ui-repair-20260908-011233
+  _launch_backup_public_pages_20260921
+  _patch_backups
+  _repair-backup-20260908-010333
+  .env.local
+  .env.local.example
+  .gitignore
+  AGENTS.md
+  CLAUDE.md
+  eslint.config.mjs
+  horizon-audit.txt
+  horizon-logo.png
+  HORIZON_FRONTEND_PROGRESS.md
+  next-env.d.ts
+  next.config.ts
+  next.config.ts.bak-security-headers
+  package-lock.json
+  package.json
+  postcss.config.mjs
+  proxy.ts
+  README.md
+  tsconfig.json
+  tsconfig.tsbuildinfo
+Source files:
+  app\about\page.tsx  (6.1 KB)
+  app\account\applications\page.tsx  (5 KB)
+  app\account\dashboard\page.tsx  (8.1 KB)
+  app\account\job-alerts\page.tsx  (10.4 KB)
+  app\account\login\page.tsx  (0.1 KB)
+  app\account\profile\page.tsx  (12 KB)
+  app\account\saved-jobs\page.tsx  (3.9 KB)
+  app\account\settings\page.tsx  (0.7 KB)
+  app\account\layout.tsx  (0.5 KB)
+  app\account\page.tsx  (0.1 KB)
+  app\admin\adsense\page.tsx  (5.7 KB)
+  app\admin\adzuna\page.tsx  (10.7 KB)
+  app\admin\agents\page.tsx  (0.1 KB)
+  app\admin\ai-agents\page.tsx  (4.4 KB)
+  app\admin\career-resources\page.tsx  (0.1 KB)
+  app\admin\companies\page.tsx  (5.4 KB)
+  app\admin\components\AdminPlaceholder.tsx  (0.8 KB)
+  app\admin\components\AdminShell.tsx  (10.4 KB)
+  app\admin\components\TargetedReview.tsx  (24 KB)
+  app\admin\jobs\published\page.tsx  (4.5 KB)
+  app\admin\jobs\[id]\page.tsx  (22.1 KB)
+  app\admin\jobs\JobsClient.tsx  (27 KB)
+  app\admin\jobs\page.tsx  (0.7 KB)
+  app\admin\login\page.tsx  (4.1 KB)
+  app\admin\maintenance\page.tsx  (3.7 KB)
+  app\admin\processing\page.tsx  (6.6 KB)
+  app\admin\recruiters\page.tsx  (5.6 KB)
+  app\admin\resources\new\page.tsx  (6.4 KB)
+  app\admin\resources\page.tsx  (9.2 KB)
+  app\admin\seo\page.tsx  (3.4 KB)
+  app\admin\users\page.tsx  (7.6 KB)
+  app\admin\layout.tsx  (0.2 KB)
+  app\admin\page.tsx  (7.5 KB)
+  app\api\admin\login\route.ts  (1.6 KB)
+  app\api\admin\logout\route.ts  (0.4 KB)
+  app\api\admin\resources\[id]\route.ts  (5.5 KB)
+  app\api\admin\resources\route.ts  (4.2 KB)
+  app\api\auth\signup\route.ts  (3.3 KB)
+  app\api\auth\[...nextauth]\route.ts  (0.2 KB)
+  app\api\career-resources\comments\route.ts  (3.4 KB)
+  app\api\catalog\categories\route.ts  (0.4 KB)
+  app\api\catalog\countries\route.ts  (0.4 KB)
+  app\api\job-alerts\subscribe\route.ts  (4.3 KB)
+  app\api\job-alerts\route.ts  (4.2 KB)
+  app\api\recruiter\jobs\route.ts  (7.8 KB)
+  app\api\recruiter\profile\route.ts  (4.3 KB)
+  app\api\recruiter\signup\route.ts  (6 KB)
+  app\api\user\applications\route.ts  (3.4 KB)
+  app\api\user\profile\route.ts  (5.9 KB)
+  app\api\user\saved-jobs\route.ts  (5 KB)
+  app\auth\callback\route.ts  (0.9 KB)
+  app\career-resources\[slug]\page.tsx  (7.6 KB)
+  app\career-resources\page.tsx  (13 KB)
+  app\categories\[slug]\jobs\[jobSlug]\page.tsx  (0.3 KB)
+  app\categories\[slug]\page.tsx  (9.6 KB)
+  app\categories\page.tsx  (5.7 KB)
+  app\contact\page.tsx  (7.8 KB)
+  app\cookie-policy\page.tsx  (3.4 KB)
+  app\countries\[country]\jobs\[jobSlug]\page.tsx  (0.3 KB)
+  app\countries\[country]\[city]\jobs\[jobSlug]\page.tsx  (0.3 KB)
+  app\countries\[country]\[city]\page.tsx  (1.6 KB)
+  app\countries\[country]\page.tsx  (7.1 KB)
+  app\countries\page.tsx  (5.6 KB)
+  app\create-account\page.tsx  (0.1 KB)
+  app\disclaimer\page.tsx  (3.4 KB)
+  app\forgot-password\page.tsx  (4 KB)
+  app\job-alerts\page.tsx  (0.4 KB)
+  app\jobs\[slug]\page.tsx  (16.4 KB)
+  app\jobs\page.tsx  (20.4 KB)
+  app\login\page.tsx  (10.6 KB)
+  app\privacy\page.tsx  (3.5 KB)
+  app\privacy-policy\page.tsx  (6.4 KB)
+  app\recruiter\candidates\page.tsx  (1.7 KB)
+  app\recruiter\dashboard\page.tsx  (7.3 KB)
+  app\recruiter\jobs\[id]\page.tsx  (5.8 KB)
+  app\recruiter\jobs\page.tsx  (2.8 KB)
+  app\recruiter\login\page.tsx  (10 KB)
+  app\recruiter\post-job\page.tsx  (5.7 KB)
+  app\recruiter\profile\page.tsx  (10.5 KB)
+  app\recruiter\signup\page.tsx  (11 KB)
+  app\recruiter\upgrade\page.tsx  (1.1 KB)
+  app\recruiter\layout.tsx  (0.5 KB)
+  app\recruiter\page.tsx  (0.1 KB)
+  app\recruiters\dashboard\page.tsx  (0.1 KB)
+  app\recruiters\post-job\page.tsx  (0.1 KB)
+  app\recruiters\page.tsx  (3.2 KB)
+  app\report-job\page.tsx  (1.3 KB)
+  app\reset-password\page.tsx  (5.9 KB)
+  app\saved\page.tsx  (0.1 KB)
+  app\signin\page.tsx  (0.1 KB)
+  app\signup\page.tsx  (11.3 KB)
+  app\terms\page.tsx  (4.4 KB)
+  app\globals.css  (8.6 KB)
+  app\layout.tsx  (2.5 KB)
+  app\page.tsx  (27 KB)
+  app\robots.ts  (0.5 KB)
+  app\sitemap.ts  (4.6 KB)
+  components\account\CandidateShell.tsx  (9.3 KB)
+  components\auth\AuthProvider.tsx  (0.2 KB)
+  components\home\JobAlertSubscribeForm.tsx  (1.8 KB)
+  components\layout\SiteChrome.tsx  (0.6 KB)
+  components\recruiter\RecruiterShell.tsx  (9.1 KB)
+  components\resources\ResourceComments.tsx  (8.2 KB)
+  components\resources\ResourceContent.tsx  (4.1 KB)
+  components\ApplyButton.tsx  (3.1 KB)
+  components\CookieConsent.tsx  (6.3 KB)
+  components\Footer.tsx  (8.4 KB)
+  components\Header.tsx  (10.6 KB)
+  components\Providers.tsx  (0.2 KB)
+  components\PublicBreadcrumb.tsx  (4.9 KB)
+  components\PublicJobCard.tsx  (6.4 KB)
+  components\SiteChrome.tsx  (0.9 KB)
+  lib\eventBus\emitter.ts  (0.9 KB)
+  lib\supabase\admin.ts  (1.3 KB)
+  lib\admin-auth.ts  (0.6 KB)
+  lib\adminAccess.ts  (1.4 KB)
+  lib\api.ts  (1.5 KB)
+  lib\auth-password.ts  (0.3 KB)
+  lib\auth.ts  (7 KB)
+  lib\career-resources.ts  (1.2 KB)
+  lib\jobs.ts  (15 KB)
+  lib\supabase-browser.ts  (0.2 KB)
+  lib\supabase-server.ts  (0.7 KB)
+  hooks\useJobs.ts  (1.2 KB)
+
+========================================================================
+2. PUBLIC FOLDER AND LOGO FILE
+========================================================================
+  file.svg  391 bytes  09/07/2026 22:34:01
+  globe.svg  1035 bytes  09/07/2026 22:34:01
+  logo.png  46837 bytes  09/28/2026 23:23:40
+  next.svg  1375 bytes  09/07/2026 22:34:01
+  vercel.svg  128 bytes  09/07/2026 22:34:01
+  window.svg  385 bytes  09/07/2026 22:34:01
+  logo.png -> 1024x1024 px
+Icon / favicon files inside the app folders:
+  app\favicon.ico  25931 bytes
+
+========================================================================
+3. ROOT LAYOUT FILE
+========================================================================
+File: app\layout.tsx
+import type { Metadata } from "next";
+import { Inter, Fraunces } from "next/font/google";
+import "./globals.css";
+import SiteChrome from "../components/SiteChrome";
+import Providers from "../components/Providers";
+import CookieConsent from "../components/CookieConsent";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-fraunces",
+  weight: ["400", "500", "600"],
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://horizonjobs.online"),
+  title: {
+    default: "Horizon Jobs | Find Jobs Worldwide",
+    template: "%s | Horizon Jobs",
+  },
+  description:
+    "Find jobs and career opportunities worldwide with Horizon Jobs. Search jobs by title, company, category, country, and location.",
+  alternates: {
+    canonical: "https://horizonjobs.online/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
+  openGraph: {
+    title: "Horizon Jobs | Find Jobs Worldwide",
+    description:
+      "Find jobs and career opportunities worldwide with Horizon Jobs. Search jobs by title, company, category, country, and location.",
+    url: "https://horizonjobs.online/",
+    siteName: "Horizon Jobs",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Horizon Jobs | Find Jobs Worldwide",
+    description:
+      "Find jobs and career opportunities worldwide with Horizon Jobs. Search jobs by title, company, category, country, and location.",
+  },
+};
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Horizon Jobs",
+  url: "https://horizonjobs.online/",
+  description:
+    "Horizon Jobs is a global job search platform helping candidates discover employment opportunities by title, company, category, country, and location.",
+};
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={`${inter.variable} ${fraunces.variable} min-h-screen bg-[#f5f7fa]`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <Providers>
+          <SiteChrome>
+            {children}
+          </SiteChrome>
+        </Providers>
+        <CookieConsent />
+      </body>
+    </html>
+  );
+}
+
+
+
+
+
+========================================================================
+4. COOKIE CONSENT
+========================================================================
+Files mentioning cookie or consent:
+  app\api\admin\login\route.ts
+  app\api\admin\logout\route.ts
+  app\cookie-policy\page.tsx
+  app\privacy\page.tsx
+  app\privacy-policy\page.tsx
+  app\layout.tsx
+  app\sitemap.ts
+  components\CookieConsent.tsx
+  components\Footer.tsx
+  components\PublicBreadcrumb.tsx
+  lib\adminAccess.ts
+  lib\supabase-server.ts
+
+--- FULL FILE: components\CookieConsent.tsx ---
+"use client";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+
+const CONSENT_COOKIE = "horizon_cookie_consent";
+
+type ConsentValue = "all" | "essential";
+
+function getConsent(): ConsentValue | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${CONSENT_COOKIE}=([^;]*)`));
+  const value = match?.[1];
+  return value === "all" || value === "essential" ? value : null;
+}
+
+function saveConsent(value: ConsentValue) {
+  document.cookie = `${CONSENT_COOKIE}=${value}; Max-Age=31536000; Path=/; SameSite=Lax; Secure`;
+}
+
+export default function CookieConsent() {
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setVisible(getConsent() === null);
+  }, []);
+
+  if (!mounted || !visible) return null;
+
+  const choose = (value: ConsentValue) => {
+    saveConsent(value);
+    setVisible(false);
+  };
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-label="Cookie consent"
+      aria-live="polite"
+      style={{
+        position: "fixed",
+        inset: "auto 0 0 0",
+        width: "100%",
+        height: "88px",
+        minHeight: "88px",
+        zIndex: 2147483647,
+        margin: 0,
+        padding: 0,
+        boxSizing: "border-box",
+        background: "#0C1122",
+        borderTop: "1px solid #D7A44A",
+        boxShadow: "0 -8px 24px rgba(0,0,0,.35)",
+        fontFamily: "var(--font-inter), Inter, system-ui, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1440px",
+          height: "88px",
+          margin: "0 auto",
+          padding: "0 48px",
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            width: "36px",
+            height: "36px",
+            flex: "0 0 36px",
+            borderRadius: "8px",
+            background: "rgba(215,164,74,.14)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            style={{ fill: "#E3B968" }}
+          >
+            <path d="M21.6 12.8a1 1 0 0 0-1-.2 2.6 2.6 0 0 1-3.4-2.9 1 1 0 0 0-1-1.2 4.6 4.6 0 0 1-4.4-4.4 1 1 0 0 0-1.2-1A10 10 0 1 0 22 13.7a1 1 0 0 0-.4-.9ZM7.5 15a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm2-6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm6 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" />
+          </svg>
+        </span>
+
+        <p
+          style={{
+            flex: 1,
+            minWidth: 0,
+            margin: 0,
+            color: "#8F9AB0",
+            fontSize: "11px",
+            lineHeight: "1.5",
+            fontWeight: 400,
+          }}
+        >
+          <strong style={{ color: "#F4F1EA", fontWeight: 600 }}>
+            Your privacy matters.
+          </strong>{" "}
+          Horizon Jobs uses essential cookies to keep the site working, plus
+          optional analytics and advertising cookies per our{" "}
+          <a
+            href="/cookie-policy"
+            style={{
+              color: "#E3B968",
+              fontSize: "11px",
+              textDecoration: "none",
+              borderBottom: "1px solid rgba(215,164,74,.35)",
+            }}
+          >
+            Cookie Policy
+          </a>{" "}
+          and{" "}
+          <a
+            href="/privacy-policy"
+            style={{
+              color: "#E3B968",
+              fontSize: "11px",
+              textDecoration: "none",
+              borderBottom: "1px solid rgba(215,164,74,.35)",
+            }}
+          >
+            Privacy Policy
+          </a>
+          .
+        </p>
+
+        <div
+          style={{
+            flex: "0 0 auto",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => choose("essential")}
+            style={{
+              height: "50px",
+              padding: "0 20px",
+              borderRadius: "7px",
+              border: "1px solid #233052",
+              background: "transparent",
+              color: "#F4F1EA",
+              fontFamily: "inherit",
+              fontSize: "11px",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+            }}
+          >
+            Essential only
+          </button>
+
+          <button
+            type="button"
+            onClick={() => choose("all")}
+            style={{
+              height: "50px",
+              padding: "0 22px",
+              borderRadius: "7px",
+              border: "1px solid #D7A44A",
+              background: "#D7A44A",
+              color: "#080C16",
+              fontFamily: "inherit",
+              fontSize: "11px",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+            }}
+          >
+            Accept all
+          </button>
+
+          <button
+            type="button"
+            onClick={() => choose("essential")}
+            aria-label="Dismiss"
+            style={{
+              width: "40px",
+              height: "40px",
+              flex: "0 0 40px",
+              marginLeft: "4px",
+              padding: 0,
+              borderRadius: "50%",
+              border: "1px solid #233052",
+              background: "transparent",
+              color: "#8F9AB0",
+              fontFamily: "Arial, sans-serif",
+              fontSize: "22px",
+              fontWeight: 300,
+              lineHeight: "38px",
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 860px) {
+          [role="dialog"][aria-label="Cookie consent"] {
+            height: auto !important;
+            min-height: 0 !important;
+          }
+
+          [role="dialog"][aria-label="Cookie consent"] > div {
+            height: auto !important;
+            min-height: 88px;
+            padding: 12px 16px !important;
+            flex-wrap: wrap;
+          }
+
+          [role="dialog"][aria-label="Cookie consent"] p {
+            flex-basis: calc(100% - 48px);
+          }
+        }
+      `}</style>
+    </div>,
+    document.body
+  );
+}
+
+Cookie / tracking / ads lines in other files:
+  app\about\page.tsx:141: information, career knowledge, analytics, and intelligent
+  app\api\admin\login\route.ts:45: response.cookies.set("horizon_admin_session", "authenticated", {
+  app\api\admin\logout\route.ts:8: response.cookies.set("horizon_admin_session", "", {
+  app\categories\[slug]\page.tsx:8: { key:"it", name:"IT & Technology", match:/(^|[^a-z])(it|technology|software|computing|data|analytics|developer|programming)([^a-z]|$)/i },
+  app\categories\page.tsx:28: { key:"it", name:"IT & Technology", icon:BarChart3, match:/(^|[^a-z])(it|technology|software|computing|data|analytics|developer|programming)([^a-z]|$)/i },
+  app\cookie-policy\page.tsx:4: title: "Cookie Policy | Horizon Jobs",
+  app\cookie-policy\page.tsx:5: description: "Cookie Policy for Horizon Jobs.",
+  app\cookie-policy\page.tsx:9: ["What Are Cookies?", "Cookies are small files or pieces of information stored by a website or service in your browser. They may allow a website to remember information between visits or help services understand how a we ...
+  app\cookie-policy\page.tsx:10: ["Essential Cookies", "These may be required for login, authentication, security, session management, and basic website functionality. These cookies may be necessary for the website to operate."],
+  app\cookie-policy\page.tsx:11: ["Preference Cookies", "These may remember choices such as language, preferences, and interface settings."],
+  app\cookie-policy\page.tsx:12: ["Analytics Cookies", "These may help us understand website traffic, page usage, performance, technical problems, and general usage patterns."],
+  app\cookie-policy\page.tsx:13: ["Advertising Cookies", "If advertising is enabled, third-party advertising providers such as Google may use cookies or similar technologies to serve advertisements. Google states that its advertising services may place  ...
+  app\cookie-policy\page.tsx:14: ["Third-Party Cookies", "Some services used on Horizon Jobs may place their own cookies or similar technologies. These may include providers for analytics, authentication, advertising, embedded services, and external int ...
+  app\cookie-policy\page.tsx:15: ["Managing Cookies", "Most browsers allow users to control or delete cookies through browser settings. Disabling certain cookies may affect website functionality. Where legally required, Horizon Jobs may also provide coo ...
+  app\cookie-policy\page.tsx:17: ["Updates", "We may update this Cookie Policy when our use of cookies or relevant technologies changes."],
+  app\cookie-policy\page.tsx:18: ["Contact", "Questions about cookies can be sent to support@horizonjobs.online."]
+  app\cookie-policy\page.tsx:21: export default function CookiePolicyPage() {
+  app\cookie-policy\page.tsx:27: <h1 className="mt-2 text-[24px] font-bold">Cookie Policy</h1>
+  app\cookie-policy\page.tsx:34: Horizon Jobs uses cookies and similar technologies to provide essential functionality, improve performance, understand website usage, and, where enabled, support advertising.
+  app\jobs\page.tsx:114: match: /(^|[^a-z])(it|technology|software|computing|data|analytics|developer|programming)([^a-z]|$)/i,
+  app\privacy\page.tsx:56: <h2 className="text-2xl font-black text-[#071a35]">Cookies</h2>
+  app\privacy\page.tsx:58: Cookies and similar technologies may be used for authentication,
+  app\privacy\page.tsx:59: security, preferences, analytics, and other website
+  app\privacy\page.tsx:60: functionality. See the Cookie Policy for more information.
+  app\privacy-policy\page.tsx:15: ["How We Use Information", "We may use information to create and maintain accounts, provide job-search functionality, personalize job discovery, provide job alerts, save user preferences, provide career resources, commun ...
+  app\privacy-policy\page.tsx:17: ["Cookies and Similar Technologies", "Horizon Jobs may use cookies and similar technologies for essential website functionality, user preferences, authentication, security, analytics, performance measurement, and adverti ...
+  app\privacy-policy\page.tsx:18: ["Analytics", "We may use analytics technologies to understand traffic, page usage, user interactions, performance, geographic trends at an appropriate level, and technical problems. Analytics information helps us improv ...
+  app\privacy-policy\page.tsx:19: ["Advertising", "Horizon Jobs may display advertising provided by third-party advertising partners, including Google AdSense, if and when enabled. Advertising partners may use cookies, web beacons, IP addresses, or simil ...
+  app\privacy-policy\page.tsx:23: ["Your Choices", "Depending on your location and applicable law, you may have rights concerning your personal information, including rights to access information, correct information, delete information, withdraw certain ...
+  app\layout.tsx:6: import CookieConsent from "../components/CookieConsent";
+  app\layout.tsx:83: <CookieConsent />
+  app\page.tsx:62: {key:"it",name:"IT & Technology",match:/(^|[^a-z])(it|technology|software|computing|data|analytics|developer|programming)([^a-z]|$)/i},
+  app\sitemap.ts:82: url: `${SITE_URL}/cookie-policy`,
+  components\Footer.tsx:122: ["Cookie Policy", "/cookie-policy"],
+  components\Footer.tsx:140: <Link href="/cookie-policy" className="transition hover:text-white">
+  components\Footer.tsx:141: Cookies
+  components\PublicBreadcrumb.tsx:16: "cookie-policy": "Cookie Policy",
+  lib\adminAccess.ts:1: import { cookies } from "next/headers";
+  lib\adminAccess.ts:6: const ADMIN_COOKIE = "horizon_admin_session";
+  lib\adminAccess.ts:13: const cookieStore = await cookies();
+  lib\adminAccess.ts:15: const adminCookie = cookieStore.get(ADMIN_COOKIE);
+  lib\adminAccess.ts:17: if (adminCookie?.value === "authenticated") {
+  lib\adminAccess.ts:44: // No NextAuth session is fine when custom admin cookie exists.
+  lib\supabase-server.ts:2: import { cookies } from "next/headers";
+  lib\supabase-server.ts:5: const cookieStore = await cookies();
+  lib\supabase-server.ts:11: cookies: {
+  lib\supabase-server.ts:13: return cookieStore.getAll();
+  lib\supabase-server.ts:15: setAll(cookiesToSet) {
+  lib\supabase-server.ts:17: cookiesToSet.forEach(({ name, value, options }) =>
+  lib\supabase-server.ts:18: cookieStore.set(name, value, options),
+  lib\supabase-server.ts:21: // Server Components cannot always mutate cookies.
+
+========================================================================
+5. FONT SIZE AUDIT (16px mobile rule)
+========================================================================
+Files with the most small Tailwind size classes:
+  55  app\page.tsx
+  27  app\admin\components\TargetedReview.tsx
+  25  app\jobs\page.tsx
+  24  app\admin\jobs\JobsClient.tsx
+  22  app\account\dashboard\page.tsx
+  22  app\career-resources\page.tsx
+  22  app\signup\page.tsx
+  21  app\recruiter\signup\page.tsx
+  21  app\login\page.tsx
+  21  app\contact\page.tsx
+  20  app\recruiter\login\page.tsx
+  19  components\resources\ResourceComments.tsx
+  19  app\admin\adzuna\page.tsx
+  17  app\account\profile\page.tsx
+  16  app\account\job-alerts\page.tsx
+  14  app\admin\resources\page.tsx
+  13  components\Header.tsx
+  12  components\account\CandidateShell.tsx
+  12  app\admin\page.tsx
+  12  app\recruiter\dashboard\page.tsx
+  12  app\about\page.tsx
+  11  components\PublicJobCard.tsx
+  11  app\reset-password\page.tsx
+  10  app\admin\processing\page.tsx
+  10  app\admin\components\AdminShell.tsx
+  10  app\account\applications\page.tsx
+  10  app\recruiter\profile\page.tsx
+  9  app\account\saved-jobs\page.tsx
+  9  components\recruiter\RecruiterShell.tsx
+  9  app\admin\resources\new\page.tsx
+
+Distinct small size classes (class = times used):
+  text-sm = 254
+  text-[13px] = 114
+  text-[12px] = 108
+  text-xs = 98
+  text-[11px] = 59
+  text-[16px] = 34
+  text-[10px] = 29
+  text-[24px] = 12
+  text-[15px] = 11
+  text-[30px] = 8
+  text-[32px] = 4
+  text-[18px] = 4
+  text-[9px] = 2
+  text-[36px] = 2
+  text-[17px] = 2
+  text-[14px] = 2
+  text-[34px] = 1
+  text-[38px] = 1
+  text-[48px] = 1
+
+CSS / inline font sizes under 16px:
+  app\globals.css:55: .horizon-label { display:block; margin-bottom:7px; font-size:13px; font-weight:800; color:#344054; }
+  app\globals.css:57: .horizon-eyebrow { color: var(--gold); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; }
+  app\globals.css:178: font-size: 14px;
+  app\globals.css:251: font-size: 13px !important;
+  components\CookieConsent.tsx:100: fontSize: "11px",
+  components\CookieConsent.tsx:114: fontSize: "11px",
+  components\CookieConsent.tsx:126: fontSize: "11px",
+  components\CookieConsent.tsx:155: fontSize: "11px",
+  components\CookieConsent.tsx:175: fontSize: "11px",
+
+========================================================================
+6. STATE OF THE globals.css UPDATE
+========================================================================
+globals.css: app\globals.css  (8816 chars)
+Has cookie block: False
+Has mobile font floor: False
+
+========================================================================
+7. LOGO AND BRAND SPOTS
+========================================================================
+Likely files for header, nav, footer, auth pages, shells:
+  app\account\login\page.tsx
+  app\admin\components\AdminShell.tsx
+  app\admin\login\page.tsx
+  app\api\admin\login\route.ts
+  app\api\admin\logout\route.ts
+  app\api\auth\signup\route.ts
+  app\api\auth\[...nextauth]\route.ts
+  app\api\recruiter\signup\route.ts
+  app\auth\callback\route.ts
+  app\forgot-password\page.tsx
+  app\login\page.tsx
+  app\recruiter\login\page.tsx
+  app\recruiter\signup\page.tsx
+  app\reset-password\page.tsx
+  app\signin\page.tsx
+  app\signup\page.tsx
+  components\account\CandidateShell.tsx
+  components\auth\AuthProvider.tsx
+  components\recruiter\RecruiterShell.tsx
+  components\Footer.tsx
+  components\Header.tsx
+  lib\admin-auth.ts
+  lib\auth-password.ts
+  lib\auth.ts
+
+Lines with logo / brand / img / Image / H badge / icons:
+  app\account\dashboard\page.tsx:273: icon: React.ReactNode;
+  app\admin\components\AdminShell.tsx:11: { href: "/admin", label: "Dashboard", icon: "\u2302" },
+  app\admin\components\AdminShell.tsx:17: { href: "/admin/jobs", label: "Job Review", icon: "\u2713" },
+  app\admin\components\AdminShell.tsx:18: { href: "/admin/processing", label: "Processing", icon: "\u21BB" },
+  app\admin\components\AdminShell.tsx:24: { href: "/admin/adzuna", label: "Adzuna Control", icon: "\u25C9" },
+  app\admin\components\AdminShell.tsx:33: icon: "\u2630",
+  app\admin\components\AdminShell.tsx:40: { href: "/admin/ai-agents", label: "AI Agents", icon: "\u2726" },
+  app\admin\components\AdminShell.tsx:46: { href: "/admin/adsense", label: "AdSense", icon: "\u0024" },
+  app\admin\components\AdminShell.tsx:47: { href: "/admin/seo", label: "SEO", icon: "\u2315" },
+  app\admin\components\AdminShell.tsx:53: { href: "/admin/users", label: "Users", icon: "\u263A" },
+  app\admin\components\AdminShell.tsx:54: { href: "/admin/recruiters", label: "Recruiters", icon: "\u260E" },
+  app\admin\components\AdminShell.tsx:55: { href: "/admin/companies", label: "Companies", icon: "\u25A6" },
+  app\admin\components\AdminShell.tsx:56: { href: "/admin/maintenance", label: "Maintenance", icon: "\u2699" },
+  app\admin\components\AdminShell.tsx:133: H
+  app\admin\components\AdminShell.tsx:240: <form action="/api/admin/logout" method="POST">
+  app\admin\login\page.tsx:53: H
+  app\api\recruiter\profile\route.ts:59: "id,owner_user_id,name,slug,industry,website,size_range,logo_url,about,verification_status,created_at,updated_at"
+  app\api\recruiter\profile\route.ts:136: logo_url:
+  app\api\recruiter\profile\route.ts:137: typeof body.logo_url === "string"
+  app\api\recruiter\profile\route.ts:138: ? body.logo_url.trim()
+  app\api\recruiter\profile\route.ts:168: "id,owner_user_id,name,slug,industry,website,size_range,logo_url,about,verification_status,created_at,updated_at"
+  app\categories\page.tsx:28: { key:"it", name:"IT & Technology", icon:BarChart3, match:/(^|[^a-z])(it|technology|software|computing|data|analytics|developer|programming)([^a-z]|$)/i },
+  app\categories\page.tsx:29: { key:"healthcare", name:"Healthcare", icon:HeartPulse, match:/(health|healthcare|nursing|nurse|medical|pharma|doctor)/i },
+  app\categories\page.tsx:30: { key:"logistics", name:"Logistics", icon:Truck, match:/(logistics|warehouse|transport|delivery|supply chain)/i },
+  app\categories\page.tsx:31: { key:"design", name:"Design & Creative", icon:Palette, match:/(design|creative|graphic|ux|ui)/i },
+  app\categories\page.tsx:32: { key:"finance", name:"Finance & Accounting", icon:DollarSign, match:/(finance|account|accounting|banking|audit)/i },
+  app\categories\page.tsx:33: { key:"trades", name:"Trades & Construction", icon:Wrench, match:/(trade|construction|electric|plumb|maintenance|building)/i },
+  app\categories\page.tsx:34: { key:"customer", name:"Customer Service", icon:Headphones, match:/(customer|client service|call centre|call center)/i },
+  app\categories\page.tsx:35: { key:"retail", name:"Retail", icon:ShoppingBag, match:/(retail|store|shop|merchand)/i },
+  app\categories\page.tsx:36: { key:"education", name:"Education", icon:GraduationCap, match:/(education|teaching|teacher|school|training|academic)/i },
+  app\categories\page.tsx:37: { key:"marketing", name:"Marketing & Sales", icon:Megaphone, match:/(marketing|sales|advertis|public relations|pr jobs)/i },
+  app\categories\page.tsx:38: { key:"legal", name:"Legal", icon:Scale, match:/(legal|lawyer|solicitor|attorney)/i },
+  app\categories\page.tsx:39: { key:"hospitality", name:"Hospitality & Catering", icon:Utensils, match:/(hospitality|catering|restaurant|hotel|chef|cook)/i },
+  app\jobs\[slug]\page.tsx:248: <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#071a35]"><img src={`/flags/${flagCode || "xx"}.svg`} alt={country?.name || "Country flag"} c ...
+  app\jobs\[slug]\page.tsx:549: icon: React.ReactNode;
+  app\login\page.tsx:94: {/* Future logo placeholder — no Horizon Jobs text */}
+  app\login\page.tsx:97: aria-label="Horizon Jobs logo placeholder"
+  app\login\page.tsx:322: icon: React.ReactNode;
+  app\recruiter\dashboard\page.tsx:51: .select("id,name,logo_url")
+  app\recruiter\dashboard\page.tsx:232: icon: React.ReactNode;
+  app\recruiter\login\page.tsx:95: aria-label="Horizon Jobs logo placeholder"
+  app\recruiter\login\page.tsx:305: icon: React.ReactNode;
+  app\recruiter\profile\page.tsx:18: logo_url: string | null;
+  app\recruiter\profile\page.tsx:284: <Field label="Logo URL">
+  app\recruiter\profile\page.tsx:287: value={company.logo_url || ""}
+  app\recruiter\profile\page.tsx:291: logo_url: e.target.value,
+  app\recruiter\signup\page.tsx:130: aria-label="Horizon Jobs logo placeholder"
+  app\recruiter\signup\page.tsx:359: icon: React.ReactNode;
+  app\recruiters\page.tsx:11: function Feature({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <div className="horizon-card horizon-card-hover p-7"><span className="flex h-12 w-12 items-center justify-cen ...
+  app\signup\page.tsx:124: {/* Future logo placeholder — no Horizon Jobs text */}
+  app\signup\page.tsx:127: aria-label="Horizon Jobs logo placeholder"
+  app\signup\page.tsx:130: H
+  app\signup\page.tsx:364: icon: React.ReactNode;
+  app\page.tsx:96: icon:def.key,
+  app\page.tsx:99: }) as {id:string;name:string;slug:string;icon:string;count:number}[];
+  components\account\CandidateShell.tsx:13: LogOut,
+  components\account\CandidateShell.tsx:45: icon: Home,
+  components\account\CandidateShell.tsx:50: icon: FileText,
+  components\account\CandidateShell.tsx:55: icon: Star,
+  components\account\CandidateShell.tsx:60: icon: UserRound,
+  components\account\CandidateShell.tsx:65: icon: Bell,
+  components\account\CandidateShell.tsx:70: icon: Settings,
+  components\account\CandidateShell.tsx:91: H
+  components\account\CandidateShell.tsx:101: H
+  components\account\CandidateShell.tsx:232: <LogOut size={17} />
+  components\recruiter\RecruiterShell.tsx:14: LogOut,
+  components\recruiter\RecruiterShell.tsx:48: icon: Home,
+  components\recruiter\RecruiterShell.tsx:53: icon: BriefcaseBusiness,
+  components\recruiter\RecruiterShell.tsx:58: icon: FileText,
+  components\recruiter\RecruiterShell.tsx:63: icon: Users,
+  components\recruiter\RecruiterShell.tsx:68: icon: Building2,
+  components\recruiter\RecruiterShell.tsx:88: H
+  components\recruiter\RecruiterShell.tsx:99: H
+  components\recruiter\RecruiterShell.tsx:255: <LogOut size={17} />
+  components\Footer.tsx:10: icon: SocialName;
+  components\Footer.tsx:15: icon: "facebook",
+  components\Footer.tsx:20: icon: "instagram",
+  components\Footer.tsx:25: icon: "linkedin",
+  components\Footer.tsx:30: icon: "pinterest",
+  components\Footer.tsx:35: icon: "whatsapp",
+  components\Footer.tsx:45: H
+  components\Header.tsx:7: LogOut,
+  components\Header.tsx:92: H
+  components\Header.tsx:226: <LogOut size={17} />
+  components\Header.tsx:304: <LogOut size={17} />
+  components\Header.tsx:342: icon: React.ReactNode;
+  lib\jobs.ts:7: logo_url: string | null;
+  lib\jobs.ts:21: icon: string | null;
+  lib\jobs.ts:239: logo_url: null,
+  lib\jobs.ts:252: icon: null,
+
+Lines with the brand name:
+  app\about\page.tsx:5: title: "About Horizon Jobs",
+  app\about\page.tsx:6: description: "Learn about Horizon Jobs and our global employment platform.",
+  app\about\page.tsx:15: ABOUT HORIZON JOBS
+  app\about\page.tsx:18: About Horizon Jobs
+  app\about\page.tsx:21: Welcome to Horizon Jobs
+  app\about\page.tsx:31: Welcome to Horizon Jobs
+  app\about\page.tsx:34: Horizon Jobs is a global employment platform designed to make
+  app\about\page.tsx:80: application is completed outside Horizon Jobs, we clearly
+  app\about\page.tsx:94: Horizon Jobs is designed to help users discover relevant
+  app\about\page.tsx:106: Horizon Jobs is also being developed as a platform for
+  app\about\page.tsx:139: Horizon Jobs is being developed into a broader employment
+  app\about\page.tsx:145: Thank you for using Horizon Jobs.
+  app\admin\adsense\page.tsx:163: Horizon Jobs keeps the original source record privately for
+  app\admin\components\AdminShell.tsx:119: Horizon Jobs
+  app\admin\components\AdminShell.tsx:287: Horizon Jobs
+  app\admin\jobs\[id]\page.tsx:484: Horizon Jobs • Human Review
+  app\admin\login\page.tsx:57: Horizon Jobs
+  app\admin\login\page.tsx:65: Secure access to the Horizon Jobs control center.
+  app\admin\recruiters\page.tsx:106: Real recruiter memberships connected to Horizon Jobs companies.
+  app\admin\resources\page.tsx:127: the Horizon Jobs database.
+  app\admin\page.tsx:155: Live operational view of the Horizon Jobs ingestion,
+  app\career-resources\[slug]\page.tsx:131: Horizon Jobs
+  app\career-resources\page.tsx:6: title: "Career Resources | Horizon Jobs",
+  app\career-resources\page.tsx:8: "Practical career advice, job search guidance, interview tips, workplace skills, and employment resources from Horizon Jobs.",
+  app\career-resources\page.tsx:138: <p className="horizon-eyebrow">HORIZON JOBS</p>
+  app\career-resources\page.tsx:191: professional resources published by Horizon Jobs.
+  app\categories\page.tsx:5: "Explore job opportunities by category on Horizon Jobs, including technology, healthcare, finance, education, logistics, and more.",
+  app\categories\page.tsx:7: canonical: "https://horizonjobs.online/categories",
+  app\categories\page.tsx:107: across the Horizon Jobs network.
+  app\categories\page.tsx:117: Horizon Jobs categories
+  app\contact\page.tsx:4: title: "Contact Horizon Jobs",
+  app\contact\page.tsx:6: "Contact Horizon Jobs for general questions, job listing issues, recruiter inquiries, partnerships, and privacy requests.",
+  app\contact\page.tsx:20: Contact Horizon Jobs
+  app\contact\page.tsx:24: Have a question, found an issue, or want to contact Horizon Jobs?
+  app\contact\page.tsx:34: For general questions about Horizon Jobs:
+  app\contact\page.tsx:37: contact@horizonjobs.online
+  app\contact\page.tsx:61: support@horizonjobs.online
+  app\contact\page.tsx:70: Recruiters and employers interested in using Horizon Jobs can
+  app\contact\page.tsx:74: partnership@horizonjobs.online
+  app\contact\page.tsx:91: support@horizonjobs.online
+  app\contact\page.tsx:100: Horizon Jobs cannot guarantee the response time, availability,
+  app\contact\page.tsx:114: action="mailto:contact@horizonjobs.online"
+  app\contact\page.tsx:177: General Questions — contact@horizonjobs.online
+  app\contact\page.tsx:180: Job Listing Issue — support@horizonjobs.online
+  app\contact\page.tsx:183: Privacy Request — support@horizonjobs.online
+  app\contact\page.tsx:186: Recruiter / Employer — partnership@horizonjobs.online
+  app\cookie-policy\page.tsx:4: title: "Cookie Policy | Horizon Jobs",
+  app\cookie-policy\page.tsx:5: description: "Cookie Policy for Horizon Jobs.",
+  app\cookie-policy\page.tsx:14: ["Third-Party Cookies", "Some services used on Horizon Jobs may place their own cookies or similar technologies. These may include providers for analytics, authentication, advertising, embedded servic ...
+  app\cookie-policy\page.tsx:15: ["Managing Cookies", "Most browsers allow users to control or delete cookies through browser settings. Disabling certain cookies may affect website functionality. Where legally required, Horizon Jobs  ...
+  app\cookie-policy\page.tsx:18: ["Contact", "Questions about cookies can be sent to support@horizonjobs.online."]
+  app\cookie-policy\page.tsx:34: Horizon Jobs uses cookies and similar technologies to provide essential functionality, improve performance, understand website usage, and, where enabled, support advertising.
+  app\countries\page.tsx:5: "Explore job opportunities by country and discover employment options worldwide on Horizon Jobs.",
+  app\countries\page.tsx:7: canonical: "https://horizonjobs.online/countries",
+  app\disclaimer\page.tsx:4: title: "Disclaimer | Horizon Jobs",
+  app\disclaimer\page.tsx:5: description: "Important information about Horizon Jobs job listings and external links.",
+  app\disclaimer\page.tsx:9: ["No Employment Guarantee", "Horizon Jobs does not guarantee employment, interviews, job offers, salaries, promotions, hiring decisions, or application success. All hiring decisions are made by the re ...
+  app\disclaimer\page.tsx:11: ["External Websites", "Some links lead to external websites. Horizon Jobs does not control external websites and is not responsible for their content, availability, privacy practices, security, terms, ...
+  app\disclaimer\page.tsx:14: ["Affiliate Disclosure", "Some links may be affiliate links. Horizon Jobs may receive a commission when users complete an eligible action through certain links. Affiliate relationships do not mean tha ...
+  app\disclaimer\page.tsx:15: ["Advertising", "Horizon Jobs may display advertisements from third-party advertising providers. Third-party advertisements are subject to the policies and technologies of the relevant advertising pro ...
+  app\disclaimer\page.tsx:16: ["AI-Generated Information", "Horizon Jobs may use automated or AI-assisted systems to organize information, generate recommendations, summarize content, or assist with platform operations. AI-generat ...
+  app\disclaimer\page.tsx:17: ["Contact", "Questions regarding this disclaimer can be sent to support@horizonjobs.online."]
+  app\disclaimer\page.tsx:33: The information provided by Horizon Jobs is intended for general informational and employment-discovery purposes.
+  app\jobs\[slug]\page.tsx:160: title: "Job Opportunity | Horizon Jobs",
+  app\jobs\[slug]\page.tsx:161: description: "Explore career opportunities on Horizon Jobs.",
+  app\jobs\[slug]\page.tsx:167: "https://horizonjobs.online";
+  app\jobs\[slug]\page.tsx:172: const title = job.meta_title || `${job.title} | Horizon Jobs`;
+  app\jobs\[slug]\page.tsx:177: `Explore the ${job.title} opportunity on Horizon Jobs.`;
+  app\jobs\[slug]\page.tsx:197: siteName: "Horizon Jobs",
+  app\jobs\page.tsx:440: Horizon Jobs marketplace
+  app\jobs\page.tsx:448: Search published opportunities from the Horizon Jobs database.
+  app\login\page.tsx:94: {/* Future logo placeholder — no Horizon Jobs text */}
+  app\login\page.tsx:97: aria-label="Horizon Jobs logo placeholder"
+  app\login\page.tsx:116: job alerts from one secure Horizon Jobs account.
+  app\login\page.tsx:130: © 2026 Horizon Jobs
+  app\privacy\page.tsx:4: title: "Privacy | Horizon Jobs",
+  app\privacy\page.tsx:5: description: "Privacy information for Horizon Jobs users and visitors.",
+  app\privacy\page.tsx:16: Information about privacy and the way Horizon Jobs may handle
+  app\privacy\page.tsx:28: Horizon Jobs may receive information that you choose to provide
+  app\privacy\page.tsx:50: leaving Horizon Jobs is subject to the policies and terms of
+
+========================================================================
+8. GIT STATUS (read only)
+========================================================================
+
+END OF AUDIT

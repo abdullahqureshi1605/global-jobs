@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
@@ -88,8 +88,8 @@ export default function Header() {
             setAccountOpen(false);
           }}
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-black text-[#071a35]">
-            <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e4ad2f] text-lg font-black text-[#071a35]">
+            H
           </span>
 
           <span>
@@ -240,7 +240,7 @@ export default function Header() {
 
               <Link
                 href="/recruiters"
-                className="rounded-xl bg-[#3E7BFA] px-5 py-3 text-sm font-black text-white hover:bg-[#0752f4]"
+                className="rounded-xl bg-[#3E7BFA] px-5 py-3 text-sm font-black text-white hover:bg-[#f2c85d]"
               >
                 Post a Job
               </Link>

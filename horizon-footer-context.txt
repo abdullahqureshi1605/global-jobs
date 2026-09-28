@@ -1,0 +1,16 @@
+﻿--- line 15 ---
+  13:       label: "Facebook",
+  14:       href: process.env.NEXT_PUBLIC_FACEBOOK_URL || "#",
+  15:       icon: "facebook",
+  16:     },
+  17:     {
+  18:       label: "Instagram",
+  19:       href: process.env.NEXT_PUBLIC_INSTAGRAM_URL || "#",
+--- line 20 ---
+  18:       label: "Instagram",
+  19:       href: process.env.NEXT_PUBLIC_INSTAGRAM_URL || "#",
+  20:       icon: "instagram",
+  21:     },
+  22:     {
+  23:       label: "LinkedIn",
+  24:       href: process.env.NEXT_PUBLIC_LINKEDIN_URL || "#",

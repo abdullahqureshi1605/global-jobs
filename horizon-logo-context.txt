@@ -1,0 +1,403 @@
+﻿LOGO CONTEXT
+--- app\login\page.tsx line 94 ---
+  84:     }
+  85:   }
+  86: 
+  87:   return (
+  88:     <main className="min-h-screen bg-white lg:h-screen lg:overflow-hidden">
+  89:       <div className="grid min-h-screen w-full lg:h-screen lg:grid-cols-2">
+  90: 
+  91:         {/* LEFT PANEL */}
+  92:         <section className="relative flex min-h-[260px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-14 lg:py-10">
+  93: 
+  94:           {/* Future logo placeholder — no Horizon Jobs text */}
+  95:           <div
+  96:             className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+  97:             aria-label="Horizon Jobs logo placeholder"
+  98:           >
+  99:             <span className="h-3 w-3 rounded-sm bg-white/90" aria-hidden="true" />
+ 100:           </div>
+ 101: 
+ 102:           <div className="absolute left-14 top-[46%] max-w-[400px] -translate-y-1/2">
+ 103: 
+ 104:             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+ 105:               For job seekers
+ 106:             </p>
+ 107: 
+ 108:             <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+ 109:               Your career,
+ 110:               <br />
+--- app\login\page.tsx line 97 ---
+  87:   return (
+  88:     <main className="min-h-screen bg-white lg:h-screen lg:overflow-hidden">
+  89:       <div className="grid min-h-screen w-full lg:h-screen lg:grid-cols-2">
+  90: 
+  91:         {/* LEFT PANEL */}
+  92:         <section className="relative flex min-h-[260px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-14 lg:py-10">
+  93: 
+  94:           {/* Future logo placeholder — no Horizon Jobs text */}
+  95:           <div
+  96:             className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+  97:             aria-label="Horizon Jobs logo placeholder"
+  98:           >
+  99:             <span className="h-3 w-3 rounded-sm bg-white/90" aria-hidden="true" />
+ 100:           </div>
+ 101: 
+ 102:           <div className="absolute left-14 top-[46%] max-w-[400px] -translate-y-1/2">
+ 103: 
+ 104:             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+ 105:               For job seekers
+ 106:             </p>
+ 107: 
+ 108:             <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+ 109:               Your career,
+ 110:               <br />
+ 111:               organized.
+ 112:             </h2>
+ 113: 
+--- app\signup\page.tsx line 124 ---
+ 114:   }
+ 115: 
+ 116:   return (
+ 117:     <main className="min-h-screen bg-white lg:h-screen lg:overflow-hidden">
+ 118: 
+ 119:       <div className="grid min-h-screen w-full lg:h-screen lg:grid-cols-2">
+ 120: 
+ 121:         {/* LEFT PANEL */}
+ 122:         <section className="relative flex min-h-[230px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-12 lg:py-8">
+ 123: 
+ 124:           {/* Future logo placeholder â€” no Horizon Jobs text */}
+ 125:           <div
+ 126:             className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+ 127:             aria-label="Horizon Jobs logo placeholder"
+ 128:           >
+ 129:             <span className="text-lg font-black text-white">
+ 130:               <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+ 131:             </span>
+ 132:           </div>
+ 133: 
+ 134:           <div className="absolute inset-x-8 top-1/2 max-w-[470px] -translate-y-1/2 sm:inset-x-10 lg:inset-x-12">
+ 135: 
+ 136:             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+ 137:               For job seekers
+ 138:             </p>
+ 139: 
+ 140:             <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+--- app\signup\page.tsx line 127 ---
+ 117:     <main className="min-h-screen bg-white lg:h-screen lg:overflow-hidden">
+ 118: 
+ 119:       <div className="grid min-h-screen w-full lg:h-screen lg:grid-cols-2">
+ 120: 
+ 121:         {/* LEFT PANEL */}
+ 122:         <section className="relative flex min-h-[230px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-12 lg:py-8">
+ 123: 
+ 124:           {/* Future logo placeholder â€” no Horizon Jobs text */}
+ 125:           <div
+ 126:             className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+ 127:             aria-label="Horizon Jobs logo placeholder"
+ 128:           >
+ 129:             <span className="text-lg font-black text-white">
+ 130:               <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+ 131:             </span>
+ 132:           </div>
+ 133: 
+ 134:           <div className="absolute inset-x-8 top-1/2 max-w-[470px] -translate-y-1/2 sm:inset-x-10 lg:inset-x-12">
+ 135: 
+ 136:             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+ 137:               For job seekers
+ 138:             </p>
+ 139: 
+ 140:             <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+ 141:               Find the right
+ 142:               <br />
+ 143:               opportunity.
+--- app\recruiter\login\page.tsx line 95 ---
+  85: 
+  86:   return (
+  87:     <main className="min-h-screen bg-white lg:h-screen lg:overflow-hidden">
+  88:       <div className="grid min-h-screen w-full lg:h-screen lg:grid-cols-2">
+  89: 
+  90:         {/* LEFT PANEL */}
+  91:         <section className="relative flex min-h-[260px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-14 lg:py-10">
+  92: 
+  93:           <div
+  94:             className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+  95:             aria-label="Horizon Jobs logo placeholder"
+  96:           >
+  97:             <span className="h-3 w-3 rounded-sm bg-white/90" aria-hidden="true" />
+  98:           </div>
+  99: 
+ 100:           <div className="absolute left-14 top-[46%] max-w-[400px] -translate-y-1/2">
+ 101: 
+ 102:             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+ 103:               For employers
+ 104:             </p>
+ 105: 
+ 106:             <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+ 107:               Your hiring,
+ 108:               <br />
+ 109:               organized.
+ 110:             </h2>
+ 111: 
+--- app\recruiter\signup\page.tsx line 130 ---
+ 120: 
+ 121:   return (
+ 122:     <main className="min-h-screen bg-white lg:h-screen lg:overflow-hidden">
+ 123:       <div className="grid min-h-screen w-full lg:h-screen lg:grid-cols-2">
+ 124: 
+ 125:         {/* LEFT PANEL */}
+ 126:         <section className="relative flex min-h-[260px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-14 lg:py-10">
+ 127: 
+ 128:           <div
+ 129:             className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+ 130:             aria-label="Horizon Jobs logo placeholder"
+ 131:           >
+ 132:             <span className="h-3 w-3 rounded-sm bg-white/90" aria-hidden="true" />
+ 133:           </div>
+ 134: 
+ 135:           <div className="absolute left-14 top-1/2 max-w-[400px] -translate-y-1/2">
+ 136: 
+ 137:             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+ 138:               For employers
+ 139:             </p>
+ 140: 
+ 141:             <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+ 142:               Find the right
+ 143:               <br />
+ 144:               people.
+ 145:             </h2>
+ 146: 
+--- components\Header.tsx line 92 ---
+  84:           href="/"
+  85:           className="flex shrink-0 items-center gap-3"
+  86:           onClick={() => {
+  87:             setOpen(false);
+  88:             setAccountOpen(false);
+  89:           }}
+  90:         >
+  91:           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e4ad2f] text-lg font-black text-[#071a35]">
+  92:             <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+  93:           </span>
+  94: 
+  95:           <span>
+  96:             <strong className="block text-[16px] leading-5">
+  97:               Horizon Jobs
+  98:             </strong>
+  99: 
+ 100: 
+ 101:           </span>
+ 102:         </Link>
+--- components\Footer.tsx line 45 ---
+  37:   ];
+  38: 
+  39:   return (
+  40:     <footer className="mt-0 bg-[#06162f] text-white">
+  41:       <div className="horizon-container grid gap-10 py-12 md:grid-cols-[1.45fr_1fr_1fr_1fr] lg:gap-12 lg:py-14">
+  42:         <div>
+  43:           <Link href="/" className="inline-flex items-center gap-3">
+  44:             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e4ad2f] font-black text-[#071a35]">
+  45:               <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+  46:             </span>
+  47:             <span className="text-lg font-black">Horizon Jobs</span>
+  48:           </Link>
+  49: 
+  50:           <p className="mt-5 max-w-sm text-sm leading-7 text-white/60">
+  51:             A professional employment platform for discovering opportunities,
+  52:             building careers and connecting employers with candidates.
+  53:           </p>
+  54: 
+  55:           <a
+--- components\account\CandidateShell.tsx line 91 ---
+  83:   }
+  84: 
+  85:   const sidebar = (
+  86:     <>
+  87:       <div className="flex h-[68px] shrink-0 items-center border-b border-white/10 px-4">
+  88: 
+  89:         {collapsed ? (
+  90:           <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-[2px] bg-[#e4ad2f] text-[18px] font-black text-[#071a35]">
+  91:             <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+  92:           </div>
+  93:         ) : (
+  94:           <div className="flex w-full items-center justify-between gap-3">
+  95:             <Link
+  96:               href="/account/dashboard"
+  97:               className="flex min-w-0 items-center gap-3"
+  98:               onClick={closeMobile}
+  99:             >
+ 100:               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-[#e4ad2f] text-[18px] font-black text-[#071a35]">
+ 101:                 <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+--- components\account\CandidateShell.tsx line 101 ---
+  93:         ) : (
+  94:           <div className="flex w-full items-center justify-between gap-3">
+  95:             <Link
+  96:               href="/account/dashboard"
+  97:               className="flex min-w-0 items-center gap-3"
+  98:               onClick={closeMobile}
+  99:             >
+ 100:               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-[#e4ad2f] text-[18px] font-black text-[#071a35]">
+ 101:                 <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+ 102:               </div>
+ 103: 
+ 104:               <div className="min-w-0">
+ 105:                 <div className="text-[18px] font-black">
+ 106:                   Horizon Jobs
+ 107:                 </div>
+ 108: 
+ 109:                 <div className="hidden">
+ 110:                   Global Opportunities
+ 111:                 </div>
+--- components\recruiter\RecruiterShell.tsx line 88 ---
+  80:     setMobileOpen(false);
+  81: 
+  82:   const content = (
+  83:     <>
+  84:       <div className="flex h-[82px] shrink-0 items-center border-b border-white/10 px-4">
+  85: 
+  86:         {collapsed ? (
+  87:           <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#e4ad2f] text-2xl font-black text-[#071a35]">
+  88:             <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+  89:           </div>
+  90:         ) : (
+  91:           <div className="flex w-full items-center justify-between gap-3">
+  92: 
+  93:             <Link
+  94:               href="/recruiter/dashboard"
+  95:               onClick={closeMobile}
+  96:               className="flex min-w-0 items-center gap-3"
+  97:             >
+  98:               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e4ad2f] text-2xl font-black text-[#071a35]">
+--- components\recruiter\RecruiterShell.tsx line 99 ---
+  91:           <div className="flex w-full items-center justify-between gap-3">
+  92: 
+  93:             <Link
+  94:               href="/recruiter/dashboard"
+  95:               onClick={closeMobile}
+  96:               className="flex min-w-0 items-center gap-3"
+  97:             >
+  98:               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e4ad2f] text-2xl font-black text-[#071a35]">
+  99:                 <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+ 100:               </div>
+ 101: 
+ 102:               <div className="min-w-0">
+ 103:                 <div className="text-xl font-black">
+ 104:                   Horizon Jobs
+ 105:                 </div>
+ 106: 
+ 107:                 <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">
+ 108:                   Recruiter Workspace
+ 109:                 </div>
+--- app\admin\components\AdminShell.tsx line 133 ---
+ 125:             )}
+ 126: 
+ 127:             {collapsed && (
+ 128:               <Link
+ 129:                 href="/admin"
+ 130:                 onClick={closeMobile}
+ 131:                 className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 text-lg font-black"
+ 132:               >
+ 133:                 <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+ 134:               </Link>
+ 135:             )}
+ 136: 
+ 137:             {/* Desktop collapse */}
+ 138:             <button
+ 139:               type="button"
+ 140:               onClick={() => setCollapsed((value) => !value)}
+ 141:               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+ 142:               className={`
+ 143:                 hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg
+--- app\admin\login\page.tsx line 53 ---
+  45:     }
+  46:   }
+  47: 
+  48:   return (
+  49:     <main className="min-h-screen bg-slate-50 px-4 py-12">
+  50:       <div className="mx-auto w-full max-w-3xl rounded-[32px] border border-slate-200 bg-white p-10 shadow-xl sm:p-14">
+  51: 
+  52:         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e4ad2f] text-3xl font-black text-[#071a35]">
+  53:           <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+  54:         </div>
+  55: 
+  56:         <p className="mt-12 text-sm font-black uppercase tracking-[0.25em] text-[#b88410]">
+  57:           Horizon Jobs
+  58:         </p>
+  59: 
+  60:         <h1 className="mt-3 text-5xl font-black text-[#071a35]">
+  61:           Administrator sign in
+  62:         </h1>
+  63: 
+--- app\signup\page.tsx line 130 ---
+ 122:         <section className="relative flex min-h-[230px] flex-col bg-[#071a35] px-8 py-7 text-white sm:px-10 lg:min-h-0 lg:px-12 lg:py-8">
+ 123: 
+ 124:           {/* Future logo placeholder â€” no Horizon Jobs text */}
+ 125:           <div
+ 126:             className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#3e7bfa] to-[#e4ad2f]"
+ 127:             aria-label="Horizon Jobs logo placeholder"
+ 128:           >
+ 129:             <span className="text-lg font-black text-white">
+ 130:               <img src="/logo.png" alt="Horizon Jobs logo" width="40" height="40" className="h-full w-full object-contain" />
+ 131:             </span>
+ 132:           </div>
+ 133: 
+ 134:           <div className="absolute inset-x-8 top-1/2 max-w-[470px] -translate-y-1/2 sm:inset-x-10 lg:inset-x-12">
+ 135: 
+ 136:             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#e4ad2f]">
+ 137:               For job seekers
+ 138:             </p>
+ 139: 
+ 140:             <h2 className="mt-3 font-serif text-[30px] font-semibold leading-[1.08] text-white sm:text-[32px]">
+--- app\forgot-password\page.tsx line 39 ---
+  39:   return (
+  40:     <main className="horizon-page">
+  41:       <div className="horizon-container flex min-h-[calc(100vh-72px)] items-center justify-center py-12">
+  42:         <div className="horizon-card w-full max-w-md p-7 sm:p-9">
+  43:           <div className="mb-7 text-center">
+  44:             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#EAF1FF] text-[#2563EB]">
+  45:               <ShieldCheck size={24} />
+  46:             </div>
+  47:             <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-[#3E7BFA]">
+  48:               Account Recovery
+  49:             </p>
+  50:             <h1 className="mt-2 text-3xl font-black text-[#071a35]">
+  51:               Forgot your password?
+  52:             </h1>
+  53:             <p className="mt-3 text-sm leading-6 text-slate-500">
+  54:               Enter your email address and we&apos;ll send you a secure link to create a new password.
+  55:             </p>
+  56:           </div>
+  57: 
+  58:           <form onSubmit={submit} className="space-y-4">
+  59:             <label className="block">
+  60:               <span className="mb-2 block text-sm font-semibold text-[#071a35]">Email address</span>
+  61:               <div className="relative">
+  62:                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+  63:                 <input
+  64:                   type="email"
+--- app\reset-password\page.tsx line 64 ---
+  64:   return (
+  65:     <main className="horizon-page">
+  66:       <div className="horizon-container flex min-h-[calc(100vh-72px)] items-center justify-center py-12">
+  67:         <div className="horizon-card w-full max-w-md p-7 sm:p-9">
+  68:           <div className="mb-7 text-center">
+  69:             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#EAF1FF] text-[#2563EB]">
+  70:               <ShieldCheck size={24} />
+  71:             </div>
+  72:             <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-[#3E7BFA]">
+  73:               Secure Account
+  74:             </p>
+  75:             <h1 className="mt-2 text-3xl font-black text-[#071a35]">
+  76:               Create a new password
+  77:             </h1>
+  78:             <p className="mt-3 text-sm leading-6 text-slate-500">
+  79:               Choose a new password for your Horizon Jobs account.
+  80:             </p>
+  81:           </div>
+  82: 
+  83:           {!ready ? (
+  84:             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-800">
+  85:               This password-reset session is missing or has expired. Please request a new reset link.
+  86:               <div className="mt-3">
+  87:                 <Link href="/forgot-password" className="font-bold text-[#2563EB] hover:underline">
+  88:                   Request a new link
+  89:                 </Link>

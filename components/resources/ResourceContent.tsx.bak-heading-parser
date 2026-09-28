@@ -1,0 +1,136 @@
+"use client";
+
+type ResourceContentProps = {
+  content?: string | null;
+  className?: string;
+};
+
+function slugifyHeading(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+function renderContent(content: string) {
+  return content
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+}
+
+export default function ResourceContent({
+  content,
+  className = "",
+}: ResourceContentProps) {
+  const text = String(content || "").trim();
+
+  if (!text) {
+    return (
+      <div className={className}>
+        <p className="text-[12px] leading-6 text-[#52657D]">
+          No article content is available.
+        </p>
+      </div>
+    );
+  }
+
+  const blocks = renderContent(text);
+  const seen = new Map<string, number>();
+
+  const headingId = (title: string) => {
+    const base = slugifyHeading(title) || "section";
+    const count = seen.get(base) || 0;
+
+    seen.set(base, count + 1);
+
+    return count
+      ? `${base}-${count + 1}`
+      : base;
+  };
+
+  return (
+    <article
+      className={`max-w-none text-[12px] leading-6 text-[#334B68] ${className}`}
+    >
+      {blocks.map((block, index) => {
+
+        if (block.startsWith("### ")) {
+          const title = block.replace(/^###\s+/, "");
+
+          return (
+            <h3
+              key={index}
+              id={headingId(title)}
+              className="mt-7 text-[14px] font-black leading-6 text-[#071a35] first:mt-0"
+            >
+              {title}
+            </h3>
+          );
+        }
+
+        if (block.startsWith("## ")) {
+          const title = block.replace(/^##\s+/, "");
+
+          return (
+            <h2
+              key={index}
+              id={headingId(title)}
+              className="mt-8 text-[16px] font-black leading-6 text-[#071a35] first:mt-0"
+            >
+              {title}
+            </h2>
+          );
+        }
+
+        if (block.startsWith("# ")) {
+          const title = block.replace(/^#\s+/, "");
+
+          return (
+            <h2
+              key={index}
+              id={headingId(title)}
+              className="mt-8 text-[16px] font-black leading-6 text-[#071a35] first:mt-0"
+            >
+              {title}
+            </h2>
+          );
+        }
+
+        if (/^[-*]\s+/.test(block)) {
+          const items = block
+            .split("\n")
+            .map((line) =>
+              line.replace(/^[-*]\s+/, "").trim()
+            )
+            .filter(Boolean);
+
+          return (
+            <ul
+              key={index}
+              className="my-4 list-disc space-y-2 pl-5 text-[12px] leading-6 text-[#334B68]"
+            >
+              {items.map((item, itemIndex) => (
+                <li key={itemIndex}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        return (
+          <p
+            key={index}
+            className="mt-4 whitespace-pre-wrap text-[12px] leading-6 text-[#334B68] first:mt-0"
+          >
+            {block}
+          </p>
+        );
+      })}
+    </article>
+  );
+}

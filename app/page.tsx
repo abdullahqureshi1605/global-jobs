@@ -1,3 +1,4 @@
+﻿import JobAlertSubscribeForm from "@/components/home/JobAlertSubscribeForm";
 import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Find Jobs Worldwide",
@@ -34,7 +35,7 @@ function CategoryIcon({icon}:{icon?:string|null}) {
 function salary(job: Job) {
   if (job.salary_min == null && job.salary_max == null) return "Salary not specified";
   const c = job.currency ? `${job.currency} ` : "";
-  if (job.salary_min != null && job.salary_max != null) return `${c}${job.salary_min.toLocaleString()} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ ${job.salary_max.toLocaleString()}`;
+  if (job.salary_min != null && job.salary_max != null) return `${c}${job.salary_min.toLocaleString()} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ ${job.salary_max.toLocaleString()}`;
   return job.salary_min != null ? `${c}${job.salary_min.toLocaleString()}+` : `Up to ${c}${job.salary_max!.toLocaleString()}`;
 }
 
@@ -302,7 +303,7 @@ export default async function HomePage() {
                 </p>
 
                 <h2 className="mt-2 text-[30px] font-black leading-tight tracking-tight text-[#071a35] md:text-[36px]">
-                  WeÃ¢â‚¬â„¢re here to help
+                  We are here to help
                 </h2>
 
                 <p className="mt-5 text-justify text-[13px] leading-6 text-[#5F7188] [hyphens:auto]">
@@ -436,31 +437,11 @@ export default async function HomePage() {
               Get job alerts delivered to your inbox
             </h2>
             <p className="mt-2 max-w-2xl text-xs leading-5 text-[#AFC0D8] md:text-sm">
-              Choose your countries and categories once Ã¢â‚¬â€ we'll tell you the moment something matching goes live.
+              Choose your countries and categories once you choosed we'll tell you the moment something matching goes live.
             </p>
           </div>
 
-          <form
-            action="/signup"
-            method="get"
-            className="flex w-full max-w-xl flex-col gap-3 sm:flex-row lg:min-w-[500px]"
-          >
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="you@email.com"
-              aria-label="Email address"
-              className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white px-4 py-2.5 text-sm text-[#071a35] outline-none placeholder:text-[#7890AA] focus:border-[#E4AD2F]"
-            />
-            <input type="hidden" name="redirect" value="/job-alerts" />
-            <button
-              type="submit"
-              className="rounded-lg bg-[#3E7BFA] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#F0BA3D]"
-            >
-              Subscribe
-            </button>
-          </form>
+          <JobAlertSubscribeForm />
         </div>
             </div>
           </div>
