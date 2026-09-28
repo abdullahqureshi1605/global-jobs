@@ -38,6 +38,7 @@
                 ],
     "exclude":  [
                     "node_modules",
+                    "frontend",
                     "_horizon-ui-repair-*",
                     "_repair-backup-*",
                     ".next",
